@@ -1,0 +1,47 @@
+-- *****************************************************************
+-- AIRSPAN-MIB.txt:  Airspan MIB root tree
+-- Copyright (c) 2003 by Airspan Networks, Inc.
+-- All rights reserved.
+-- 
+-- *****************************************************************
+
+ AIRSPAN-MIB DEFINITIONS ::= BEGIN
+
+	IMPORTS
+	    MODULE-IDENTITY,
+		OBJECT-IDENTITY,
+		enterprises         	FROM SNMPv2-SMI;
+
+ airspan MODULE-IDENTITY
+        LAST-UPDATED    "200311210000Z"
+        ORGANIZATION    "Airspan Networks, Inc."
+        CONTACT-INFO
+        "Primary Author: Shlomi Eini  seini@Airspan.com"
+       	DESCRIPTION
+ 	    "This file defines the private Airspan Networks Inc. SNMP MIB extensions."
+       ::= { enterprises 989 }
+
+    airspanProducts	OBJECT-IDENTITY 
+	STATUS	current
+	DESCRIPTION
+	"  airspanProducts is the root from  wich sysObjectID values are 		
+	   assigned.
+	   see AIRSPAN-PRODUCTS-MIB for more details"
+	::= { airspan 1 }
+
+    airspanOIDs	OBJECT-IDENTITY 
+	STATUS	current
+	DESCRIPTION
+	  "the main subtree for new mib development."
+	::= { airspan 2 }
+
+    airspanGeneral	OBJECT-IDENTITY 
+	STATUS	current
+	DESCRIPTION
+	"  provides a root object identifier from which experimental mibs may 	
+	   be temporarily based"
+	::= { airspan 3 }
+
+END
+
+

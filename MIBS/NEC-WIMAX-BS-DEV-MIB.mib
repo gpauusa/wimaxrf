@@ -1,0 +1,1615 @@
+NEC-WIMAX-BS-DEV-MIB DEFINITIONS ::= BEGIN
+    IMPORTS
+    MODULE-IDENTITY, IpAddress, OBJECT-TYPE,
+    Integer32, enterprises
+        FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION, TruthValue
+        FROM SNMPv2-TC
+    OBJECT-GROUP, MODULE-COMPLIANCE
+        FROM SNMPv2-CONF;
+
+    necWimaxBsDevMib MODULE-IDENTITY
+        LAST-UPDATED        "200811050000Z"
+        ORGANIZATION        "NEC/J MWN"
+        CONTACT-INFO        "NEC/J MWN"
+        DESCRIPTION         "NEC WIMAX BS DEV MIB: Revision 5.6"
+
+        ::= { wimaxbs 1 }
+
+    --Textual Conventions
+    NecWimaxBsAlarmSeverity ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "defines the alarm Severity of an event."
+        SYNTAX              INTEGER {
+                                notAvailable( 0 ),
+                                clear( 1 ),
+                                warning( 2 ),
+                                minor( 3 ),
+                                major( 4 ),
+                                critical( 5 )
+                            }
+
+    NecWimaxBsEventLogLevel ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "defines the event log level of an event."
+        SYNTAX              INTEGER {
+                                notAvailable( 0 ),
+                                emergency( 1 ),
+                                alert( 2 ),
+                                critical( 3 ),
+                                error( 4 ),
+                                warning( 5 ),
+                                notice( 6 ),
+                                informational( 7 ),
+                                debug( 8 )
+                            }
+
+    NecWimaxBsAlarmType ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Alarm types per X.733/X.736."
+        SYNTAX              INTEGER {
+                                notAvailable( 0 ),
+                                communicationAlarm( 1 ),
+                                qualityOfServiceAlarm( 2 ),
+                                processingErrorAlarm( 3 ),
+                                equipmentAlarm( 4 ),
+                                environmentalAlarm( 5 ),
+                                integrityViolationAlarm( 6 ),
+                                operationalViolationAlarm( 7 ),
+                                physicalViolationAlarm( 8 ),
+                                securityViolationAlarm( 9 ),
+                                timeDomainViolationAlarm( 10 )
+                            }
+
+    NecWimaxBsAlarmProbableCause ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Probable causes per X.733/X.736. Values 1..50
+                            are used with communications alarms. Values 51..100
+                            are used with equipment alarms. Values 101..150
+                            are used with environmental alarms. Values 151..200
+                            are used with processing error alarms. Values
+                            501..600 are used with any of the violation alarm
+                            types."
+        SYNTAX              INTEGER {
+                                notAvailable( 0 ),
+                                aIS( 1 ),
+                                callSetUpFailure( 2 ),
+                                degradedSignal( 3 ),
+                                farEndReceiverFailure( 4 ),
+                                framingError( 5 ),
+                                lossOfFrame( 6 ),
+                                lossOfPointer( 7 ),
+                                lossOfSignal( 8 ),
+                                payloadTypeMismatch( 9 ),
+                                transmissionError( 10 ),
+                                remoteAlarmInterface( 11 ),
+                                excessiveBER( 12 ),
+                                pathTraceMismatch( 13 ),
+                                backplaneFailure( 51 ),
+                                dataSetProblem( 52 ),
+                                equipmentIdentifierDuplication( 53 ),
+                                externalIFDeviceProblem( 54 ),
+                                lineCardProblem( 55 ),
+                                multiplexerProblem( 56 ),
+                                nEIdentifierDuplication( 57 ),
+                                powerProblem( 58 ),
+                                processorProblem( 59 ),
+                                protectionPathFailure( 60 ),
+                                receiverFailure( 61 ),
+                                replaceableUnitMissing( 62 ),
+                                replaceableUnitTypeMismatch( 63 ),
+                                synchronizationSourceMismatch( 64 ),
+                                terminalProblem( 65 ),
+                                timingProblem( 66 ),
+                                transmitterFailure( 67 ),
+                                trunkCardProblem( 68 ),
+                                replaceableUnitProblem( 69 ),
+                                airCompressorFailure( 101 ),
+                                airConditioningFailure( 102 ),
+                                airDryerFailure( 103 ),
+                                batteryDischarging( 104 ),
+                                batteryFailure( 105 ),
+                                commercialPowerFailure( 106 ),
+                                coolingFanFailure( 107 ),
+                                engineFailure( 108 ),
+                                fireDetectorFailure( 109 ),
+                                fuseFailure( 110 ),
+                                generatorFailure( 111 ),
+                                lowBatteryThreshold( 112 ),
+                                pumpFailure( 113 ),
+                                rectifierFailure( 114 ),
+                                rectifierHighVoltage( 115 ),
+                                rectifierLowFVoltage( 116 ),
+                                ventilationsSystemFailure( 117 ),
+                                enclosureDoorOpen( 118 ),
+                                explosiveGas( 119 ),
+                                fire( 120 ),
+                                flood( 121 ),
+                                highHumidity( 122 ),
+                                highTemperature( 123 ),
+                                highWind( 124 ),
+                                iceBuildUp( 125 ),
+                                intrusionDetection( 126 ),
+                                lowFuel( 127 ),
+                                lowHumidity( 128 ),
+                                lowCablePressure( 129 ),
+                                lowTemperature( 130 ),
+                                lowWater( 131 ),
+                                smoke( 132 ),
+                                toxicGas( 133 ),
+                                storageCapacityProblem( 151 ),
+                                memoryMismatch( 152 ),
+                                corruptData( 153 ),
+                                outOfCPUCycles( 154 ),
+                                sfwrEnvironmentProblem( 155 ),
+                                sfwrDownloadFailure( 156 ),
+                                duplicateInformation( 501 ),
+                                informationMissing( 502 ),
+                                informationModificationDetected( 503 ),
+                                informationOutOfSequence( 504 ),
+                                unexpectedInformation( 505 ),
+                                denialOfService( 506 ),
+                                outOfService( 507 ),
+                                proceduralError( 508 ),
+                                cableTamper( 509 ),
+                                securityIntrusionDetection( 510 ),
+                                authenticationFailure( 511 ),
+                                breachOfConfidentiality( 512 ),
+                                unauthorisedAccessAttempt( 513 ),
+                                delayedInformation( 514 ),
+                                keyExpired( 515 ),
+                                outOfHoursActivity( 516 ),
+                                otherReasons( 517 )
+                            }
+
+    TableRowStatus ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Please replace this text."
+        SYNTAX              INTEGER {
+                                createRequest( 1 ),
+                                validRow( 2 ),
+                                deleteRequest( 3 ),
+                                invalidRow( 4 )
+                            }
+
+
+
+    nec OBJECT IDENTIFIER ::= { enterprises 119 }
+
+    necmib OBJECT IDENTIFIER ::= { nec 2 }
+
+    necProductDepend OBJECT IDENTIFIER ::= { necmib 3 }
+
+    wa802 OBJECT IDENTIFIER ::= { necProductDepend 163 }
+
+    wimaxbs OBJECT IDENTIFIER ::= { wa802 100 }
+
+    necWimaxBsDevObjects OBJECT IDENTIFIER ::= { necWimaxBsDevMib 1 }
+
+    necWimaxBsDevConfigurations OBJECT IDENTIFIER ::= { necWimaxBsDevObjects 1 }
+
+    necWimaxBsDevConfigurationsTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF NecWimaxBsDevConfigurationsEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "BS configurations"
+        ::= { necWimaxBsDevConfigurations 1 }
+
+    necWimaxBsDevConfigurationsEntry OBJECT-TYPE
+        SYNTAX              NecWimaxBsDevConfigurationsEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "configurations"
+        INDEX               {
+                                necWimaxBsDeviceIndex
+                            }
+        ::= { necWimaxBsDevConfigurationsTable 1 }
+
+    NecWimaxBsDevConfigurationsEntry ::= SEQUENCE {
+        necWimaxBsDeviceIndex
+            Integer32,
+        necWimaxBsConfNtpServerIp
+            IpAddress,
+        necWimaxBsConfTimeZone
+            OCTET STRING,
+        necWimaxBsConfSyslogIp
+            IpAddress,
+        necWimaxBsConfSyslogPort
+            Integer32,
+        necWimaxBsConfSyslogSeverity
+            INTEGER
+    }
+
+    necWimaxBsDeviceIndex OBJECT-TYPE
+        SYNTAX              Integer32 (1..640000)
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "An index identifies a BS device. Index 1 = MAC/NWINFC"
+        ::= { necWimaxBsDevConfigurationsEntry 1 }
+
+    necWimaxBsConfNtpServerIp OBJECT-TYPE
+        SYNTAX              IpAddress
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "IP address of NTP server"
+        ::= { necWimaxBsDevConfigurationsEntry 2 }
+
+    necWimaxBsConfTimeZone OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..127))
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "TimeZone"
+        ::= { necWimaxBsDevConfigurationsEntry 3 }
+
+    necWimaxBsConfSyslogIp OBJECT-TYPE
+        SYNTAX              IpAddress
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "IP addess of syslog server"
+        ::= { necWimaxBsDevConfigurationsEntry 4 }
+
+    necWimaxBsConfSyslogPort OBJECT-TYPE
+        SYNTAX              Integer32 (0..65535)
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "port number of syslog server"
+        ::= { necWimaxBsDevConfigurationsEntry 5 }
+
+    necWimaxBsConfSyslogSeverity OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                emergency( 1 ),
+                                alert( 2 ),
+                                critical( 3 ),
+                                error( 4 ),
+                                warning( 5 ),
+                                notice( 6 ),
+                                informational( 7 ),
+                                debug( 8 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Threshold of syslog output"
+        ::= { necWimaxBsDevConfigurationsEntry 6 }
+
+    necWimaxBsMonitor OBJECT IDENTIFIER ::= { necWimaxBsDevObjects 2 }
+
+    necWimaxBsMonitorTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF NecWimaxBsMonitorEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "setting for monitoring function"
+        ::= { necWimaxBsMonitor 1 }
+
+    necWimaxBsMonitorEntry OBJECT-TYPE
+        SYNTAX              NecWimaxBsMonitorEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "monitoring parameter"
+        INDEX               {
+                                necWimaxBsDeviceIndex
+                            }
+        ::= { necWimaxBsMonitorTable 1 }
+
+    NecWimaxBsMonitorEntry ::= SEQUENCE {
+        necWimaxBsMonitorIp
+            IpAddress,
+        necWimaxBsMonitorPort
+            Integer32,
+        necWimaxBsMonitorMax
+            Integer32,
+        necWimaxBsMonitorFilemode
+            BITS,
+        necWimaxBsMonitorUdpmode
+            BITS,
+        necWimaxBsMonitorFilter
+            BITS
+    }
+
+    necWimaxBsMonitorIp OBJECT-TYPE
+        SYNTAX              IpAddress
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "IP address of monitor server"
+        ::= { necWimaxBsMonitorEntry 1 }
+
+    necWimaxBsMonitorPort OBJECT-TYPE
+        SYNTAX              Integer32 (0..65535)
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "port number of monitor server"
+        ::= { necWimaxBsMonitorEntry 2 }
+
+    necWimaxBsMonitorMax OBJECT-TYPE
+        SYNTAX              Integer32 (0..65535)
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "max size of monitoring data. defval = 0x0080"
+        ::= { necWimaxBsMonitorEntry 3 }
+
+    necWimaxBsMonitorFilemode OBJECT-TYPE
+        SYNTAX              BITS {
+                                asngwMng( 0 ),
+                                asngwData( 1 ),
+                                msMngSdu( 2 ),
+                                msDataSdu( 3 ),
+                                msPdu( 4 ),
+                                reserved5( 5 ),
+                                reserved6( 6 ),
+                                typeEnable( 7 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "monitoring data type for local file monitoring.
+                            defval = 0x00"
+        ::= { necWimaxBsMonitorEntry 4 }
+
+    necWimaxBsMonitorUdpmode OBJECT-TYPE
+        SYNTAX              BITS {
+                                asngwMng( 0 ),
+                                asngwData( 1 ),
+                                msMngSdu( 2 ),
+                                msDataSdu( 3 ),
+                                msPdu( 4 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "monitoring data type for local UDP monitoring.
+                            defval = 0x00."
+        ::= { necWimaxBsMonitorEntry 5 }
+
+    necWimaxBsMonitorFilter OBJECT-TYPE
+        SYNTAX              BITS {
+                                dlMap( 0 ),
+                                ulMap( 1 ),
+                                dcd( 2 ),
+                                ucd( 3 ),
+                                measurement( 4 ),
+                                arq( 5 ),
+                                signaling( 6 ),
+                                change( 7 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "management message type to monitor. defval = 0x60."
+        ::= { necWimaxBsMonitorEntry 6 }
+
+    necWimaxBsResetControl OBJECT IDENTIFIER ::= { necWimaxBsDevObjects 3 }
+
+    necWimaxBsResetControlTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF NecWimaxBsResetControlEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "reset control"
+        ::= { necWimaxBsResetControl 1 }
+
+    necWimaxBsResetControlEntry OBJECT-TYPE
+        SYNTAX              NecWimaxBsResetControlEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "reset control"
+        INDEX               {
+                                necWimaxBsDeviceIndex
+                            }
+        ::= { necWimaxBsResetControlTable 1 }
+
+    NecWimaxBsResetControlEntry ::= SEQUENCE {
+        necWimaxBsRstCntrMode
+            INTEGER
+    }
+
+    necWimaxBsRstCntrMode OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                reset( 0 ),
+                                noReset( 1 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "define the action after critical error. defval
+                            = 0x01."
+        ::= { necWimaxBsResetControlEntry 1 }
+
+    necWimaxBsSoftwareAdmin OBJECT IDENTIFIER ::= { necWimaxBsDevObjects 4 }
+
+    necWimaxBsSwAdminTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF NecWimaxBsSwAdminEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "software management"
+        ::= { necWimaxBsSoftwareAdmin 1 }
+
+    necWimaxBsSwAdminEntry OBJECT-TYPE
+        SYNTAX              NecWimaxBsSwAdminEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "Software Management Table. Index 1 = MAC/NWINFC,
+                            2 = MAC PHY/NWINFC GPS, 3 = ODU#1(DSP), 4 = ODU#1(DPD
+                            FPGA), 5 = ODU#1(ODU Parameter), 6 = ODU#1(IDU
+                            INTF FPCGA), 7 = ODU#1(PLD)"
+        INDEX               {
+                                necWimaxBsDeviceIndex
+                            }
+        ::= { necWimaxBsSwAdminTable 1 }
+
+    NecWimaxBsSwAdminEntry ::= SEQUENCE {
+        necWimaxBsSwActiveVer
+            OCTET STRING,
+        necWimaxBsSwBackupVer
+            OCTET STRING,
+        necWimaxBsSwRollback
+            INTEGER,
+        necWimaxBsSwCurrentVer
+            OCTET STRING,
+        necWimaxBsSwSide0Ver
+            OCTET STRING,
+        necWimaxBsSwSide1Ver
+            OCTET STRING
+    }
+
+    necWimaxBsSwActiveVer OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..32))
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "software version of active side"
+        ::= { necWimaxBsSwAdminEntry 1 }
+
+    necWimaxBsSwBackupVer OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..32))
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "software version of backup side"
+        ::= { necWimaxBsSwAdminEntry 2 }
+
+    necWimaxBsSwRollback OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                noRollback( 0 ),
+                                rollback( 1 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "rollback command"
+        ::= { necWimaxBsSwAdminEntry 3 }
+
+    necWimaxBsSwCurrentVer OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..32))
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "current software version"
+        ::= { necWimaxBsSwAdminEntry 4 }
+
+    necWimaxBsSwSide0Ver OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..32))
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "side 0 software version"
+        ::= { necWimaxBsSwAdminEntry 5 }
+
+    necWimaxBsSwSide1Ver OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..32))
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "side 1 software version"
+        ::= { necWimaxBsSwAdminEntry 6 }
+
+    necWimaxBsOduSwSwichover OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                noSwichOver( 0 ),
+                                swichOver( 1 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "When this value is set to 1(swich over), ODU sw
+                            specified in necWimaxBsSwRollback is swiched."
+        ::= { necWimaxBsSoftwareAdmin 2 }
+
+    --
+    --
+    --
+    necWimaxBsNotification OBJECT IDENTIFIER ::= { necWimaxBsDevObjects 5 }
+
+    necWimaxBsTrapControl OBJECT IDENTIFIER ::= { necWimaxBsNotification 1 }
+
+    --
+    --
+    --
+    necWimaxBsThresholdConfigTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF NecWimaxBsThresholdConfigEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This table contains threshold objects that can
+                            be set to detect the threshold crossing events."
+        ::= { necWimaxBsTrapControl 2 }
+
+    necWimaxBsThresholdConfigEntry OBJECT-TYPE
+        SYNTAX              NecWimaxBsThresholdConfigEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This table provides one row for each BS sector,
+                            and is indexed by wmanPriDeviceIndex."
+        INDEX               {
+                                necWimaxBsDeviceIndex
+                            }
+        ::= { necWimaxBsThresholdConfigTable 1 }
+
+    NecWimaxBsThresholdConfigEntry ::= SEQUENCE {
+        necWimaxBsTempLowAlarmThreshold
+            Integer32,
+        necWimaxBsTempLowAlarmRestoredThreshold
+            Integer32,
+        necWimaxBsTempHighAlarmThreshold
+            Integer32,
+        necWimaxBsTempHighAlarmRestoredThreshold
+            Integer32
+    }
+
+    necWimaxBsTempLowAlarmThreshold OBJECT-TYPE
+        SYNTAX              Integer32 (-128..127)
+        UNITS               "degreeC"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Low threshold for generating the temperature low
+                            alarm trap. The detection of temperature low
+                            alarm will be disabled until the temperature
+                            goes above wmanPriTempLowAlarmRestoredThreshold"
+        ::= { necWimaxBsThresholdConfigEntry 2 }
+
+    necWimaxBsTempLowAlarmRestoredThreshold OBJECT-TYPE
+        SYNTAX              Integer32 (-128..127)
+        UNITS               "degreeC"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Low threshold for generating a trap indicating
+                            the temperature alarm is restored."
+        ::= { necWimaxBsThresholdConfigEntry 3 }
+
+    necWimaxBsTempHighAlarmThreshold OBJECT-TYPE
+        SYNTAX              Integer32 (-128..127)
+        UNITS               "degreeC"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Low threshold for generating the temperature low
+                            alarm trap. The detection of temperature low
+                            alarm will be disabled until the temperature
+                            goes above wmanPriTempLowAlarmRestoredThreshold"
+        ::= { necWimaxBsThresholdConfigEntry 4 }
+
+    necWimaxBsTempHighAlarmRestoredThreshold OBJECT-TYPE
+        SYNTAX              Integer32 (-128..127)
+        UNITS               "degreeC"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "High threshold for generating a trap indicating
+                            the temperature alarm is restored."
+        ::= { necWimaxBsThresholdConfigEntry 5 }
+
+    necWimaxBsDevBSID OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(6))
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "It is represented ID as for a physical device
+                            of NWINFC and three CHCs."
+        ::= { necWimaxBsDevObjects 6 }
+
+    necWimaxBsDevStatusTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF NecWimaxBsDevStatusEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "The status of device."
+        ::= { necWimaxBsDevObjects 7 }
+
+    necWimaxBsDevStatusEntry OBJECT-TYPE
+        SYNTAX              NecWimaxBsDevStatusEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "Device status and inventry table Index 1 = MAC/NWINFC,
+                            2 = MAC ODU/NWINFC GPS"
+        INDEX               {
+                                necWimaxBsDeviceIndex
+                            }
+        ::= { necWimaxBsDevStatusTable 1 }
+
+    NecWimaxBsDevStatusEntry ::= SEQUENCE {
+        necWimaxBsDevSectorNumber
+            INTEGER,
+        necWimaxBsDevAlarmStatus
+            INTEGER,
+        necWimaxBsDevSerialNumber
+            OCTET STRING,
+        necWimaxBsDevHwType
+            OCTET STRING
+    }
+
+    necWimaxBsDevSectorNumber OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                nWINFC( 0 ),
+                                sectorBoard1( 1 ),
+                                sectorBoard2( 2 ),
+                                sectorBoard3( 3 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the sector position."
+        ::= { necWimaxBsDevStatusEntry 1 }
+
+    necWimaxBsDevAlarmStatus OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                normal( 0 ),
+                                alarm( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsDevStatusEntry 2 }
+
+    necWimaxBsDevSerialNumber OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..32))
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "H/W serial number"
+        ::= { necWimaxBsDevStatusEntry 3 }
+
+    necWimaxBsDevHwType OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..32))
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "H/W Type"
+        ::= { necWimaxBsDevStatusEntry 6 }
+
+    necWimaxBsCmnObjects OBJECT IDENTIFIER ::= { necWimaxBsDevMib 2 }
+
+    necWimaxBsEventTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF NecWimaxBsEventEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This table provides the alarms and events that
+                            are supported by BS or SS."
+        ::= { necWimaxBsCmnObjects 1 }
+
+    necWimaxBsEventEntry OBJECT-TYPE
+        SYNTAX              NecWimaxBsEventEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "Each entry in this table represents an event that
+                            can be generated by BS. It is indexed by necWimaxBsDeviceIndex
+                            and necWimaxBsEventIdentifier."
+        INDEX               {
+                                necWimaxBsDeviceIndex,
+                                necWimaxBsEventIdentifier
+                            }
+        ::= { necWimaxBsEventTable 1 }
+
+    NecWimaxBsEventEntry ::= SEQUENCE {
+        necWimaxBsEventIdentifier
+            Integer32,
+        necWimaxBsEventType
+            INTEGER,
+        necWimaxBsEventLogLevel
+            NecWimaxBsEventLogLevel,
+        necWimaxBsEventNotification
+            TruthValue,
+        necWimaxBsEventDescription
+            OCTET STRING,
+        necWimaxBsAlarmSeverity
+            NecWimaxBsAlarmSeverity,
+        necWimaxBsAlarmType
+            NecWimaxBsAlarmType,
+        necWimaxBsAlarmProbableCause
+            NecWimaxBsAlarmProbableCause,
+        necWimaxBsAlarmRestart
+            INTEGER,
+        necWimaxBsAlarmId
+            Integer32
+    }
+
+    necWimaxBsEventIdentifier OBJECT-TYPE
+        SYNTAX              Integer32 (1..100000)
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "A numeric value represents the Event Identifier."
+        ::= { necWimaxBsEventEntry 1 }
+
+    necWimaxBsEventType OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                alarm( 0 ),
+                                event( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "alarm / event"
+        ::= { necWimaxBsEventEntry 2 }
+
+    necWimaxBsEventLogLevel OBJECT-TYPE
+        SYNTAX              NecWimaxBsEventLogLevel
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "This object describes the severity of such event.
+                            The system will assign a severity for each event.
+                            But, it can be configurable by NMS"
+        ::= { necWimaxBsEventEntry 3 }
+
+    necWimaxBsEventNotification OBJECT-TYPE
+        SYNTAX              TruthValue
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "An event notification will be reported when it
+                            is True (1)."
+        ::= { necWimaxBsEventEntry 4 }
+
+    necWimaxBsEventDescription OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..127))
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "This object describes the event."
+        ::= { necWimaxBsEventEntry 5 }
+
+    necWimaxBsAlarmSeverity OBJECT-TYPE
+        SYNTAX              NecWimaxBsAlarmSeverity
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "This object describes the severity of such event.
+                            The system will assign a severity for each event.
+                            But, it can be configurable by NMS"
+        ::= { necWimaxBsEventEntry 6 }
+
+    necWimaxBsAlarmType OBJECT-TYPE
+        SYNTAX              NecWimaxBsAlarmType
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Alarm types per X.733/X.736."
+        ::= { necWimaxBsEventEntry 7 }
+
+    necWimaxBsAlarmProbableCause OBJECT-TYPE
+        SYNTAX              NecWimaxBsAlarmProbableCause
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Probable causes per X.733/X.736. Values 1..50
+                            are used with communications alarms. Values 51..100
+                            are used with equipment alarms. Values 101..150
+                            are used with environmental alarms. Values 151..200
+                            are used with processing error alarms. Values
+                            501..600 are used with any of the violation alarm
+                            types."
+        ::= { necWimaxBsEventEntry 8 }
+
+    necWimaxBsAlarmRestart OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                notAvailable( 0 ),
+                                autoRestart( 1 ),
+                                noAutoRestart( 2 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Restart will be executed when it is autoRestart(1)."
+        ::= { necWimaxBsEventEntry 9 }
+
+    necWimaxBsAlarmId OBJECT-TYPE
+        SYNTAX              Integer32 (0..255)
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Alarm ID"
+        ::= { necWimaxBsEventEntry 12 }
+
+    --FILE DOWNLOAD:
+    --The reliable file transfer mechanism implemented
+    --in this MIB is focused around the ftpDownXferState
+    --object, which identified the current state of the
+    --download process. The EMS requests a download, and
+    --sets this object to 'wait'. When the NE is ready
+    --for the download, it sets this object to 'ready'.
+    --The EMS, which is polling the object (waiting for
+    --the 'ready' state, performs the FTP, and sets the
+    --object to 'complete'. The NE examines the file
+    --transferred, and sets the object to either 'fail'
+    --or 'success'.
+    necWimaxBsFtpDownTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF NecWimaxBsFtpDownEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "FTP Download Table"
+        ::= { necWimaxBsCmnObjects 4 }
+
+    necWimaxBsFtpDownEntry OBJECT-TYPE
+        SYNTAX              NecWimaxBsFtpDownEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "Software Download Entry Index 1 = MAC/NWINFC,
+                            2 = MAC PHY/NWINFC GPS, 3 = ODU#1(DSP), 4 = ODU#1(DPD
+                            FPGA), 5 = ODU#1(ODU Parameter), 6 = ODU#1(IDU
+                            INTF FPCGA), 7 = ODU#1(PLD)"
+        INDEX               {
+                                necWimaxBsDeviceIndex
+                            }
+        ::= { necWimaxBsFtpDownTable 1 }
+
+    NecWimaxBsFtpDownEntry ::= SEQUENCE {
+        necWimaxBsFtpDownIpAddress
+            OCTET STRING,
+        necWimaxBsFtpDownFileName
+            OCTET STRING,
+        necWimaxBsFtpDownFileType
+            INTEGER,
+        necWimaxBsFtpDownFileFormat
+            INTEGER,
+        necWimaxBsFtpDownFileSize
+            INTEGER,
+        necWimaxBsFtpDownFileChecksum
+            INTEGER,
+        necWimaxBsFtpDownPath
+            OCTET STRING,
+        necWimaxBsFtpDownXferState
+            INTEGER,
+        necWimaxBsFtpDownXferDescription
+            OCTET STRING,
+        necWimaxBsFtpDownRowStatus
+            TableRowStatus,
+        necWimaxBsFtpDownUser
+            OCTET STRING,
+        necWimaxBsFtpDownPasswd
+            OCTET STRING
+    }
+
+    necWimaxBsFtpDownIpAddress OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..19))
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "This is the Ftp Server IpAddress to be used to
+                            download the file."
+        ::= { necWimaxBsFtpDownEntry 1 }
+
+    necWimaxBsFtpDownFileName OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..31))
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "The file name."
+        ::= { necWimaxBsFtpDownEntry 2 }
+
+    necWimaxBsFtpDownFileType OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                software( 1 ),
+                                configuration( 2 ),
+                                performance( 4 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "The file type, possible values must be completed."
+        ::= { necWimaxBsFtpDownEntry 3 }
+
+    necWimaxBsFtpDownFileFormat OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                binary( 1 ),
+                                ascii( 2 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "The file format to be used to setup the FTP session"
+        ::= { necWimaxBsFtpDownEntry 4 }
+
+    necWimaxBsFtpDownFileSize OBJECT-TYPE
+        SYNTAX              Integer32 (1..6553500)
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "The file size in bytes."
+        ::= { necWimaxBsFtpDownEntry 5 }
+
+    necWimaxBsFtpDownFileChecksum OBJECT-TYPE
+        SYNTAX              Integer32 (1..6553500)
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "The file checksum in bytes."
+        ::= { necWimaxBsFtpDownEntry 6 }
+
+    necWimaxBsFtpDownPath OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..249))
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "This is the path to be used to download the file."
+        ::= { necWimaxBsFtpDownEntry 7 }
+
+    necWimaxBsFtpDownXferState OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                wait( 1 ),
+                                ready( 2 ),
+                                complete( 3 ),
+                                fail( 4 ),
+                                success( 5 ),
+                                processing( 6 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Current state of the transfer. (add processing)"
+        ::= { necWimaxBsFtpDownEntry 8 }
+
+    necWimaxBsFtpDownXferDescription OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..4))
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Any descriptions associated to any ftpDownXferState
+                            change is put in here."
+        ::= { necWimaxBsFtpDownEntry 9 }
+
+    necWimaxBsFtpDownRowStatus OBJECT-TYPE
+        SYNTAX              TableRowStatus
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Row creation/activation or deletion/deactivation
+                            state. BS download is initiated when createReqest(1)
+                            or validRow(2) is set."
+        ::= { necWimaxBsFtpDownEntry 10 }
+
+    necWimaxBsFtpDownUser OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..31))
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "The user name for ftp login"
+        ::= { necWimaxBsFtpDownEntry 11 }
+
+    necWimaxBsFtpDownPasswd OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..31))
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "The password for ftp login"
+        ::= { necWimaxBsFtpDownEntry 12 }
+
+    necWimaxBsDevices OBJECT IDENTIFIER ::= { necWimaxBsCmnObjects 5 }
+
+    necWimaxBsChc OBJECT-TYPE
+        SYNTAX              Integer32
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This object is just for alarmSource, eventSource
+                            etc."
+        ::= { necWimaxBsDevices 1 }
+
+    necWimaxBsNwinfc OBJECT-TYPE
+        SYNTAX              Integer32
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This object is just for alarmSource, eventSource
+                            etc."
+        ::= { necWimaxBsDevices 2 }
+
+    necWimaxBsNwinfcObjects OBJECT IDENTIFIER ::= { necWimaxBsDevMib 3 }
+
+    necWimaxBsNwinfcStatusTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF NecWimaxBsNwinfcStatusEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "The status of device."
+        ::= { necWimaxBsNwinfcObjects 1 }
+
+    necWimaxBsNwinfcStatusEntry OBJECT-TYPE
+        SYNTAX              NecWimaxBsNwinfcStatusEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "Please replace this text with your description."
+        INDEX               {
+                                necWimaxBsDeviceIndex
+                            }
+        ::= { necWimaxBsNwinfcStatusTable 1 }
+
+    NecWimaxBsNwinfcStatusEntry ::= SEQUENCE {
+        necWimaxBsNwinfcChc1AlarmStatus
+            INTEGER,
+        necWimaxBsNwinfcChc2AlarmStatus
+            INTEGER,
+        necWimaxBsNwinfcChc3AlarmStatus
+            INTEGER,
+        necWimaxBsNwinfcChc1WdtAlarmStatus
+            INTEGER,
+        necWimaxBsNwinfcChc2WdtAlarmStatus
+            INTEGER,
+        necWimaxBsNwinfcChc3WdtAlarmStatus
+            INTEGER,
+        necWimaxBsNwinfcChc1AttendStatus
+            INTEGER,
+        necWimaxBsNwinfcChc2AttendStatus
+            INTEGER,
+        necWimaxBsNwinfcChc3AttendStatus
+            INTEGER,
+        necWimaxBsNwinfcGpsStatus
+            BITS,
+        necWimaxBsNwinfcGpsAntennaAlarmStatus
+            INTEGER,
+        necWimaxBsNwinfcGpsOCXOAlarmStatus
+            INTEGER,
+        necWimaxBsNwinfcGps1PPSAlarmStatus
+            INTEGER,
+        necWimaxBsNwinfcGpsSatelliteNo
+            Integer32,
+        necWimaxBsNwinfcGpsOperationalMode
+            INTEGER
+    }
+
+    necWimaxBsNwinfcChc1AlarmStatus OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                normal( 0 ),
+                                alarm( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 1 }
+
+    necWimaxBsNwinfcChc2AlarmStatus OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                normal( 0 ),
+                                alarm( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 2 }
+
+    necWimaxBsNwinfcChc3AlarmStatus OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                normal( 0 ),
+                                alarm( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 3 }
+
+    necWimaxBsNwinfcChc1WdtAlarmStatus OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                normal( 0 ),
+                                alarm( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 4 }
+
+    necWimaxBsNwinfcChc2WdtAlarmStatus OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                normal( 0 ),
+                                alarm( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 5 }
+
+    necWimaxBsNwinfcChc3WdtAlarmStatus OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                normal( 0 ),
+                                alarm( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 6 }
+
+    necWimaxBsNwinfcChc1AttendStatus OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                attend( 0 ),
+                                notAttend( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 7 }
+
+    necWimaxBsNwinfcChc2AttendStatus OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                attend( 0 ),
+                                notAttend( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 8 }
+
+    necWimaxBsNwinfcChc3AttendStatus OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                attend( 0 ),
+                                notAttend( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 9 }
+
+    necWimaxBsNwinfcGpsStatus OBJECT-TYPE
+        SYNTAX              BITS {
+                                mgtComm( 4 ),
+                                todComm( 5 ),
+                                operatingTemperature( 6 ),
+                                trackedInitial( 7 ),
+                                antennaFailure( 8 ),
+                                gpsFailure( 9 ),
+                                gpsTiming( 10 ),
+                                outputsSquelched( 11 ),
+                                ocxoFailure( 12 ),
+                                trackedFast( 13 ),
+                                holdOver( 14 ),
+                                initial( 15 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 10 }
+
+    necWimaxBsNwinfcGpsAntennaAlarmStatus OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                normal( 0 ),
+                                alarm( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 11 }
+
+    necWimaxBsNwinfcGpsOCXOAlarmStatus OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                normal( 0 ),
+                                alarm( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 12 }
+
+    necWimaxBsNwinfcGps1PPSAlarmStatus OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                normal( 0 ),
+                                alarm( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 13 }
+
+    necWimaxBsNwinfcGpsSatelliteNo OBJECT-TYPE
+        SYNTAX              Integer32
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 14 }
+
+    necWimaxBsNwinfcGpsOperationalMode OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                nonFix( 0 ),
+                                fix( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "It indicate the status of the alarm."
+        ::= { necWimaxBsNwinfcStatusEntry 15 }
+
+    necWimaxBsNwinfcActionsTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF NecWimaxBsNwinfcActionsEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "Please replace this text with your description."
+        ::= { necWimaxBsNwinfcObjects 2 }
+
+    necWimaxBsNwinfcActionsEntry OBJECT-TYPE
+        SYNTAX              NecWimaxBsNwinfcActionsEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "Please replace this text with your description."
+        INDEX               {
+                                necWimaxBsDeviceIndex
+                            }
+        ::= { necWimaxBsNwinfcActionsTable 1 }
+
+    NecWimaxBsNwinfcActionsEntry ::= SEQUENCE {
+        necWimaxBsNwinfcChc1Reset
+            INTEGER,
+        necWimaxBsNwinfcChc2Reset
+            INTEGER,
+        necWimaxBsNwinfcChc3Reset
+            INTEGER
+    }
+
+    necWimaxBsNwinfcChc1Reset OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                noReset( 0 ),
+                                reset( 1 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Please replace this text with your description."
+        ::= { necWimaxBsNwinfcActionsEntry 1 }
+
+    necWimaxBsNwinfcChc2Reset OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                noReset( 0 ),
+                                reset( 1 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Please replace this text with your description."
+        ::= { necWimaxBsNwinfcActionsEntry 2 }
+
+    necWimaxBsNwinfcChc3Reset OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                noReset( 0 ),
+                                reset( 1 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Please replace this text with your description."
+        ::= { necWimaxBsNwinfcActionsEntry 3 }
+
+    necWimaxBsNwinfcConfigurationsTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF NecWimaxBsNwinfcConfigurationsEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "Please replace this text with your description."
+        ::= { necWimaxBsNwinfcObjects 3 }
+
+    necWimaxBsNwinfcConfigurationsEntry OBJECT-TYPE
+        SYNTAX              NecWimaxBsNwinfcConfigurationsEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "Please replace this text with your description."
+        INDEX               {
+                                necWimaxBsDeviceIndex
+                            }
+        ::= { necWimaxBsNwinfcConfigurationsTable 1 }
+
+    NecWimaxBsNwinfcConfigurationsEntry ::= SEQUENCE {
+        necWimaxBsNwinfcGpsAntenna
+            Integer32,
+        necWimaxBsNwinfcGpsMode
+            INTEGER,
+        necWimaxBsNwinfcL2swSpeed
+            Integer32
+    }
+
+    necWimaxBsNwinfcGpsAntenna OBJECT-TYPE
+        SYNTAX              Integer32
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Please replace this text with your description."
+        ::= { necWimaxBsNwinfcConfigurationsEntry 1 }
+
+    necWimaxBsNwinfcGpsMode OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                nonFix( 1 ),
+                                fix( 2 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Please replace this text with your description."
+        ::= { necWimaxBsNwinfcConfigurationsEntry 2 }
+
+    necWimaxBsNwinfcL2swSpeed OBJECT-TYPE
+        SYNTAX              Integer32
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Please replace this text with your description."
+        ::= { necWimaxBsNwinfcConfigurationsEntry 3 }
+
+    --
+    --External I/O Monitor/Control MIB for NWINFC (added MIB 3.3)
+    --
+    necWimaxBsNwinfcOutputPortTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF NecWimaxBsNwinfcOutputPortEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This table is used to control generic output port."
+        ::= { necWimaxBsNwinfcObjects 4 }
+
+    necWimaxBsNwinfcOutputPortEntry OBJECT-TYPE
+        SYNTAX              NecWimaxBsNwinfcOutputPortEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This table is indexed by port number. NWINFC have
+                            4 output ports (6 ports in future)"
+        INDEX               {
+                                necWimaxBsNwinfcOutputPortIndex
+                            }
+        ::= { necWimaxBsNwinfcOutputPortTable 1 }
+
+    NecWimaxBsNwinfcOutputPortEntry ::= SEQUENCE {
+        necWimaxBsNwinfcOutputPortIndex
+            Integer32,
+        necWimaxBsNwinfcOutputPortName
+            OCTET STRING,
+        necWimaxBsNwinfcOutputPortControl
+            INTEGER,
+        necWimaxBsNwinfcOutputPortOnName
+            OCTET STRING,
+        necWimaxBsNwinfcOutputPortOffName
+            OCTET STRING
+    }
+
+    necWimaxBsNwinfcOutputPortIndex OBJECT-TYPE
+        SYNTAX              Integer32 (1..6)
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "It indicate output port number. the value 5 and
+                            6 is for future use"
+        ::= { necWimaxBsNwinfcOutputPortEntry 1 }
+
+    necWimaxBsNwinfcOutputPortName OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..255))
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Description of the function assigned to this port."
+        ::= { necWimaxBsNwinfcOutputPortEntry 2 }
+
+    necWimaxBsNwinfcOutputPortControl OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                off( 0 ),
+                                on( 1 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "control/status value of this port."
+        ::= { necWimaxBsNwinfcOutputPortEntry 3 }
+
+    necWimaxBsNwinfcOutputPortOnName OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..255))
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Description of the event assigned to this port
+                            to ON."
+        ::= { necWimaxBsNwinfcOutputPortEntry 4 }
+
+    necWimaxBsNwinfcOutputPortOffName OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..255))
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Description of the event assigned to this port
+                            to OFF."
+        ::= { necWimaxBsNwinfcOutputPortEntry 5 }
+
+    necWimaxBsNwinfcInputPortTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF NecWimaxBsNwinfcInputPortEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This table is used to control generic input port."
+        ::= { necWimaxBsNwinfcObjects 5 }
+
+    necWimaxBsNwinfcInputPortEntry OBJECT-TYPE
+        SYNTAX              NecWimaxBsNwinfcInputPortEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This table is indexed by port number. NWINFC have
+                            4 input ports (24 ports in future)"
+        INDEX               {
+                                necWimaxBsNwinfcInputPortIndex
+                            }
+        ::= { necWimaxBsNwinfcInputPortTable 1 }
+
+    NecWimaxBsNwinfcInputPortEntry ::= SEQUENCE {
+        necWimaxBsNwinfcInputPortIndex
+            Integer32,
+        necWimaxBsNwinfcInputPortName
+            OCTET STRING,
+        necWimaxBsNwinfcInputPortControl
+            INTEGER,
+        necWimaxBsNwinfcInputPortStatus
+            INTEGER,
+        necWimaxBsNwinfcInputPortEventIdOn
+            Integer32,
+        necWimaxBsNwinfcInputPortEventIdOff
+            Integer32,
+        necWimaxBsNwinfcInputPortAlarmIdOn
+            Integer32,
+        necWimaxBsNwinfcInputPortAlarmIdOff
+            Integer32
+    }
+
+    necWimaxBsNwinfcInputPortIndex OBJECT-TYPE
+        SYNTAX              Integer32 (1..24)
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "It indicate output port number. the value 5..24
+                            is for future use"
+        ::= { necWimaxBsNwinfcInputPortEntry 1 }
+
+    necWimaxBsNwinfcInputPortName OBJECT-TYPE
+        SYNTAX              OCTET STRING (SIZE(0..255))
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Description of the function assigned to this port."
+        ::= { necWimaxBsNwinfcInputPortEntry 2 }
+
+    necWimaxBsNwinfcInputPortControl OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                noMonitor( 0 ),
+                                monitorAsEvent( 1 ),
+                                monitorAsAlarm( 2 )
+                            }
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "In case of noMonitor, this port is not monitored.
+                            In case of monitorAsEvent, this port is monitored,
+                            and when the status is changed to ON, an event
+                            identified by necWimaxBsNwinfcInputPortEventIdOn
+                            will occur, and when the status is changed to
+                            OFF, an event identified by necWimaxBsNwinfcInputPortEventIdOffn
+                            will occur. In case of monitorAsAlarm, this port
+                            is monitored, and when the status is changed
+                            to ON, an alarm identified by necWimaxBsNwinfcInputPortAlarmIdOn
+                            will occur or recover (it's depend on assigned
+                            event's definition) , and when the status is
+                            changed to OFF, an alarm identified by necWimaxBsNwinfcInputPortAlarmIdOff
+                            will occur or recover (it's depend on assigned
+                            event's definition)."
+        ::= { necWimaxBsNwinfcInputPortEntry 3 }
+
+    necWimaxBsNwinfcInputPortStatus OBJECT-TYPE
+        SYNTAX              INTEGER {
+                                off( 0 ),
+                                on( 1 )
+                            }
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "status value of this input port."
+        ::= { necWimaxBsNwinfcInputPortEntry 4 }
+
+    necWimaxBsNwinfcInputPortEventIdOn OBJECT-TYPE
+        SYNTAX              Integer32 (1..65535)
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "This value is used to the index of necWimaxBsEventEntry.
+                            corresponded necWimaxBsEventType must be event(1)"
+        ::= { necWimaxBsNwinfcInputPortEntry 5 }
+
+    necWimaxBsNwinfcInputPortEventIdOff OBJECT-TYPE
+        SYNTAX              Integer32 (1..65535)
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "This value is used to the index of necWimaxBsEventEntry.
+                            corresponded necWimaxBsEventType must be event(1)"
+        ::= { necWimaxBsNwinfcInputPortEntry 6 }
+
+    necWimaxBsNwinfcInputPortAlarmIdOn OBJECT-TYPE
+        SYNTAX              Integer32 (1..65535)
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "This value is used to the index of necWimaxBsEventEntry.
+                            corresponded necWimaxBsEventType must be alarm(0).
+                            If corresponded necWimaxBsAlarmSeverity is clear,
+                            corresponded necWimaxBsAlarmSeverity indexed
+                            by necWimaxBsNwinfcInputPortAlarmIdOff must not
+                            be clear. And both necWimaxBsAlarmId must be
+                            same."
+        ::= { necWimaxBsNwinfcInputPortEntry 7 }
+
+    necWimaxBsNwinfcInputPortAlarmIdOff OBJECT-TYPE
+        SYNTAX              Integer32 (1..65535)
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "This value is used to the index of necWimaxBsEventEntry.
+                            corresponded necWimaxBsEventType must be alarm(0).
+                            If corresponded necWimaxBsAlarmSeverity is clear,
+                            corresponded necWimaxBsAlarmSeverity indexed
+                            by necWimaxBsNwinfcInputPortAlarmIdOn must not
+                            be clear. And both necWimaxBsAlarmId must be
+                            same."
+        ::= { necWimaxBsNwinfcInputPortEntry 8 }
+
+    necWimaxBsDevMibConformance OBJECT IDENTIFIER ::= { necWimaxBsDevMib 4 }
+
+    necWimaxBsDevMibGroups OBJECT IDENTIFIER ::= { necWimaxBsDevMibConformance 1 }
+
+    necWimaxBsDevMibGroup OBJECT-GROUP
+        OBJECTS {           
+                        necWimaxBsMonitorIp,
+                        necWimaxBsMonitorPort,
+                        necWimaxBsMonitorMax,
+                        necWimaxBsMonitorFilemode,
+                        necWimaxBsMonitorUdpmode,
+                        necWimaxBsMonitorFilter,
+                        necWimaxBsTempLowAlarmThreshold,
+                        necWimaxBsTempLowAlarmRestoredThreshold,
+                        necWimaxBsTempHighAlarmThreshold,
+                        necWimaxBsTempHighAlarmRestoredThreshold
+                }
+        STATUS              current
+        DESCRIPTION         "This automatically created object group contains
+                            all those objects that do not belong to any other
+                            OBJECT-GROUP"
+        ::= { necWimaxBsDevMibGroups 1 }
+
+    necWimaxBsCmnMibGroup OBJECT-GROUP
+        OBJECTS {           
+                        necWimaxBsConfNtpServerIp,
+                        necWimaxBsConfTimeZone,
+                        necWimaxBsConfSyslogIp,
+                        necWimaxBsConfSyslogPort,
+                        necWimaxBsConfSyslogSeverity,
+                        necWimaxBsRstCntrMode,
+                        necWimaxBsSwActiveVer,
+                        necWimaxBsSwBackupVer,
+                        necWimaxBsSwRollback,
+                        necWimaxBsSwCurrentVer,
+                        necWimaxBsSwSide0Ver,
+                        necWimaxBsSwSide1Ver,
+                        necWimaxBsDevBSID,
+                        necWimaxBsDevSectorNumber,
+                        necWimaxBsDevAlarmStatus,
+                        necWimaxBsDevSerialNumber,
+                        necWimaxBsDevHwType,
+                        necWimaxBsEventType,
+                        necWimaxBsEventLogLevel,
+                        necWimaxBsEventNotification,
+                        necWimaxBsEventDescription,
+                        necWimaxBsAlarmSeverity,
+                        necWimaxBsAlarmType,
+                        necWimaxBsAlarmProbableCause,
+                        necWimaxBsAlarmRestart,
+                        necWimaxBsAlarmId,
+                        necWimaxBsFtpDownIpAddress,
+                        necWimaxBsFtpDownFileName,
+                        necWimaxBsFtpDownFileType,
+                        necWimaxBsFtpDownFileFormat,
+                        necWimaxBsFtpDownFileSize,
+                        necWimaxBsFtpDownFileChecksum,
+                        necWimaxBsFtpDownPath,
+                        necWimaxBsFtpDownXferState,
+                        necWimaxBsFtpDownXferDescription,
+                        necWimaxBsFtpDownRowStatus,
+                        necWimaxBsFtpDownUser,
+                        necWimaxBsFtpDownPasswd
+                }
+        STATUS              current
+        DESCRIPTION         "Please replace this text with your description."
+        ::= { necWimaxBsDevMibGroups 2 }
+
+    necWimaxBsNwinfcMibGroup OBJECT-GROUP
+        OBJECTS {           
+                        necWimaxBsNwinfcChc1Reset,
+                        necWimaxBsNwinfcChc2Reset,
+                        necWimaxBsNwinfcChc3Reset,
+                        necWimaxBsNwinfcChc1AlarmStatus,
+                        necWimaxBsNwinfcChc2AlarmStatus,
+                        necWimaxBsNwinfcChc3AlarmStatus,
+                        necWimaxBsNwinfcChc1WdtAlarmStatus,
+                        necWimaxBsNwinfcChc2WdtAlarmStatus,
+                        necWimaxBsNwinfcChc3WdtAlarmStatus,
+                        necWimaxBsNwinfcChc1AttendStatus,
+                        necWimaxBsNwinfcChc2AttendStatus,
+                        necWimaxBsNwinfcChc3AttendStatus,
+                        necWimaxBsNwinfcGpsStatus,
+                        necWimaxBsNwinfcGpsAntennaAlarmStatus,
+                        necWimaxBsNwinfcGpsOCXOAlarmStatus,
+                        necWimaxBsNwinfcGps1PPSAlarmStatus,
+                        necWimaxBsNwinfcGpsSatelliteNo,
+                        necWimaxBsNwinfcGpsOperationalMode,
+                        necWimaxBsNwinfcGpsAntenna,
+                        necWimaxBsNwinfcGpsMode,
+                        necWimaxBsNwinfcL2swSpeed,
+                        necWimaxBsNwinfcOutputPortName,
+                        necWimaxBsNwinfcOutputPortControl,
+                        necWimaxBsNwinfcOutputPortOnName,
+                        necWimaxBsNwinfcOutputPortOffName,
+                        necWimaxBsNwinfcInputPortName,
+                        necWimaxBsNwinfcInputPortControl,
+                        necWimaxBsNwinfcInputPortStatus,
+                        necWimaxBsNwinfcInputPortEventIdOn,
+                        necWimaxBsNwinfcInputPortEventIdOff,
+                        necWimaxBsNwinfcInputPortAlarmIdOn,
+                        necWimaxBsNwinfcInputPortAlarmIdOff
+                }
+        STATUS              current
+        DESCRIPTION         "Please replace this text with your description."
+        ::= { necWimaxBsDevMibGroups 3 }
+
+    necWimaxBsDevMibCompliances OBJECT IDENTIFIER ::= { necWimaxBsDevMibConformance 2 }
+
+    --compliance statements
+    necWimaxBsDevMibCompliance MODULE-COMPLIANCE
+        STATUS              current
+        DESCRIPTION         "The compliance statement for devices that implement
+                            Wireless MAN interfaces as defined in IEEE Std
+                            802.16-2004."
+
+        MODULE  -- this module
+                GROUP               necWimaxBsDevMibGroup
+        --optional group
+                DESCRIPTION         "This group is optional for Base Station."
+
+
+        ::= { necWimaxBsDevMibCompliances 1 }
+
+
+
+END
+

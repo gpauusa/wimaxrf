@@ -1,0 +1,1254 @@
+WMAN-IF2M-MIB DEFINITIONS ::= BEGIN
+    IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, Unsigned32,
+    Integer32
+        FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION
+        FROM SNMPv2-TC
+    OBJECT-GROUP
+        FROM SNMPv2-CONF
+    ifIndex
+        FROM IF-MIB;
+
+    wmanIf2mMib MODULE-IDENTITY
+        LAST-UPDATED        "200705220000Z"
+        --May 22, 2007
+        ORGANIZATION        "IEEE 802.16"
+        CONTACT-INFO        "WG E-mail: stds-802-16@ieee.org       
+                            WG Chair: Roger
+                            B. Marks
+                            Postal: NextWave
+                            Broadband, Inc.
+                            E-mail: r.b.marks@ieee.org
+                            
+                            TG Chair: Phillip
+                            Barber
+                            Postal: Huawei Technologies
+                            Co., Ltd
+                            E-mail: pbarber@futurewei.com
+                            
+                            Editor: Joey Chou
+                            Postal: Intel Corporation
+                            5000 W. Chandler
+                            Blvd,
+                            Chandler, AZ
+                            85227, USA
+                            E-mail: joey.chou@intel.com"
+        DESCRIPTION         "This material is from IEEE Std 802.16i Copyright
+                            (c) 2007 IEEE. This MIB Module defines managed
+                            objects for Subscriber Station and Base Station
+                            based on IEEE Std 802.16-2004 and its amendment
+                            IEEE Std 802.16e-2005. The MIB contains managed
+                            objects that are specific to mobile Broadband
+                            Wireless Networks."
+
+        REVISION            "200705220000Z"
+        DESCRIPTION         "Includes changes as per comment resolutions agreed
+                            at the Portland meeting"
+        REVISION            "200703280000Z"
+        DESCRIPTION         "Includes changes as per comment resolutions agreed
+                            at the Orlando meeting"
+        REVISION            "200702100000Z"
+        DESCRIPTION         "Includes changes as per comment resolutions agreed
+                            at the London meeting"
+        REVISION            "200610160000Z"
+        DESCRIPTION         "The 1st revision of WMAN-IF2M-MIB module."
+        ::= { iso(1) std(0) iso8802(8802) wman(16) 3 }
+
+    --
+    --
+    --
+    WmanIf2mOfdmaMobility ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "This field indicates whether or not the MS supports
+                            mobility hand-over, Slee-pmode, and Idle-mode.
+                            A bit value of 0 indicates 'not supported' while
+                            1 indicates it is supported."
+        SYNTAX              BITS {
+                                handoverSupport( 0 ),
+                                sleepModeSupport( 1 ),
+                                idleModeSupport( 2 )
+                            }
+
+    WmanIf2mHandoverType ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Indicates what type(s) of Handover the BS and
+                            the MS supports. bit#0: if set to 1, MDHO/FBSS
+                            HO not supported, the BS shall ignore all other
+                            bits. bit#1: if set to 1, FBSS/MDHO DL RF Combining
+                            is supported with monitoring MAPs from active
+                            BSs bit#2: if set to 1, MDHO DL soft Combining
+                            is supported with monitoring single MAP from
+                            anchor BS bit#3: if set to 1, MDHO DL soft combining
+                            is supported with monitoring MAPs from active
+                            BSs bit#3: if set to 1, MDHO UL Multiple transmission
+                            is supported"
+        SYNTAX              BITS {
+                                mdhcFbssHoNotSpported( 0 ),
+                                mdhcFbssDlMapsFromActiveBss( 1 ),
+                                mdhcDlMapFromAnchorBs( 2 ),
+                                mdhcDlMapsFromActiveBss( 3 ),
+                                mdhcUlMultipleTx( 4 )
+                            }
+
+    WmanIf2mCidType ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Type of CID."
+        SYNTAX              Integer32 (0..65535)
+
+    WmanIf2mPsClassId ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Indicates the index to Power Saving Classes. The
+                            ID shall be unique within the group of Power
+                            Saving Classes associated with the MS. This ID
+                            may be used in further MOB_SLP-REQ/RSP messages
+                            for activation / deactivation of Power Saving
+                            Class."
+        SYNTAX              Integer32 (0..63)
+
+    WmanIf2mPsClassType ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "The types of power saving classes."
+        SYNTAX              INTEGER {
+                                powerSavingClassTypeI( 1 ),
+                                powerSavingClassTypeII( 2 ),
+                                powerSavingClassTypeIII( 3 )
+                            }
+
+    WmanIf2mPsClassCidDir ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "The direction of power saving class's CIDs. 0b00
+                            = Unspecified. Each CID has its own direction
+                            assign in its connection creation. Can be DL,
+                            UL, or both (in the case of management connections).
+                            0b01 = Downlink direction only. 0b10 = Uplink
+                            direction only."
+        SYNTAX              INTEGER {
+                                unspecified( 0 ),
+                                downlink( 1 ),
+                                uplink( 2 )
+                            }
+
+    WmanIf2mPowerSavingMode ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Power saving class mode active or not active."
+        SYNTAX              INTEGER {
+                                psNotActive( 0 ),
+                                psActive( 1 )
+                            }
+
+    WmanIf2mSkipOptBitMap ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "If set to 1, its corresponding field will be omitted."
+        SYNTAX              BITS {
+                                omitOperatorId( 0 ),
+                                omitNeighborBsId( 1 ),
+                                omitHoProcOptimization( 2 ),
+                                omitQosRelatedField( 3 )
+                            }
+
+    WmanIf2mNbrBsId ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "The least significant 24 bits of the Base Station
+                            ID parameter in the DL-MAP message broadcast
+                            by the Neighbor BS. The BSID is a 6 byte number
+                            and follows the encoding rules of MacAddress
+                            textual convention, i.e. as if it were transmitted
+                            least-significant bit first. The value should
+                            be displayed with 2 parts clearly separated by
+                            a colon. Example 001DFF:00003A - 00003A is the
+                            Base Station ID."
+        SYNTAX              OCTET STRING (SIZE(3))
+
+    WmanIf2mNbrOperatorId ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "The most significant 24 bits of the Base Station
+                            ID parameter in the DL-MAP message broadcast
+                            by the Neighbor BS. The BSID is a 6 byte number
+                            and follows the encoding rules of MacAddress
+                            textual convention, i.e. as if it were transmitted
+                            least-significant bit first. The value should
+                            be displayed with 2 parts clearly separated by
+                            a colon. Example 001DFF:00003A - 001DFF is the
+                            Operator ID."
+        SYNTAX              OCTET STRING (SIZE(3))
+
+    WmanIf2mPhyProfileId ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "For systems using OFDM or OFDMA, the definition
+                            of the PHY Profile ID is shown as follows: bit#0:
+                            If set to 1, BS (or FA) is co-located with the
+                            serving BS bit#1: If set to 1, the BS has the
+                            same number of FAs and frequencies as the BS
+                            broadcasting the NBR-ADV bit#2: 0b00 = Unsynchronized
+                            bit#3: 0b01 = Time synchronization 0b10 = Time
+                            and Frequency synchronization If time synchronization
+                            is indicated for the OFDMA PHY, then the downlink
+                            frames transmitted by the serving BS and the
+                            Neighbor BS shall be synchronized to a level
+                            of at least 1/8 cyclic prefix length. If frequency
+                            synchronization is indicated for the OFDMA PHY,
+                            then the BS reference clocks shall be synchronized
+                            to a level that yields RF center frequency offset
+                            of no more than 1% of the OFDMA carrier spacing
+                            of the Neighbor BS. bit#4: If set to 1, the BS
+                            EIRP follows the PHY Profile ID bit#5: 0b0- The
+                            DCD/UCD settings of this neighbor BS are the
+                            same as those of the serving BS unless the TLV
+                            information specifies. 0b1- The DCD/UCD settings
+                            of this neighbor BS are the same as those of
+                            the preceding neighbor BS unless the TLV information
+                            specifies. bit#6: If set to 1, the FA Index follows
+                            the PHY Profile ID. In addition, if the FA Indicator
+                            is followed, the DL center frequency shall be
+                            omitted in the DCD/UCD difference TLV information.
+                            bit#7: The Trigger Reference Indicator is related
+                            to the Neighbor BS trigger metric TLV information
+                            of this neighbor BS. 0b0- The trigger settings
+                            of this neighbor BS are the same as those provided
+                            by the serving BS (via DCD).If the TLV information
+                            is present, it overrides values inherited from
+                            preceding neighbor BS. 0b1- The trigger settings
+                            of this neighbor BS are the same as those of
+                            the preceding neighbor BS."
+        SYNTAX              BITS {
+                                colocatedFaInd( 0 ),
+                                faConfigInd( 1 ),
+                                timeFreqSyncInd1( 2 ),
+                                timeFreqSyncInd2( 3 ),
+                                bsEirpInd( 4 ),
+                                dcdUcdRefInd( 5 ),
+                                faIndexInd( 6 ),
+                                triggRefInd( 7 )
+                            }
+
+    WmanIf2mHoProcOptm ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "For each Bit location, a value of '0' indicates
+                            the associated reentry management messages shall
+                            be required, a value of '1' indicates the reentry
+                            management message may be omitted. Regardless
+                            of the HO Process Optimization TLV settings,
+                            the target BS may send unsolicited SBC-RSP and/
+                            or REG-RSP management messages bit#0: Omit SBC-REQ/RSP
+                            management messages during re-entry processing
+                            bit#1: Omit PKM Authentication phase except TEK
+                            phase during current re-entry processing bit#2:
+                            Omit PKM TEK creation phase during reentry processing
+                            bit#3: Omit REG-REQ/RSP management during current
+                            re-entry processing bit#4: Omit Network Address
+                            Acquisition management messages during current
+                            reentry processing bit#5: Omit Time of Day Acquisition
+                            management messages during current reentry processing
+                            bit#6: Omit TFTP management messages during current
+                            re-entry processing bit#7: Full service and operational
+                            state transfer or sharing between serving BS
+                            and target BS (ARQ, timers , counters, MAC state
+                            machines, etc...)"
+        SYNTAX              BITS {
+                                omitSbcReq( 0 ),
+                                omitPkmAuth( 1 ),
+                                omitPkmTek( 2 ),
+                                omitRegReq( 3 ),
+                                omitNtwkAddrAcq( 4 ),
+                                omitTimeOfDay( 5 ),
+                                omitTftp( 6 ),
+                                fullService( 7 )
+                            }
+
+    WmanIf2mSchedulingSupp ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Bitmap to indicate if BS supports a particular
+                            scheduling service. 1 indicates support, 0 indicates
+                            not support: bit#0: Unsolicited Grant Service
+                            (UGS) bit#1: Real-time Polling Service (rtPS)
+                            bit#2: Non-real-time Polling Service (nrtPS)
+                            bit#3: Best Effort bit#4: Extended real-time
+                            Polling Service (ertPS) If the value of bit 0
+                            through bit 4 is 0b00000, it indicates no information
+                            on service available."
+        SYNTAX              BITS {
+                                ugs( 0 ),
+                                rtPs( 1 ),
+                                nrtPs( 2 ),
+                                be( 3 ),
+                                ertPs( 4 )
+                            }
+
+    WmanIf2mMacVersion ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Version number of IEEE 802.16."
+        SYNTAX              INTEGER {
+                                ieee802Dot16Of2001( 1 ),
+                                ieee802Dot16cOf2002( 2 ),
+                                ieee802Dot16aOf2003( 3 ),
+                                ieee802Dot16Of2004( 4 ),
+                                ieee802Dot16e( 5 ),
+                                tbd( 6 )
+                            }
+
+    WmanIf2mHarqAckDelay ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "HARQ ACK delay for UL and DL bursts 1 = one frame
+                            offset 2 = two frames offset 3 = three frames
+                            offset"
+        SYNTAX              INTEGER {
+                                oneframeoffset( 1 ),
+                                twoframesoffset( 2 ),
+                                threeframesoffset( 3 )
+                            }
+
+    WmanIf2mPowerSaveType ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "For MS supporting sleep mode, this parameter defines
+                            the capability of the MS supporting different
+                            power save class types in sleep mode. A bit 0
+                            - 'not supported' 1 - 'supported'"
+        SYNTAX              BITS {
+                                psClassTypeI( 0 ),
+                                psClassTypeII( 1 ),
+                                psClassTypeIII( 2 )
+                            }
+
+    WmanIf2mHoTrigMatrix ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "This field indicates trigger metrics that MS or
+                            BS supports. A bit 0 - 'not supported' 1 - 'supported'"
+        SYNTAX              INTEGER {
+--      SYNTAX              BITS {
+                                bsCinrMean( 0 ),
+                                bsRssiMean( 1 ),
+                                relativeDelay( 2 ),
+                                bsRoundTripDelay( 3 )
+                            }
+
+    WmanIf2mAssociationTyp ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "This field indicates the association level supported
+                            by the MS or the BS. If a bit is set to '1',
+                            then MS or BS indicates support at the respective
+                            association type and level. The MS may associate
+                            according to arrangements by the BS at levels
+                            up to and including the one for which the MS
+                            has indicated support."
+        SYNTAX              BITS {
+                                scanWoAssociation( 0 ),
+                                scanOrAssocWoCoordination( 1 ),
+                                assocWithCoordination( 2 ),
+                                ntwkAssistAssociation( 3 ),
+                                directAssociation( 4 )
+                            }
+
+    WmanIf2mOfdmaFftSize ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "FFT size for OFDMA PHY 0b000 = 2048 0b001 = 1024
+                            0b010 = 512 0b100 = 128"
+        SYNTAX              INTEGER {
+                                fft2048( 0 ),
+                                fft1024( 1 ),
+                                fft512( 2 ),
+                                reserved( 3 ),
+                                fft128( 4 )
+                            }
+
+    WmanIf2mOfdmaCp ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Cycle prefix for OFDMA PHY 0b00 = 1/4 0b01 = 1/8
+                            0b10 = 1/16 0b11 = 1/32"
+        SYNTAX              INTEGER {
+                                oneForth( 0 ),
+                                oneEighth( 1 ),
+                                oneSixteenth( 2 ),
+                                oneThirtySecond( 3 )
+                            }
+
+    WmanIf2mOfdmaFrame ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Frame duration for OFDMA PHY 0b0000 = 2.0 ms 0b0001
+                            = 2.5 ms 0b0010 = 4 ms 0b0011 = 5 ms 0b0100 =
+                            8 ms 0b0101 = 10 ms 0b0110 = 12.5 ms 0b0111 =
+                            20 ms"
+        SYNTAX              INTEGER {
+                                twoMs( 0 ),
+                                twoPointFiveMs( 1 ),
+                                fourMs( 2 ),
+                                fiveMs( 3 ),
+                                eightMs( 4 ),
+                                tenMs( 5 ),
+                                twelvePointFiveMs( 6 ),
+                                twentyMs( 7 )
+                            }
+
+    WmanIf2mPagingAction ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Paging action instruction to MS 0b00 = No Action
+                            Required 0b01 = Perform Ranging to establish
+                            location and acknowledge message 0b10 = Enter
+                            Network"
+        SYNTAX              INTEGER {
+                                noAction( 0 ),
+                                performRanging( 1 ),
+                                enterNetwork( 2 )
+                            }
+
+    WmanIf2mSsMacAddrHash ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "24 bit SS MAC address hash that is obtained by
+                            computing a CRC24 on the MS 48-bit MAC address."
+        SYNTAX              OCTET STRING (SIZE(3))
+
+    WmanIf2mSfState ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Defines the state of a service flow. 'inactive'
+                            - A service flow is inactive, when the MS owns
+                            this service flow has handoff to another BS.
+                            'provisioned' - A service flow is provisioned,
+                            but not yet activated. 'admitted' - This maps
+                            to the 1st phase of the two-phase activation
+                            model that the bandwidth a service flow is reserved.
+                            But, no traffic can be sent on this service flow
+                            yet. 'active' - This maps to the 2nd phase of
+                            the two-phase activation model that bandwidth
+                            is granted, (e.g., is actively sending UL maps
+                            containing unsolicited grants for a UGS service
+                            flow)."
+        SYNTAX              INTEGER {
+                                inactive( 0 ),
+                                provisioned( 1 ),
+                                admitted( 2 ),
+                                active( 3 )
+                            }
+
+    WmanIf2mGlobalSrvClass ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Global Service Class Name contains 8 information
+                            fields that map to predefined QoS attributes
+                            as shown in subclause 6.3.14.4.1. bit#0: Uplink/Downlink
+                            indicator 0 - uplink 1 - downlink bit#1-6: Maximum
+                            sustained traffic rate in bps that is defined
+                            in Table 124b bit#7: 0 - no traffic indication
+                            1 - traffic indication bit#8-13: Maximum traffic
+                            burst defines the maximum burst size that must
+                            be accommodated for the service. bit#14-19: Minimum
+                            reserved traffic rate parameter specifies the
+                            minimum rate, in bits per second, reserved for
+                            this service flow. bit#20-25: Maximum latency
+                            specifies the maximum interval between the reception
+                            of a packet at CS of BS or SS and the arrival
+                            of the packet to the peer device. bit#26: SDU
+                            indicator specifies whether the SDUs on the service
+                            flow are fixed-length or variable-length. 0 -
+                            variable length 1 - fixed length bit#27: Paging
+                            indicator of an MS preference for the reception
+                            of paging advisory messages during idle mode.
+                            When set, it indicates that the BS may present
+                            paging advisory messages or other indicative
+                            messages to the MS when data SDUs bound for the
+                            MS are present while the MS is in Idle Mode.
+                            0 - no paging generation 1 - paging generation"
+        SYNTAX              BITS {
+                                ulDlIndicator( 0 ),
+                                maxSustainedRate0( 1 ),
+                                maxSustainedRate1( 2 ),
+                                maxSustainedRate2( 3 ),
+                                maxSustainedRate3( 4 ),
+                                maxSustainedRate4( 5 ),
+                                maxSustainedRate5( 6 ),
+                                trafficIndication( 7 ),
+                                maxTrafficBurst0( 8 ),
+                                maxTrafficBurst1( 9 ),
+                                maxTrafficBurst2( 10 ),
+                                maxTrafficBurst3( 11 ),
+                                maxTrafficBurst4( 12 ),
+                                maxTrafficBurst5( 13 ),
+                                minReservedRate0( 14 ),
+                                minReservedRate1( 15 ),
+                                minReservedRate2( 16 ),
+                                minReservedRate3( 17 ),
+                                minReservedRate4( 18 ),
+                                minReservedRate5( 19 ),
+                                maxLatency0( 20 ),
+                                maxLatency1( 21 ),
+                                maxLatency2( 22 ),
+                                maxLatency3( 23 ),
+                                maxLatency4( 24 ),
+                                maxLatency5( 25 ),
+                                sduIndicator( 26 ),
+                                pagingGeneration( 27 ),
+                                reserved0( 28 ),
+                                reserved1( 29 ),
+                                reserved2( 30 ),
+                                reserved3( 31 )
+                            }
+
+    WmanIf2mSfDirection ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "The direction of a service flow"
+        SYNTAX              INTEGER {
+                                downstream( 1 ),
+                                upstream( 2 )
+                            }
+
+    WmanIf2mReqTxPolicy ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Specify certain attributes for the associated
+                            service flow. An attribute is enabled by setting
+                            the corresponding bit position to 1. bit#0: Service
+                            flow shall not use broadcast bandwidth request
+                            opportunities. (Uplink only) bit#1: reserved
+                            bit#2: The service flow shall not piggyback requests
+                            with data. (Uplink only) bit#3: The service flow
+                            shall not fragment data. bit#4: The service flow
+                            shall not suppress payload headers (CS parameter)
+                            bit#5: The service flow shall not pack multiple
+                            SDUs (or fragments) into single MAC PDUs. bit#6:
+                            The service flow shall not include CRC in the
+                            MAC PDU."
+        SYNTAX              BITS {
+                                noBroadcastBwReq( 0 ),
+                                reserved1( 1 ),
+                                noPiggybackReq( 2 ),
+                                noFragmentData( 3 ),
+                                noPHS( 4 ),
+                                noSduPacking( 5 ),
+                                noCrc( 6 ),
+                                reserved2( 7 )
+                            }
+
+    WmanIf2mPhsRuleVerify ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "The value of this field indicates to the sending
+                            entity whether or not the packet header contents
+                            are to be verified prior to performing suppression.
+                            If PHSV is enabled, the sender shall compare
+                            the bytes in the packet header with the bytes
+                            in the PHSF that are to be suppressed as indicated
+                            by the PHSM."
+        SYNTAX              INTEGER {
+                                phsVerifyEnable( 0 ),
+                                phsVerifyDisable( 1 )
+                            }
+
+    WmanIf2mSchedulingType ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "The scheduling service provided by a SC for an
+                            upstream service flow. If the parameter is omitted
+                            from an upstream QOS Parameter Set, this object
+                            takes the value of bestEffort (2). This parameter
+                            must be reported as undefined (1) for downstream
+                            QOS Parameter Sets."
+        SYNTAX              INTEGER {
+                                undefined( 1 ),
+                                bestEffort( 2 ),
+                                nonRealTimePollingService( 3 ),
+                                realTimePollingService( 4 ),
+                                extRealTimePollingService( 5 ),
+                                unsolicitedGrantService( 6 )
+                            }
+
+    WmanIf2mCsSpecification ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "Defines the types of convergence sublayer."
+        SYNTAX              INTEGER {
+                                reserved( 0 ),
+                                packetIpV4( 1 ),
+                                packetIpV6( 2 ),
+                                packet802dot3Ethernet( 3 ),
+                                packet802dot1QVlan( 4 ),
+                                packetIpV4Over802dot3( 5 ),
+                                packetIpV6Over802dot3( 6 ),
+                                packetIpV4Over802dot1Q( 7 ),
+                                packetIpV6Over802dot1Q( 8 ),
+                                atm( 9 ),
+                                packet802dot3EthernetRohcHc( 10 ),
+                                packet802dot3EthernetEcrtpHc( 11 ),
+                                packetIp2RohcHc( 12 ),
+                                packetIp2EcrtpHc( 13 )
+                            }
+
+    WmanIf2mIpv6FlowLabel ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "The value of this field specifies the matching
+                            values for the IPv6 Flow label field. As the
+                            flow label field has a length of 20 bits, the
+                            first 4 bits of the most significant byte shall
+                            be set to 0x0 and disregarded."
+        SYNTAX              OCTET STRING (SIZE(3))
+
+    WmanIf2mClassifierBitMap ::= TEXTUAL-CONVENTION
+        STATUS              current
+        DESCRIPTION         "A bit of of this object is set to 1 if the parameter
+                            indicated by the comment was present in the classifier
+                            encoding, and 0 otherwise. Note: that BITS are
+                            encoded most significant bit first, so that if
+                            e.g. bits 6 and 7 are set, this object is encoded
+                            as the octet string '030000'H."
+        SYNTAX              BITS {
+                                priority( 0 ),
+                                ipTos( 1 ),
+                                ipProtocol( 2 ),
+                                ipMaskedSrcAddr( 3 ),
+                                ipMaskedDestAddr( 4 ),
+                                srcPort( 5 ),
+                                destPort( 6 ),
+                                destMacAddr( 7 ),
+                                srcMacAddr( 8 ),
+                                ethernetProtocol( 9 ),
+                                userPriority( 10 ),
+                                vlanId( 11 ),
+                                ipv6FlowLabel( 12 )
+                            }
+
+
+
+    wmanIf2mMibObjects OBJECT IDENTIFIER ::= { wmanIf2mMib 1 }
+
+    wmanIf2mBsObjects OBJECT IDENTIFIER ::= { wmanIf2mMibObjects 1 }
+
+    --
+    --
+    --
+    --
+    --
+    --
+    --
+    wmanIf2mBsCm OBJECT IDENTIFIER ::= { wmanIf2mBsObjects 1 }
+
+    --
+    --
+    --
+    wmanIf2mBsCapabilities OBJECT IDENTIFIER ::= { wmanIf2mBsCm 1 }
+
+    wmanIf2mBsBasicCapabilitiesTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF WmanIf2mBsBasicCapabilitiesEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This table contains the basic capabilities of
+                            the BS as implemented in BS hardware and software.
+                            These capabilities along with the configuration
+                            for them (wmanIf2mBsCapabilitiesConfigTable)
+                            are used for negotiation of basic capabilities
+                            with SS using RNG-RSP, SBC-RSP and REG-RSP messages.
+                            The negotiated capabilities are obtained by interSubclause
+                            of SS raw reported capabilities, BS raw capabilities
+                            and BS configured capabilities. The objects in
+                            the table have read-only access. The table is
+                            maintained by BS."
+        ::= { wmanIf2mBsCapabilities 3 }
+
+    wmanIf2mBsBasicCapabilitiesEntry OBJECT-TYPE
+        SYNTAX              WmanIf2mBsBasicCapabilitiesEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This table provides one row for each BS sector
+                            and is indexed by ifIndex."
+        INDEX               {
+                                ifIndex
+                            }
+        ::= { wmanIf2mBsBasicCapabilitiesTable 1 }
+
+    WmanIf2mBsBasicCapabilitiesEntry ::= SEQUENCE {
+        wmanIf2mBsCapHandoverSupported
+            WmanIf2mHandoverType,
+        wmanIf2mBsCapRetrainTime
+            Unsigned32,
+        wmanIf2mBsCapHoProcessTimer
+            Unsigned32,
+        wmanIf2mBsCapRetransmissionTimer
+            Unsigned32,
+        wmanIf2mBsCapMobilityFeature
+            WmanIf2mOfdmaMobility,
+        wmanIf2mBsCapIdleModeTimeout
+            Unsigned32,
+        wmanIf2mBsCapHoConnProcessTime
+            Unsigned32,
+        wmanIf2mBsCapHoTekProcessTime
+            Unsigned32,
+        wmanIf2mBsCapPowerSavingType
+            WmanIf2mPowerSaveType,
+        wmanIf2mBsCapNumOfPsClassIandII
+            Integer32,
+        wmanIf2mBsCapNumOfPsClassIII
+            Integer32,
+        wmanIf2mBsCapHoTrigMatrix
+            WmanIf2mHoTrigMatrix,
+        wmanIf2mBsCapAssociationType
+            WmanIf2mAssociationTyp
+    }
+
+    wmanIf2mBsCapHandoverSupported OBJECT-TYPE
+        SYNTAX              WmanIf2mHandoverType
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Indicates what type(s) of Handover the BS or MS
+                            supports."
+        ::= { wmanIf2mBsBasicCapabilitiesEntry 1 }
+
+    wmanIf2mBsCapRetrainTime OBJECT-TYPE
+        SYNTAX              Unsigned32
+        UNITS               "100 milliseconds"
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Indicates the duration for MS's connection information
+                            that will be retained in serving BS. BS shall
+                            start Resource_Retain_Time timer at MS notification
+                            of pending HO attempt through MOB_HO-IND or by
+                            detecting an MS drop."
+        ::= { wmanIf2mBsBasicCapabilitiesEntry 2 }
+
+    wmanIf2mBsCapHoProcessTimer OBJECT-TYPE
+        SYNTAX              Unsigned32
+        UNITS               "frames"
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "The duration in frames the MS shall wait until
+                            receipt of the next unsolicited network re-entry
+                            MAC management message as indicated in the HO
+                            Process Optimization element of the RNG-RSP message."
+        ::= { wmanIf2mBsBasicCapabilitiesEntry 3 }
+
+    wmanIf2mBsCapRetransmissionTimer OBJECT-TYPE
+        SYNTAX              Unsigned32
+        UNITS               "frames"
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "When an MS transmits MOB_MSHO-REQ to initiate
+                            a handover process, it shall start MS Handover
+                            Retransmission Timer and shall not transmit another
+                            MOB_MSHO-REQ until the expiration of the MS Handover
+                            Retransmission Timer."
+        ::= { wmanIf2mBsBasicCapabilitiesEntry 4 }
+
+    wmanIf2mBsCapMobilityFeature OBJECT-TYPE
+        SYNTAX              WmanIf2mOfdmaMobility
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "The field indicates the mobility hand-over, Sleep-mode,
+                            and Idle-mode supported by BS."
+        ::= { wmanIf2mBsBasicCapabilitiesEntry 5 }
+
+    wmanIf2mBsCapIdleModeTimeout OBJECT-TYPE
+        SYNTAX              Unsigned32
+        UNITS               "seconds"
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Max time interval between MS Idle Mode Location
+                            Updates."
+        ::= { wmanIf2mBsBasicCapabilitiesEntry 6 }
+
+    wmanIf2mBsCapHoConnProcessTime OBJECT-TYPE
+        SYNTAX              Unsigned32
+        UNITS               "milliseconds"
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "The duration that the MS needs to process information
+                            on connections provided in RNG-RSP or REG-RSP
+                            message during Handoff."
+        ::= { wmanIf2mBsBasicCapabilitiesEntry 7 }
+
+    wmanIf2mBsCapHoTekProcessTime OBJECT-TYPE
+        SYNTAX              Unsigned32
+        UNITS               "milliseconds"
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "The duration that the MS needs to completely process
+                            TEK information during Handoff."
+        ::= { wmanIf2mBsBasicCapabilitiesEntry 8 }
+
+    wmanIf2mBsCapPowerSavingType OBJECT-TYPE
+        SYNTAX              WmanIf2mPowerSaveType
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "For MS supporting sleep mode, this parameter defines
+                            the capability of the MS supporting different
+                            power save class types in sleep mode."
+        ::= { wmanIf2mBsBasicCapabilitiesEntry 9 }
+
+    wmanIf2mBsCapNumOfPsClassIandII OBJECT-TYPE
+        SYNTAX              Integer32 (0..7)
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Number of power save class instances supported
+                            from class types 1 and 2."
+        ::= { wmanIf2mBsBasicCapabilitiesEntry 10 }
+
+    wmanIf2mBsCapNumOfPsClassIII OBJECT-TYPE
+        SYNTAX              Integer32 (0..7)
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Number of power save class instances supported
+                            from class types 3."
+        ::= { wmanIf2mBsBasicCapabilitiesEntry 11 }
+
+    wmanIf2mBsCapHoTrigMatrix OBJECT-TYPE
+        SYNTAX              WmanIf2mHoTrigMatrix
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Indicates trigger metrics that MS or BS supports."
+        ::= { wmanIf2mBsBasicCapabilitiesEntry 12 }
+
+    wmanIf2mBsCapAssociationType OBJECT-TYPE
+        SYNTAX              WmanIf2mAssociationTyp
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Indicates the association level supported by the
+                            MS or the BS."
+        ::= { wmanIf2mBsBasicCapabilitiesEntry 13 }
+
+    wmanIf2mBsCapabilitiesConfigTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF WmanIf2mBsCapabilitiesConfigEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This table contains the configuration for basic
+                            capabilities of BS. The table is intended to
+                            be used to restrict the Capabilities implemented
+                            by BS, for example in order to comply with local
+                            regulatory requirements. The BS should use the
+                            configuration along with the implemented Capabilities
+                            (wmanIf2mBsBasicCapabilitiesTable) for negotiation
+                            of basic capabilities with SS using RNG-RSP,
+                            SBC-RSP and REG-RSP messages. The negotiated
+                            capabilities are obtained by interSubclause of
+                            SS reported capabilities, BS raw capabilities
+                            and BS configured capabilities. The objects in
+                            the table have read-write access. The rows are
+                            created by BS as a copy of wmanIf2mBsBasicCapabilitiesTable
+                            and can be modified by NMS."
+        ::= { wmanIf2mBsCapabilities 4 }
+
+    wmanIf2mBsCapabilitiesConfigEntry OBJECT-TYPE
+        SYNTAX              WmanIf2mBsCapabilitiesConfigEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This table provides one row for each BS sector
+                            and is indexed by ifIndex."
+        INDEX               {
+                                ifIndex
+                            }
+        ::= { wmanIf2mBsCapabilitiesConfigTable 1 }
+
+    WmanIf2mBsCapabilitiesConfigEntry ::= SEQUENCE {
+        wmanIf2mBsCapCfgHandoverSupported
+            WmanIf2mHandoverType,
+        wmanIf2mBsCapCfgRetrainTime
+            Unsigned32,
+        wmanIf2mBsCapCfgHoProcessTimer
+            Unsigned32,
+        wmanIf2mBsCapCfgRetransmissionTimer
+            Unsigned32,
+        wmanIf2mBsCapCfgMobilityFeature
+            WmanIf2mOfdmaMobility,
+        wmanIf2mBsCapCfgIdleModeTimeout
+            Unsigned32,
+        wmanIf2mBsCapCfgHoConnProcessTime
+            Unsigned32,
+        wmanIf2mBsCapCfgHoTekProcessTime
+            Unsigned32,
+        wmanIf2mBsCapCfgPowerSavingType
+            WmanIf2mPowerSaveType,
+        wmanIf2mBsCapCfgNumOfPsClassIandII
+            Integer32,
+        wmanIf2mBsCapCfgNumOfPsClassIII
+            Integer32,
+        wmanIf2mBsCapCfgHoTrigMatrix
+            WmanIf2mHoTrigMatrix,
+        wmanIf2mBsCapCfgAssociationType
+            WmanIf2mAssociationTyp
+    }
+
+    wmanIf2mBsCapCfgHandoverSupported OBJECT-TYPE
+        SYNTAX              WmanIf2mHandoverType
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Indicates what type(s) of Handover the BS or MS
+                            supports."
+        ::= { wmanIf2mBsCapabilitiesConfigEntry 1 }
+
+    wmanIf2mBsCapCfgRetrainTime OBJECT-TYPE
+        SYNTAX              Unsigned32 (0..65535)
+        UNITS               "100 milliseconds"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Indicates the duration for MS's connection information
+                            that will be retained in serving BS. BS shall
+                            start Resource_Retain_Time timer at MS notification
+                            of pending HO attempt through MOB_HO-IND or by
+                            detecting an MS drop. DEFVAL { 1 }"
+        ::= { wmanIf2mBsCapabilitiesConfigEntry 2 }
+
+    wmanIf2mBsCapCfgHoProcessTimer OBJECT-TYPE
+        SYNTAX              Unsigned32
+        UNITS               "frames"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "The duration in frames the MS shall wait until
+                            receipt of the next unsolicited network re-entry
+                            MAC management message as indicated in the HO
+                            Process Optimization element of the RNG-RSP message."
+        ::= { wmanIf2mBsCapabilitiesConfigEntry 3 }
+
+    wmanIf2mBsCapCfgRetransmissionTimer OBJECT-TYPE
+        SYNTAX              Unsigned32 (0..255)
+        UNITS               "frames"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "When an MS transmits MOB_MSHO-REQ to initiate
+                            a handover process, it shall start MS Handover
+                            Retransmission Timer and shall not transmit another
+                            MOB_MSHO-REQ until the expiration of the MS Handover
+                            Retransmission Timer."
+        ::= { wmanIf2mBsCapabilitiesConfigEntry 4 }
+
+    wmanIf2mBsCapCfgMobilityFeature OBJECT-TYPE
+        SYNTAX              WmanIf2mOfdmaMobility
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "The field indicates the mobility hand-over, Sleep-mode,
+                            and Idle-mode configured for the BS."
+        ::= { wmanIf2mBsCapabilitiesConfigEntry 5 }
+
+    wmanIf2mBsCapCfgIdleModeTimeout OBJECT-TYPE
+        SYNTAX              Unsigned32
+        UNITS               "seconds"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Max time interval between MS Idle Mode Location
+                            Updates. DEFVAL { 4096 }"
+        ::= { wmanIf2mBsCapabilitiesConfigEntry 6 }
+
+    wmanIf2mBsCapCfgHoConnProcessTime OBJECT-TYPE
+        SYNTAX              Unsigned32
+        UNITS               "milliseconds"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "The duration that the MS needs to process information
+                            on connections provided in RNG-RSP or REG-RSP
+                            message during Handoff."
+        ::= { wmanIf2mBsCapabilitiesConfigEntry 7 }
+
+    wmanIf2mBsCapCfgHoTekProcessTime OBJECT-TYPE
+        SYNTAX              Unsigned32
+        UNITS               "milliseconds"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "The duration that the MS needs to completely process
+                            TEK information during Handoff."
+        ::= { wmanIf2mBsCapabilitiesConfigEntry 8 }
+
+    wmanIf2mBsCapCfgPowerSavingType OBJECT-TYPE
+        SYNTAX              WmanIf2mPowerSaveType
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Change MAX-ACCESS from R/O to R/W by NEC. For
+                            MS supporting sleep mode, this parameter defines
+                            the capability of the MS supporting different
+                            power save class types in sleep mode."
+        ::= { wmanIf2mBsCapabilitiesConfigEntry 9 }
+
+    wmanIf2mBsCapCfgNumOfPsClassIandII OBJECT-TYPE
+        SYNTAX              Integer32 (0..7)
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Number of power save class instances supported
+                            from class types 1 and 2."
+        ::= { wmanIf2mBsCapabilitiesConfigEntry 10 }
+
+    wmanIf2mBsCapCfgNumOfPsClassIII OBJECT-TYPE
+        SYNTAX              Integer32 (0..7)
+        MAX-ACCESS          read-only
+        STATUS              current
+        DESCRIPTION         "Number of power save class instances supported
+                            from class types 3."
+        ::= { wmanIf2mBsCapabilitiesConfigEntry 11 }
+
+    wmanIf2mBsCapCfgHoTrigMatrix OBJECT-TYPE
+        SYNTAX              WmanIf2mHoTrigMatrix
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Change MAX-ACCESS from R/O to R/W by NEC. Indicates
+                            trigger metrics that MS or BS supports."
+        ::= { wmanIf2mBsCapabilitiesConfigEntry 12 }
+
+    wmanIf2mBsCapCfgAssociationType OBJECT-TYPE
+        SYNTAX              WmanIf2mAssociationTyp
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Change MAX-ACCESS from R/O to R/W by NEC. Indicates
+                            the association level supported by the MS or
+                            the BS."
+        ::= { wmanIf2mBsCapabilitiesConfigEntry 13 }
+
+    --
+    --
+    --
+    wmanIf2mBsConfigurationTable OBJECT-TYPE
+        SYNTAX              SEQUENCE OF WmanIf2mBsConfigurationEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This table contains one row for the BS system
+                            parameters."
+        ::= { wmanIf2mBsCm 5 }
+
+    wmanIf2mBsConfigurationEntry OBJECT-TYPE
+        SYNTAX              WmanIf2mBsConfigurationEntry
+        MAX-ACCESS          not-accessible
+        STATUS              current
+        DESCRIPTION         "This table is indexed by ifIndex."
+        INDEX               {
+                                ifIndex
+                            }
+        ::= { wmanIf2mBsConfigurationTable 1 }
+
+    WmanIf2mBsConfigurationEntry ::= SEQUENCE {
+        wmanIf2mBsMobNbrAdvInterval
+            Integer32,
+        wmanIf2mBsAscAgingTimer
+            Integer32,
+        wmanIf2mBsPagingRetryCount
+            Integer32,
+        wmanIf2mBsModeSelectFeedbackProcTime
+            Integer32,
+        wmanIf2mBsIdleModeSystemTimer
+            Unsigned32,
+        wmanIf2mBsMgmtResourceHoldingTimer
+            Integer32,
+        wmanIf2mBsDregCommandRetryCount
+            Integer32,
+        wmanIf2mBsT46Timer
+            Integer32,
+        wmanIf2mBsT47Timer
+            Integer32,
+        wmanIf2mBsPagingInterval
+            Integer32,
+        wmanIf2mBs2ndMgmtDlQoSProfileIndex
+            Integer32,
+        wmanIf2mBs2ndMgmtUlQoSProfileIndex
+            Integer32,
+        wmanIf2mBsBasicCidDlQosProfileIndex
+            Integer32,
+        wmanIf2mBsBasicCidUlQosProfileIndex
+            Integer32,
+        wmanIf2mBsPrimaryCidDlQosProfileIndex
+            Integer32,
+        wmanIf2mBsPrimaryCidUlQosProfileIndex
+            Integer32
+    }
+
+    wmanIf2mBsMobNbrAdvInterval OBJECT-TYPE
+        SYNTAX              Integer32 (1..30)
+        UNITS               "seconds"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Nominal time between transmission of MOB_NBR-ADV
+                            messages"
+        ::= { wmanIf2mBsConfigurationEntry 1 }
+
+    wmanIf2mBsAscAgingTimer OBJECT-TYPE
+        SYNTAX              Integer32 (100..10000)
+        UNITS               "milliseconds"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Nominal time for aging of MS associations"
+        ::= { wmanIf2mBsConfigurationEntry 2 }
+
+    wmanIf2mBsPagingRetryCount OBJECT-TYPE
+        SYNTAX              Integer32 (0..16)
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Number of retries on paging transmission. If the
+                            BS does not receive RNG-REQ from the MS until
+                            this value decreases to zero, it determines that
+                            the MS is unavailable. DEFVAL { 3 }"
+        ::= { wmanIf2mBsConfigurationEntry 3 }
+
+    wmanIf2mBsModeSelectFeedbackProcTime OBJECT-TYPE
+        SYNTAX              Integer32 (1..65535)
+        UNITS               "microseconds"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "The time allowed between the end of the burst
+                            carrying the Mode Selection Feedback subheader
+                            and the start of the UL subframe carrying the
+                            Mode Selection Feedback response. Minimum value
+                            = 1 frame duration for TDD 1/2 Frame duration
+                            for FDD"
+        ::= { wmanIf2mBsConfigurationEntry 4 }
+
+    wmanIf2mBsIdleModeSystemTimer OBJECT-TYPE
+        SYNTAX              Unsigned32 (128..65536)
+        UNITS               "seconds"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "For BS acting as Paging Controller, timed interval
+                            to receive notification of MS Idle Mode Location
+                            Update. Set timer to MS Idle Mode Timeout. Timer
+                            recycles on successful Idle Mode Location Update.
+                            DEFVAL { 4096 }"
+        ::= { wmanIf2mBsConfigurationEntry 5 }
+
+    wmanIf2mBsMgmtResourceHoldingTimer OBJECT-TYPE
+        SYNTAX              Integer32 (0..10)
+        UNITS               "milliseconds"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Time the BS maintain connection information with
+                            the MS after the BS send DREG-CMD to the MS.
+                            DEFVAL { 0 }"
+        ::= { wmanIf2mBsConfigurationEntry 6 }
+
+    wmanIf2mBsDregCommandRetryCount OBJECT-TYPE
+        SYNTAX              Integer32 (3..16)
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Number of retries on DREG Command Message. DEFVAL
+                            { 3 }"
+        ::= { wmanIf2mBsConfigurationEntry 7 }
+
+    wmanIf2mBsT46Timer OBJECT-TYPE
+        SYNTAX              Integer32 (10..500)
+        UNITS               "milliseconds"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Time the BS waits for DREG-REQ in case of unsolicited
+                            Idle Mode initiation from BS."
+        ::= { wmanIf2mBsConfigurationEntry 8 }
+
+    wmanIf2mBsT47Timer OBJECT-TYPE
+        SYNTAX              Integer32 (8..1024)
+        UNITS               "frames"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "PMC_RSP Timer: BS shall send the PMC_RSP before
+                            T47 + 1 frames after BS receives PMC_REQ (confirmation
+                            = 0) correctly. DEFVAL { 64 }"
+        ::= { wmanIf2mBsConfigurationEntry 9 }
+
+    wmanIf2mBsPagingInterval OBJECT-TYPE
+        SYNTAX              Integer32 (2..5)
+        UNITS               "frames"
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "Time duration of Paging Interval of the BS. DEFVAL
+                            { 2 }"
+        ::= { wmanIf2mBsConfigurationEntry 10 }
+
+    wmanIf2mBs2ndMgmtDlQoSProfileIndex OBJECT-TYPE
+        SYNTAX              Integer32 (1..65535)
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "This object defines the index of a row in wmanIf2mCmnQoSProfileTable
+                            which is used to obtain all QoS parameters required
+                            for the BS downlink scheduler to properly allocate
+                            and manage the bandwidth and schedule the 2nd
+                            Management Connection traffic. The 2nd Management
+                            Connection traffic doesn't differ from Traffic
+                            Connection traffic in the area of QoS management."
+        ::= { wmanIf2mBsConfigurationEntry 11 }
+
+    wmanIf2mBs2ndMgmtUlQoSProfileIndex OBJECT-TYPE
+        SYNTAX              Integer32 (1..65535)
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "This object defines the index of a row in wmanIf2mCmnQoSProfileTable
+                            which is used to obtain all QoS parameters required
+                            for the BS uplink scheduler to properly allocate
+                            and manage the bandwidth and schedule the 2nd
+                            Management Connection traffic. The 2nd Management
+                            Connection traffic doesn't differ from Traffic
+                            Connection traffic in the area of QoS management."
+        ::= { wmanIf2mBsConfigurationEntry 12 }
+
+    wmanIf2mBsBasicCidDlQosProfileIndex OBJECT-TYPE
+        SYNTAX              Integer32 (1..65535)
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "This index points to an entry in wmanIf2mCmnQoSProfileTable
+                            that defines the QoS parameter set for downlink
+                            basic CID."
+        ::= { wmanIf2mBsConfigurationEntry 13 }
+
+    wmanIf2mBsBasicCidUlQosProfileIndex OBJECT-TYPE
+        SYNTAX              Integer32 (1..65535)
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "This index points to an entry in wmanIf2mCmnQoSProfileTable
+                            that defines the QoS parameter set for uplink
+                            basic CID."
+        ::= { wmanIf2mBsConfigurationEntry 14 }
+
+    wmanIf2mBsPrimaryCidDlQosProfileIndex OBJECT-TYPE
+        SYNTAX              Integer32 (1..65535)
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "This index points to an entry in wmanIf2mCmnQoSProfileTable
+                            that defines the QoS parameter set for downlink
+                            primary CID ."
+        ::= { wmanIf2mBsConfigurationEntry 15 }
+
+    wmanIf2mBsPrimaryCidUlQosProfileIndex OBJECT-TYPE
+        SYNTAX              Integer32 (1..65535)
+        MAX-ACCESS          read-write
+        STATUS              current
+        DESCRIPTION         "This index points to an entry in wmanIf2mCmnQoSProfileTable
+                            that defines the QoS parameter set for uplink
+                            primary CID."
+        ::= { wmanIf2mBsConfigurationEntry 16 }
+
+    wmanIf2mMibConformance OBJECT IDENTIFIER ::= { wmanIf2mMib 2 }
+
+    wmanIf2mMibGroups OBJECT IDENTIFIER ::= { wmanIf2mMibConformance 1 }
+
+    wmanIf2mMibAllObjects OBJECT-GROUP
+        OBJECTS {           
+                        wmanIf2mBsCapHandoverSupported,
+                        wmanIf2mBsCapRetrainTime,
+                        wmanIf2mBsCapHoProcessTimer,
+                        wmanIf2mBsCapRetransmissionTimer,
+                        wmanIf2mBsCapMobilityFeature,
+                        wmanIf2mBsCapIdleModeTimeout,
+                        wmanIf2mBsCapHoConnProcessTime,
+                        wmanIf2mBsCapHoTekProcessTime,
+                        wmanIf2mBsCapPowerSavingType,
+                        wmanIf2mBsCapNumOfPsClassIandII,
+                        wmanIf2mBsCapNumOfPsClassIII,
+                        wmanIf2mBsCapHoTrigMatrix,
+                        wmanIf2mBsCapAssociationType,
+                        wmanIf2mBsCapCfgHandoverSupported,
+                        wmanIf2mBsCapCfgRetrainTime,
+                        wmanIf2mBsCapCfgHoProcessTimer,
+                        wmanIf2mBsCapCfgRetransmissionTimer,
+                        wmanIf2mBsCapCfgMobilityFeature,
+                        wmanIf2mBsCapCfgIdleModeTimeout,
+                        wmanIf2mBsCapCfgHoConnProcessTime,
+                        wmanIf2mBsCapCfgHoTekProcessTime,
+                        wmanIf2mBsCapCfgPowerSavingType,
+                        wmanIf2mBsCapCfgNumOfPsClassIandII,
+                        wmanIf2mBsCapCfgNumOfPsClassIII,
+                        wmanIf2mBsCapCfgHoTrigMatrix,
+                        wmanIf2mBsCapCfgAssociationType,
+                        wmanIf2mBsMobNbrAdvInterval,
+                        wmanIf2mBsAscAgingTimer,
+                        wmanIf2mBsPagingRetryCount,
+                        wmanIf2mBsModeSelectFeedbackProcTime,
+                        wmanIf2mBsIdleModeSystemTimer,
+                        wmanIf2mBsMgmtResourceHoldingTimer,
+                        wmanIf2mBsDregCommandRetryCount,
+                        wmanIf2mBsT46Timer,
+                        wmanIf2mBsT47Timer,
+                        wmanIf2mBsPagingInterval,
+                        wmanIf2mBs2ndMgmtDlQoSProfileIndex,
+                        wmanIf2mBs2ndMgmtUlQoSProfileIndex,
+                        wmanIf2mBsBasicCidDlQosProfileIndex,
+                        wmanIf2mBsBasicCidUlQosProfileIndex,
+                        wmanIf2mBsPrimaryCidDlQosProfileIndex,
+                        wmanIf2mBsPrimaryCidUlQosProfileIndex
+                }
+        STATUS              current
+        DESCRIPTION         "This automatically created object group contains
+                            all those objects that do not belong to any other
+                            OBJECT-GROUP"
+        ::= { wmanIf2mMibGroups 1 }
+
+
+END
+

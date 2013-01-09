@@ -1,0 +1,41 @@
+NEC-WIMAX-COMMON-REG DEFINITIONS ::= BEGIN
+IMPORTS
+        MODULE-IDENTITY, 
+        enterprises
+             FROM SNMPv2-SMI;
+
+necwimaxCommonReg MODULE-IDENTITY
+        LAST-UPDATED      "200802280000Z"
+        ORGANIZATION      "NEC/J MWN"
+        CONTACT-INFO      "NEC/J MWN"
+        DESCRIPTION
+                "The NEC WIMAX Common Reg: Revision 0.1"
+        ::= { necwimaxCommonMibModules 1 }
+
+nec               OBJECT IDENTIFIER ::= { enterprises 119 }
+necmib            OBJECT IDENTIFIER ::= { nec 2 }
+necProductDepend  OBJECT IDENTIFIER ::= { necmib 3 }
+wa802             OBJECT IDENTIFIER ::= { necProductDepend 163 }
+
+necwimaxCommonMib OBJECT IDENTIFIER ::= { wa802 1 }
+
+necwimaxCommonMibModules OBJECT IDENTIFIER ::= { necwimaxCommonMib 1 }
+management               OBJECT IDENTIFIER ::= { necwimaxCommonMib 2 }
+common                   OBJECT IDENTIFIER ::= { necwimaxCommonMib 3 }
+
+files           OBJECT IDENTIFIER ::= { management 1 }
+notify          OBJECT IDENTIFIER ::= { management 2 }
+performance     OBJECT IDENTIFIER ::= { management 3 }
+debug           OBJECT IDENTIFIER ::= { management 4 }
+
+ftp             OBJECT IDENTIFIER ::= { files 1 }
+
+health          OBJECT IDENTIFIER ::= { notify 1 }
+event           OBJECT IDENTIFIER ::= { notify 2 }
+alarm           OBJECT IDENTIFIER ::= { notify 3 }
+
+necwimaxNotificationEvents   OBJECT IDENTIFIER ::= { event 1 }
+
+necwimaxObjectGroups OBJECT IDENTIFIER ::= { common 1 }
+
+END

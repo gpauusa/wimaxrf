@@ -1,0 +1,2202 @@
+WMAN-IF2F-BS-MIB DEFINITIONS ::= BEGIN
+                                    
+  IMPORTS
+        MODULE-IDENTITY,
+        OBJECT-TYPE,
+        NOTIFICATION-TYPE,
+        Unsigned32, Integer32, Counter32,
+        Counter64, transmission
+                FROM SNMPv2-SMI
+        SnmpAdminString
+                FROM SNMP-FRAMEWORK-MIB
+        TEXTUAL-CONVENTION,
+        MacAddress, RowStatus, TruthValue,
+        TimeStamp, DateAndTime        
+                FROM SNMPv2-TC
+        InetAddressType, InetAddress
+                FROM INET-ADDRESS-MIB 
+        OBJECT-GROUP,
+        MODULE-COMPLIANCE,
+        NOTIFICATION-GROUP
+                FROM SNMPv2-CONF
+        ifIndex
+                FROM IF-MIB
+        wman
+                FROM WMAN-DEV-MIB;
+
+wmanIf2fBsMib MODULE-IDENTITY
+        LAST-UPDATED    "200802110000Z" -- February 11, 2008
+        ORGANIZATION    "IEEE 802.16"
+        CONTACT-INFO
+            "WG E-mail: stds-802-16@ieee.org
+             WG Chair:  Roger B. Marks
+             Postal:    NextWave Broadband, Inc.
+             E-mail:    r.b.marks@ieee.org
+             
+             TG Chair:  Phillip Barber
+             Postal:    Huawei Technologies Co., Ltd
+             E-mail:    pbarber@Huawei.com             
+
+             Editor:    Joey Chou
+             Postal:    Intel Corporation
+                        5000 W. Chandler Blvd,
+                        Chandler, AZ 85227, USA
+             E-mail:    joey.chou@intel.com"                     
+        DESCRIPTION
+            "This MIB Module defines managed objects for Base Stations
+             based on IEEE Std 802.16 supporting fixed BWA."             
+        REVISION        "200802110000Z"
+        DESCRIPTION
+            "Includes changes as per comment resolutions agreed at the
+             Levi meeting"
+        REVISION        "200711300000Z"
+        DESCRIPTION
+            "The first revision of WMAN-IF2F-BS-MIB module that supports
+             direct service flow provisioning."
+        ::= { wman 4 }
+
+-- Textual Conventions                                                       
+WmanIf2fSfState ::= TEXTUAL-CONVENTION
+        STATUS      current
+        DESCRIPTION     
+            "Defines the state of a service flow."
+        SYNTAX      INTEGER {authorized(1),
+                             admitted(2),
+                             active(3)}
+                             
+WmanIf2fCsType ::= TEXTUAL-CONVENTION
+        STATUS      current
+        DESCRIPTION     
+            "Defines the types of convergence sublayer."
+        REFERENCE
+            "Subclause 11.13.19.1 in IEEE Std 802.16e-2005"
+        SYNTAX      INTEGER {reserved(0),
+                             packetIpV4(1),
+                             packetIpV6(2),
+                             packet802dot3Ethernet(3),
+                             reserved4(4),
+                             packetIpV4Over802dot3(5),
+                             packetIpV6Over802dot3(6),
+                             reserved7(7),
+                             reserved8(8),
+                             atm(9),
+                             packet802dot3EthernetRohcHc(10),
+                             packet802dot3EthernetEcrtpHc(11),
+                             packetIpRohcHc(12),
+                             packetIpEcrtpHc(13),
+                             packetIp(14)}                             
+                                     
+WmanIf2fServClassName ::= TEXTUAL-CONVENTION
+        STATUS      current
+        DESCRIPTION     
+            "Defines the type of service class name."
+        SYNTAX      OCTET STRING (SIZE(2..128))
+      
+WmanIf2fSchedulingType ::= TEXTUAL-CONVENTION
+        STATUS      current
+        DESCRIPTION     
+            "The scheduling service provided by a SC for an upstream
+             service flow. If the parameter is omitted from an upstream
+             QOS Parameter Set, this object takes the value of
+             bestEffort (2). This parameter must be reported as
+             undefined (1) for downstream QOS Parameter Sets."
+        REFERENCE
+            "Subclause 11.13.11"
+        SYNTAX      INTEGER {undefined(1),
+                             bestEffort(2),
+                             nonRealTimePollingService(3),
+                             realTimePollingService(4),
+                             extRealTimePollingService(5),
+                             unsolicitedGrantService(6)}
+                                 
+WmanIf2fPhsRuleVerify ::= TEXTUAL-CONVENTION
+        STATUS      current
+        DESCRIPTION
+            "The value of this field indicates to the sending entity   
+             whether or not the packet header contents are to be
+             verified prior to performing suppression. If PHSV is
+             enabled, the sender shall compare the bytes in the packet
+             header with the bytes in the PHSF that are to be
+             suppressed as indicated by the PHSM."
+        REFERENCE
+            "Subclause 11.13.19.3.7.5 in IEEE Std 802.16-2004"
+        SYNTAX      INTEGER {phsVerifyEnable(0),
+                             phsVerifyDisable(1)}
+                             
+WmanIf2fClassifierMap ::= TEXTUAL-CONVENTION
+        STATUS      current
+        DESCRIPTION     
+            "A bit of of this object is set to 1 if the parameter
+             indicated by the comment was present in the classifier
+             encoding, and 0 otherwise.
+             Note: that BITS are encoded most significant bit first,
+             so that if e.g. bits 6 and 7 are set, this object is
+             encoded as the octet string '030000'H."
+        REFERENCE
+            "Subclause 11.13.19.3.4 in IEEE Std 802.16e-2005"
+        SYNTAX      BITS {priority(0),
+                          ipTos(1),
+                          ipProtocol(2),
+                          ipMaskedSrcAddr(3),
+                          ipMaskedDestAddr(4),
+                          srcPort(5),
+                          destPort(6),
+                          destMacAddr(7),
+                          srcMacAddr(8),
+                          ethernetProtocol(9),
+                          userPriority(10),
+                          vlanId(11),
+                          ipv6FlowLabel(12),
+                          actionRule(13)}
+                          
+WmanIf2fIpv6FlowLabel ::= TEXTUAL-CONVENTION
+        STATUS      current
+        DESCRIPTION     
+            "The value of this field specifies the matching values for
+             the IPv6 Flow label field. As the flow label field has a
+             length of 20 bits, the first 4 bits of the most significant
+             byte shall be set to 0x0 and disregarded."
+        SYNTAX      OCTET STRING (SIZE(3))
+
+WmanIf2fActionRule ::= TEXTUAL-CONVENTION
+        STATUS      current
+        DESCRIPTION
+            "The value of this field specifies an action associated with
+             the classifier rule
+                 Bit #0: 0 = none.
+                         1 = Discard packet"
+        REFERENCE
+            "Subclause 11.13.19.3.4.17 in IEEE Std 802.16e-2005"
+        SYNTAX      BITS {discardPacket(0)}
+                                     
+WmanIf2fCidType ::= TEXTUAL-CONVENTION
+        STATUS      current
+        DESCRIPTION
+            "Type of CID."                     
+        SYNTAX      INTEGER (0 .. 65535)
+
+--
+-- BS object group – containing tables and objects to be implemented in 
+-- the Base station
+wmanIf2fBsProvServiceFlowTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF WmanIf2fBsProvServiceFlowEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table contains service flow profiles provisioned by
+             NMS. The service flow should be created with SS(s)
+             following instruction given by wmanIf2fBsSfState object.
+             1. The QoS parameters of the service flow are provisioned 
+                in wmanIf2fBsServiceClassTable and referenced by
+                wmanIf2fBsServiceClassIndex.
+             2. The classifier rules of the service flow are provisioned
+                in wmanIf2fBsClassifierRuleTable, where they refer to SF
+                via wmanIf2fBsSfId.
+             
+             The MAC addresses of SSs the service flow is created with
+             are provisioned in wmanIf2fBsSsProvisionedForSfTable, where
+             they refer to SF via wmanIf2fBsSfId."
+        REFERENCE            
+            "Subclause 6.3.13 and 6.3.14 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsMib 1 }
+
+wmanIf2fBsProvServiceFlowEntry OBJECT-TYPE
+        SYNTAX      WmanIf2fBsProvServiceFlowEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table provides one row for each service flow
+             provisioned by NMS."
+        INDEX     { ifIndex,
+                    wmanIf2fBsSsProvMacAddress,
+                    wmanIf2fBsSfId }
+        ::= { wmanIf2fBsProvServiceFlowTable 1 }
+
+WmanIf2fBsProvServiceFlowEntry ::= SEQUENCE {
+        wmanIf2fBsSsProvMacAddress              MacAddress,
+        wmanIf2fBsSfId                          Unsigned32,
+        wmanIf2fBsSfDirection                   INTEGER,
+        wmanIf2fBsServiceClassIndex             INTEGER,
+        wmanIf2fBsSfState                       WmanIf2fSfState,
+        wmanIf2fBsSfProvisionedTime             TimeStamp,
+        wmanIf2fBsSfCsSpecification             WmanIf2fCsType,
+        wmanIf2fBsProvisionedSfRowStatus        RowStatus}
+
+wmanIf2fBsSsProvMacAddress OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "The MAC address of the SS, the service flow is created
+             with."
+        ::= { wmanIf2fBsProvServiceFlowEntry 1 }
+        
+wmanIf2fBsSfId OBJECT-TYPE
+        SYNTAX      Unsigned32 (1 .. 4294967295)
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "A 32 bit quantity that uniquely identifies a service flow
+             to both the subscriber station and base station (BS)."
+        ::= { wmanIf2fBsProvServiceFlowEntry 2 }
+                
+wmanIf2fBsSfDirection OBJECT-TYPE
+        SYNTAX      INTEGER {downstream(1),
+                             upstream(2)}
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "An attribute indicating the service flow is downstream or
+             upstream."
+        ::= { wmanIf2fBsProvServiceFlowEntry 3 }                        
+        
+wmanIf2fBsServiceClassIndex OBJECT-TYPE
+        SYNTAX      INTEGER (1..65535)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The index in wmanIf2fBsServiceClassTable describing the
+             service class or QoS parameters for such service flow.
+             If no associated entry in wmanIf2fBsServiceClassTable
+             exists, this object returns a value of zero."
+        ::= { wmanIf2fBsProvServiceFlowEntry 4 }
+                
+wmanIf2fBsSfState OBJECT-TYPE
+        SYNTAX      WmanIf2fSfState
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "wmanIf2fBsSfState determines the requested state of a
+             service flow. 
+             - authorized state: A service flow is provisioned but
+               not resource is reserved yet
+             - admitted state: service flow has resources reserved.
+             - active state: has resources committed by the BS (e.g., is
+               actively sending maps containing unsolicited grants for a
+               UGS-based service flow),"
+        REFERENCE
+            "Subclause 6.3.14.6, in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvServiceFlowEntry 5 }                
+        
+wmanIf2fBsSfProvisionedTime OBJECT-TYPE
+        SYNTAX      TimeStamp
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "Indicates the date and time when the service flow is
+             provisioned."
+        ::= { wmanIf2fBsProvServiceFlowEntry 6 }
+
+wmanIf2fBsSfCsSpecification OBJECT-TYPE
+        SYNTAX      WmanIf2fCsType
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This parameter specifies the convergence sublayer
+             encapsulation mode."
+        REFERENCE
+            "Subclause 11.13.19.1 in IEEE Std 802.16-2004"             
+        ::= { wmanIf2fBsProvServiceFlowEntry 7 }
+        
+wmanIf2fBsProvisionedSfRowStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object is used to create a new row or modify or delete
+             an existing row in this table.
+
+             If the implementator of this MIB has choosen not to
+             implement 'dynamic assignment' of profiles, this object is
+             not useful and should return noSuchName upon SNMP request."
+        ::= { wmanIf2fBsProvServiceFlowEntry 8 }
+                                                                
+wmanIf2fBsProvServiceClassTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF WmanIf2fBsProvServiceClassEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "Each entry of the table contains corresponding service flow
+             characteristic attributes (e.g. QoS parameter set). The
+             value of wmanIf2fBsQoSProfileIndex is obtained from 
+             wmanIf2fBsServiceClassIndex in wmanIf2fBsProvisionedSfTable"
+        REFERENCE
+            "Subclause 6.3.14.4 in IEEE Std 802.16-2004"    
+        ::= { wmanIf2fBsMib 2 }
+
+wmanIf2fBsProvServiceClassEntry OBJECT-TYPE
+        SYNTAX      WmanIf2fBsProvServiceClassEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table provides one row for each service class"
+        INDEX     { ifIndex, wmanIf2fBsQoSProfileIndex }
+        ::= { wmanIf2fBsProvServiceClassTable 1 }
+
+WmanIf2fBsProvServiceClassEntry ::= SEQUENCE {
+        wmanIf2fBsQoSProfileIndex               INTEGER,
+        wmanIf2fBsQosServiceClassName           WmanIf2fServClassName,
+        wmanIf2fBsQoSTrafficPriority            INTEGER,
+        wmanIf2fBsQoSMaxSustainedRate           Unsigned32,
+        wmanIf2fBsQoSMaxTrafficBurst            Unsigned32,
+        wmanIf2fBsQoSMinReservedRate            Unsigned32,
+        wmanIf2fBsQoSToleratedJitter            Unsigned32,
+        wmanIf2fBsQoSMaxLatency                 Unsigned32,
+        wmanIf2fBsQoSFixedVsVariableSduInd      INTEGER,            
+        wmanIf2fBsQoSSduSize                    Unsigned32,
+        wmanIf2fBsQosScSchedulingType           WmanIf2fSchedulingType,
+        wmanIf2fBsQosScArqEnable                TruthValue,
+        wmanIf2fBsQosScArqWindowSize            INTEGER,
+        wmanIf2fBsQosScArqBlockLifetime         INTEGER,
+        wmanIf2fBsQosScArqSyncLossTimeout       INTEGER,
+        wmanIf2fBsQosScArqDeliverInOrder        TruthValue,
+        wmanIf2fBsQosScArqRxPurgeTimeout        INTEGER,
+        wmanIf2fBsQosScArqBlockSize             INTEGER,
+        wmanIf2fBsQosSCMinRsvdTolerableRate     Unsigned32,
+        wmanIf2fBsQoSReqTxPolicy                BITS,
+        wmanIf2fBsQoSServiceClassRowStatus      RowStatus}
+        
+wmanIf2fBsQoSProfileIndex OBJECT-TYPE
+        SYNTAX      INTEGER (1 .. 65535)
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "The index value which uniquely identifies an entry
+             in the wmanIf2fBsServiceClassTable"
+        ::= { wmanIf2fBsProvServiceClassEntry 1 }
+        
+wmanIf2fBsQosServiceClassName  OBJECT-TYPE
+        SYNTAX      WmanIf2fServClassName
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION    
+            "Refers to the Service Class Name"
+        REFERENCE
+            "Subclause 11.13.3 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvServiceClassEntry 2 }
+            
+wmanIf2fBsQoSTrafficPriority OBJECT-TYPE
+        SYNTAX      INTEGER (0..7)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The value of this parameter specifies the priority
+             assigned to a service flow. For uplink service flows,
+             the BS should use this parameter when determining
+             precedence in request service and grant generation,
+             and the SS shall preferentially select contention
+             Request opportunities for Priority Request CIDs
+             based on this priority. Higher numbers indicate higher
+             priority"
+        REFERENCE
+            "Subclause 11.13.5 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvServiceClassEntry 3 }
+        
+wmanIf2fBsQoSMaxSustainedRate OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "b/s"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This parameter defines the peak information rate of the
+             service. The rate is expressed in bits per second and
+             pertains to the SDUs at the input to the system."
+        REFERENCE
+            "Subclause 11.13.6 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvServiceClassEntry 4 }        
+                
+wmanIf2fBsQoSMaxTrafficBurst OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "byte"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This parameter defines the maximum burst size that must be
+             accommodated for the service."
+        REFERENCE
+            "Subclause 11.13.7 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvServiceClassEntry 5 }
+                        
+wmanIf2fBsQoSMinReservedRate OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "b/s"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This parameter specifies the minimum rate reserved for this
+             service flow."
+        REFERENCE
+            "Subclause 11.13.8 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvServiceClassEntry 6 }
+                                
+wmanIf2fBsQoSToleratedJitter OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "millisecond"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This parameter defines the Maximum delay variation (jitter)
+             for the connection."
+        REFERENCE
+            "Subclause 11.13.13 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvServiceClassEntry 7 }
+                                
+wmanIf2fBsQoSMaxLatency OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "millisecond"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The value of this parameter specifies the maximum latency
+             between the reception of a packet by the BS or SS on its
+             network interface and the forwarding of the packet to its
+             RF Interface."
+        REFERENCE
+            "Subclause 11.13.14 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvServiceClassEntry 8 }
+
+wmanIf2fBsQoSFixedVsVariableSduInd OBJECT-TYPE
+        SYNTAX      INTEGER {variableLength(0),
+                             fixedLength(1)}
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The value of this parameter specifies whether the SDUs on
+             the service flow are variable-length (0) or fixed-length
+             (1). The parameter is used only if packing is on for the
+             service flow. The default value is 0, i.e.,variable-length
+             SDUs."
+        REFERENCE
+            "Subclause 11.13.15 in IEEE Std 802.16-2004"
+        DEFVAL      { variableLength }
+        ::= { wmanIf2fBsProvServiceClassEntry 9 }
+
+wmanIf2fBsQoSSduSize OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "byte"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The value of this parameter specifies the length of the
+             SDU for a fixed-length SDU service flow. This parameter
+             is used only if packing is on and the service flow is
+             indicated as carrying fixed-length SDUs. The default
+             value is 49 bytes, i.e., VC-switched ATM cells with PHS.
+             The parameter is relevant for both ATM and Packet
+             Convergence Sublayers."
+        REFERENCE
+            "Subclause 11.13.16 in IEEE Std 802.16-2004"
+        DEFVAL      { 49 }
+        ::= { wmanIf2fBsProvServiceClassEntry 10 }
+                
+wmanIf2fBsQosScSchedulingType OBJECT-TYPE
+        SYNTAX      WmanIf2fSchedulingType
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "Specifies the upstream scheduling service used for upstream
+             service flow. If the referenced parameter is not present in
+             the corresponding 802.16 QOS Parameter Set of an upstream
+             service flow, the default value of this object is
+             bestEffort(2)."
+        REFERENCE      
+            "Subclause 11.13.11 in IEEE Std 802.16-2004"
+        DEFVAL	    {bestEffort}
+        ::= { wmanIf2fBsProvServiceClassEntry 11 }
+
+wmanIf2fBsQosScArqEnable OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "True(1) ARQ enabling is requested for the connection."
+        REFERENCE
+            "Subclause 11.13.18 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvServiceClassEntry 12 }
+
+wmanIf2fBsQosScArqWindowSize	 OBJECT-TYPE
+        SYNTAX      INTEGER (1 .. 1024)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "Indicates the maximum number of unacknowledged 
+             fragments at any time."
+        REFERENCE
+            "Subclause 11.13.18 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvServiceClassEntry 13 }
+
+wmanIf2fBsQosScArqBlockLifetime OBJECT-TYPE
+        SYNTAX	    INTEGER (0 .. 65535)
+        UNITS	    "10 us"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The maximum time interval an ARQ fragment will be managed
+             by the transmitter ARQ machine, once initial transmission
+             of the fragment has occured. If transmission or
+             retransmission of the fragment is not acknowledged by the
+             receiver before the time limit is reached, the fragment is
+             discarded. A value of 0 means Infinite."
+        REFERENCE
+            "Subclause 11.13.18 in IEEE Std 802.16-2004"
+        DEFVAL		{0}
+        ::= { wmanIf2fBsProvServiceClassEntry 14 }
+
+wmanIf2fBsQosScArqSyncLossTimeout OBJECT-TYPE
+        SYNTAX      INTEGER (0 .. 65535 )
+        UNITS       "10 us"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The maximum interval before declaring a loss of
+             synchronization of the sender and receiver state machines.
+             A value of 0 means Infinite."
+        REFERENCE
+            "Subclause 11.13.18 in IEEE Std 802.16-2004"
+        DEFVAL	    {0}
+        ::= { wmanIf2fBsProvServiceClassEntry 15 }
+
+wmanIf2fBsQosScArqDeliverInOrder  OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "Indicates whether or not data is to be delivered by the
+             receiving MAC to its client application in the order in
+             which data was handed off to the originating MAC."
+        REFERENCE
+            "Subclause 11.13.18 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvServiceClassEntry 16 }
+
+wmanIf2fBsQosScArqRxPurgeTimeout  OBJECT-TYPE
+        SYNTAX      INTEGER (0 .. 65535)
+        UNITS       "10 us"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "Indicates the time interval the ARQ window is advanced
+             after a fragment is received. A value of 0 means Infinite."
+        REFERENCE
+            "Subclause 11.13.18 in IEEE Std 802.16-2004"
+        DEFVAL	    {0}
+        ::= { wmanIf2fBsProvServiceClassEntry 17 }
+
+wmanIf2fBsQosScArqBlockSize OBJECT-TYPE
+        SYNTAX      INTEGER (1..2040)
+        UNITS       "byte"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The value of this parameter specifies the size of an ARQ
+             block. This parameter shall be established by negotiation
+             during the connection creation dialog."
+        REFERENCE
+            "Subclause 11.13.18.8 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvServiceClassEntry 18 } 
+
+wmanIf2fBsQosSCMinRsvdTolerableRate OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "b/s"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "Minimum Tolerable Traffic Rate = R (bits/sec) with time
+             base T(sec) means the following. Let S denote additional
+             demand accumulated at the MAC SAP of the transmitter during
+             an arbitrary time interval of the length T. Then the amount
+             of data forwarded at the receiver to CS (in bits) during
+             this interval should be not less than min {S, R * T}."
+        REFERENCE
+            "Subclause 11.13.9 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvServiceClassEntry 19 }
+        
+wmanIf2fBsQoSReqTxPolicy OBJECT-TYPE
+        SYNTAX      BITS {noBroadcastBwReq(0),
+                          noMulticastBwReq(1),
+                          noPiggybackReq(2),
+                          noFragmentData(3),
+                          noPHS(4),
+                          noSduPacking(5),
+                          noCrc(6),
+                          reserved2(7)} 
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The value of this parameter provides the capability to
+             specify certain attributes for the associated service
+             flow. An attribute is enabled by setting the corresponding
+             bit position to 1."
+        REFERENCE   "Subclause 11.13.12 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvServiceClassEntry 20 }
+            
+wmanIf2fBsQoSServiceClassRowStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object is used to create a new row or modify or delete
+             an existing row in this table.
+
+             If the implementator of this MIB has choosen not to
+             implement 'dynamic assignment' of profiles, this object is
+             not useful and should return noSuchName upon SNMP request."
+        ::= { wmanIf2fBsProvServiceClassEntry 21 }
+
+wmanIf2fBsServiceFlowTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF WmanIf2fBsServiceFlowEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table contains Service Flow managed objects that
+             are common in BS and SS."
+        ::= { wmanIf2fBsMib 3 }
+
+wmanIf2fBsServiceFlowEntry OBJECT-TYPE
+        SYNTAX      WmanIf2fBsServiceFlowEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table provides one row for each created service
+             flow for a given MacAddress."
+        INDEX     { ifIndex,
+                    wmanIf2fBsSfMacAddress,
+                    wmanIf2fBsSfId }
+        ::= { wmanIf2fBsServiceFlowTable 1 }
+
+WmanIf2fBsServiceFlowEntry::= SEQUENCE {
+        wmanIf2fBsSfMacAddress                  MacAddress,
+        wmanIf2fBsSfCid                         WmanIf2fCidType,
+        wmanIf2fBsServiceFlowDirection          INTEGER,
+        wmanIf2fBsServiceFlowState              WmanIf2fSfState,
+        wmanIf2fBsTrafficPriority               INTEGER,
+        wmanIf2fBsMaxSustainedRate              Unsigned32,
+        wmanIf2fBsMaxTrafficBurst               Unsigned32,
+        wmanIf2fBsMinReservedRate               Unsigned32,
+        wmanIf2fBsToleratedJitter               Unsigned32,
+        wmanIf2fBsMaxLatency                    Unsigned32,
+        wmanIf2fBsFixedVsVariableSduInd         INTEGER,
+        wmanIf2fBsSduSize                       Unsigned32,
+        wmanIf2fBsSfSchedulingType              WmanIf2fSchedulingType,
+        wmanIf2fBsArqEnable                     TruthValue,
+        wmanIf2fBsArqWindowSize                 INTEGER,
+        wmanIf2fBsArqBlockLifetime              INTEGER,
+        wmanIf2fBsArqSyncLossTimeout            INTEGER,
+        wmanIf2fBsArqDeliverInOrder             TruthValue,
+        wmanIf2fBsArqRxPurgeTimeout             INTEGER,
+        wmanIf2fBsArqBlockSize                  INTEGER,
+        wmanIf2fBsMinRsvdTolerableRate          Unsigned32,
+        wmanIf2fBsReqTxPolicy                   BITS,
+        wmanIf2fBsCsSpecification               WmanIf2fCsType,
+        wmanIf2fBsTargetSaid                    INTEGER}
+
+wmanIf2fBsSfMacAddress OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "When this table is implemented on the basestation, this
+             object contains the SS Mac address, the reported service
+             flow was created for. On the SS, the value returned is
+             the SS's own Mac address."
+        ::= { wmanIf2fBsServiceFlowEntry 1 }
+
+wmanIf2fBsSfCid OBJECT-TYPE
+        SYNTAX      WmanIf2fCidType
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "A 16 bit channel identifier to identify the connection
+             being created by DSA."
+        ::= { wmanIf2fBsServiceFlowEntry 2 }
+                
+wmanIf2fBsServiceFlowDirection OBJECT-TYPE
+        SYNTAX      INTEGER {downstream(1),
+                             upstream(2)}
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "An attribute indicating the service flow is downstream or
+             upstream."
+        ::= { wmanIf2fBsServiceFlowEntry 3 }                        
+      
+wmanIf2fBsServiceFlowState OBJECT-TYPE
+        SYNTAX      WmanIf2fSfState
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "wmanIf2fBsSfState indicates the service flow state:
+             Authorized (1), Admitted (2), and Active (3) service
+             flow state."
+        REFERENCE
+            "Subclause 6.3.14.6, in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsServiceFlowEntry 4 }                
+            
+wmanIf2fBsTrafficPriority OBJECT-TYPE
+        SYNTAX      INTEGER (0 .. 7)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The value of this parameter specifies the priority
+             assigned to a service flow. For uplink service flows,
+             the BS should use this parameter when determining
+             precedence in request service and grant generation,
+             and the SS shall preferentially select contention
+             Request opportunities for Priority Request CIDs
+             based on this priority"
+        REFERENCE
+            "Subclause 11.13.5 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsServiceFlowEntry 5 }
+        
+wmanIf2fBsMaxSustainedRate OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "b/s"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This parameter defines the peak information rate
+             of the service. The rate is expressed in bits per
+             second and pertains to the SDUs at the input to
+             the system."
+        REFERENCE
+            "Subclause 11.13.6 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsServiceFlowEntry 6 }        
+                
+wmanIf2fBsMaxTrafficBurst OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS	    "byte"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This parameter defines the maximum burst size that
+             must be accommodated for the service."
+        REFERENCE
+            "Subclause 11.13.7 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsServiceFlowEntry 7 }
+                        
+wmanIf2fBsMinReservedRate OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "byte" 
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This parameter specifies the minimum rate reserved
+             for this service flow."
+        REFERENCE
+            "Subclause 11.13.8 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsServiceFlowEntry 8 }
+                                
+wmanIf2fBsToleratedJitter OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "millisecond"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This parameter defines the Maximum delay 
+             variation (jitter) for the connection."
+        REFERENCE
+            "Subclause 11.13.13 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsServiceFlowEntry 9 }
+                                
+wmanIf2fBsMaxLatency OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "millisecond"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The value of this parameter specifies the maximum
+             latency between the reception of a packet by the BS
+             or SS on its network interface and the forwarding
+             of the packet to its RF Interface."
+        REFERENCE
+            "Subclause 11.13.14 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsServiceFlowEntry 10 }
+
+wmanIf2fBsFixedVsVariableSduInd OBJECT-TYPE
+        SYNTAX      INTEGER {variableLength(0),
+                             fixedLength(1)}
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The value of this parameter specifies whether the SDUs
+             on the service flow are variable-length (0) or 
+             fixed-length (1). The parameter is used only if
+             packing is on for the service flow. The default value
+             is 0, i.e.,variable-length SDUs."
+        REFERENCE
+            "Subclause 11.13.15 in IEEE Std 802.16-2004"
+        DEFVAL      { variableLength }
+        ::= { wmanIf2fBsServiceFlowEntry 11 }
+        
+wmanIf2fBsSduSize OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "byte"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The value of this parameter specifies the length of the
+             SDU for a fixed-length SDU service flow. This parameter
+             is used only if packing is on and the service flow is
+             indicated as carrying fixed-length SDUs. The default
+             value is 49 bytes, i.e., VC-switched ATM cells with PHS.
+             The parameter is relevant for both ATM and Packet
+             Convergence Sublayers."
+        REFERENCE
+            "Subclause 11.13.16 in IEEE Std 802.16-2004"
+        DEFVAL      { 49 }
+        ::= { wmanIf2fBsServiceFlowEntry 12 }
+        
+wmanIf2fBsSfSchedulingType OBJECT-TYPE
+        SYNTAX      WmanIf2fSchedulingType
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "Specifies the upstream scheduling service used for
+             upstream service flow. If the referenced parameter
+             is not present in the corresponding 802.16 QOS
+             Parameter Set of an upstream service flow, the
+             default value of this object is bestEffort(2)."
+        REFERENCE
+            "Subclause 11.13.11 in IEEE Std 802.16-2004"
+        DEFVAL         { bestEffort }
+        ::= { wmanIf2fBsServiceFlowEntry 13 }
+
+wmanIf2fBsArqEnable OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "True(1) ARQ enabling is requested for the connection."
+        ::= { wmanIf2fBsServiceFlowEntry 14 }
+
+wmanIf2fBsArqWindowSize	 OBJECT-TYPE
+        SYNTAX	    INTEGER (1..1024)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "Indicates the maximum number of unacknowledged 
+	 fragments at any time."
+        ::= { wmanIf2fBsServiceFlowEntry 15 }
+
+wmanIf2fBsArqBlockLifetime OBJECT-TYPE
+        SYNTAX	    INTEGER (0 .. 65535)
+        UNITS	    "10 us"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The maximum time interval an ARQ fragment will be
+             managed by the transmitter ARQ machine, once
+             initial transmission of the fragment has occured.
+             If transmission or retransmission of the fragment
+             is not acknowledged by the receiver before the 
+             time limit is reached, the fragment is discarded.
+             A value of 0 means Infinite."
+        ::= { wmanIf2fBsServiceFlowEntry 16 }
+
+wmanIf2fBsArqSyncLossTimeout OBJECT-TYPE
+        SYNTAX	    INTEGER (0 .. 65535 )
+        UNITS	    "10 us"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The maximum interval before declaring a loss
+             of synchronization of the sender and receiver
+             state machines. A value of 0 means Infinite."
+        ::= { wmanIf2fBsServiceFlowEntry 17 }
+
+wmanIf2fBsArqDeliverInOrder  OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "Indicates whether or not data is to be delivered
+             by the receiving MAC to its client application
+             in the order in which data was handed off to the
+             originating MAC."
+        ::= { wmanIf2fBsServiceFlowEntry 18 }
+
+wmanIf2fBsArqRxPurgeTimeout  OBJECT-TYPE
+        SYNTAX	    INTEGER (0 .. 65535)
+        UNITS	    "10 us"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "Indicates the time interval the ARQ window is advanced
+             after a fragment is received. A value of 0 means
+             Infinite."
+        ::= { wmanIf2fBsServiceFlowEntry 19 }
+
+wmanIf2fBsArqBlockSize OBJECT-TYPE
+        SYNTAX	    INTEGER (1..2040)
+        UNITS       "byte"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This value of this parameter specifies the size of an
+             ARQ block. This parameter shall be established by
+             negotiation during the connection creation dialog."
+        REFERENCE
+            "Subclause 11.13.18.8 in IEEE Std 802.16-2004"             
+        ::= { wmanIf2fBsServiceFlowEntry 20 }
+
+wmanIf2fBsMinRsvdTolerableRate OBJECT-TYPE
+        SYNTAX      Unsigned32
+        UNITS       "b/s"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "Minimum Tolerable Traffic Rate = R (bits/sec) with
+             time base T(sec) means the following. Let S denote
+             additional demand accumulated at the MAC SAP of the
+             transmitter during an arbitrary time interval of the
+             length T. Then the amount of data forwarded at the
+             receiver to CS (in bits) during this interval should
+             be not less than min {S, R * T}."
+        REFERENCE
+            "Subclause 11.13.9 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsServiceFlowEntry 21 }
+        
+wmanIf2fBsReqTxPolicy OBJECT-TYPE
+        SYNTAX      BITS {noBroadcastBwReq(0),
+                          noMulticastBwReq(1),
+                          noPiggybackReq(2),
+                          noFragmentData(3),
+                          noPHS(4),
+                          noSduPacking(5),
+                          noCrc(6),
+                          reserved2(7)} 
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The value of this parameter provides the capability to
+             specify certain attributes for the associated service
+             flow. An attribute is enabled by setting the
+             corresponding bit position to 1."
+        REFERENCE
+            "Subclause 11.13.12 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsServiceFlowEntry 22 }
+
+wmanIf2fBsCsSpecification OBJECT-TYPE
+        SYNTAX      WmanIf2fCsType
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This parameter specifies the convergence sublayer
+             encapsulation mode."
+        REFERENCE
+            "Subclause 11.13.19.1 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsServiceFlowEntry 23 }
+
+wmanIf2fBsTargetSaid OBJECT-TYPE
+        SYNTAX      INTEGER (0 .. 65535)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The target SAID parameter indicates the SAID onto
+             which the service flow being set up shall be mapped."
+        REFERENCE
+            "Subclause 11.13.17 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsServiceFlowEntry 24 }
+                
+wmanIf2fBsProvClassifierRuleTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF WmanIf2fBsProvClassifierRuleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table contains provisioned classifier rules associated
+             with service flows."
+        REFERENCE
+            "Subclause 11.13.19.3.4 in IEEE Std 802.16-2004"        
+        ::= { wmanIf2fBsMib 4 }
+
+wmanIf2fBsProvClassifierRuleEntry OBJECT-TYPE
+        SYNTAX      WmanIf2fBsProvClassifierRuleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION 
+           "This table provides one row for each packet classifier 
+            rule."
+        INDEX     { ifIndex,
+                    wmanIf2fBsSsProvMacAddress,
+                    wmanIf2fBsSfId,
+                    wmanIf2fBsProvClsfRuleIndex }
+        ::= { wmanIf2fBsProvClassifierRuleTable 1 }
+
+WmanIf2fBsProvClassifierRuleEntry::= SEQUENCE {
+        wmanIf2fBsProvClsfRuleIndex             Unsigned32,
+        wmanIf2fBsProvClsfRulePriority          INTEGER,
+        wmanIf2fBsProvClsfRuleIpTosLow          INTEGER,
+        wmanIf2fBsProvClsfRuleIpTosHigh         INTEGER,
+        wmanIf2fBsProvClsfRuleIpTosMask         INTEGER,
+        wmanIf2fBsProvClsfRuleIpProtocol        Integer32,
+        wmanIf2fBsProvClsfRuleIpSrcAddr         InetAddress,
+        wmanIf2fBsProvClsfRuleIpSrcMask         InetAddress,
+        wmanIf2fBsProvClsfRuleIpDestAddr        InetAddress,
+        wmanIf2fBsProvClsfRuleIpDestMask        InetAddress,
+        wmanIf2fBsProvClsfRuleSrcPortStart      Integer32,
+        wmanIf2fBsProvClsfRuleSrcPortEnd        Integer32,
+        wmanIf2fBsProvClsfRuleDestPortStart     Integer32,
+        wmanIf2fBsProvClsfRuleDestPortEnd       Integer32,
+        wmanIf2fBsProvClsfRuleDestMacAddr       MacAddress,
+        wmanIf2fBsProvClsfRuleDestMacMask       MacAddress,
+        wmanIf2fBsProvClsfRuleSrcMacAddr        MacAddress,
+        wmanIf2fBsProvClsfRuleSrcMacMask        MacAddress,
+        wmanIf2fBsProvClsfRuleEnetProtType      INTEGER,
+        wmanIf2fBsProvClsfRuleEnetProtocol      Integer32,
+        wmanIf2fBsProvClsfRuleUserPriLow        Integer32,
+        wmanIf2fBsProvClsfRuleUserPriHigh       Integer32,
+        wmanIf2fBsProvClsfRuleVlanId            Integer32,
+        wmanIf2fBsProvClsfRuleIpv6FlowLabel     WmanIf2fIpv6FlowLabel,
+        wmanIf2fBsProvClsfRuleActionRule        WmanIf2fActionRule,
+        wmanIf2fBsProvClsfRuleBitMap            WmanIf2fClassifierMap,
+        wmanIf2fBsProvClsfRuleAssociatedPhsi    INTEGER,
+        wmanIf2fBsProvClsfRuleRowStatus         RowStatus}
+       
+wmanIf2fBsProvClsfRuleIndex  OBJECT-TYPE
+        SYNTAX      Unsigned32 (1..4294967295)
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION 
+            "An index is assigned to a classifier in BS classifiers
+             table"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 1 }
+
+wmanIf2fBsProvClsfRulePriority OBJECT-TYPE
+        SYNTAX      INTEGER (0..255)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The value specifies the priority for the Classifier, which
+             is used for determining the order of the Classifier. A
+             higher value indicates higher priority. Classifiers may
+             have priorities in the range 0..255."
+        REFERENCE
+            "Subclause 11.13.19.3.4.1 in IEEE Std 802.16-2004"
+        DEFVAL      { 0 }
+        ::= { wmanIf2fBsProvClassifierRuleEntry 2 }
+
+wmanIf2fBsProvClsfRuleIpTosLow OBJECT-TYPE
+        SYNTAX      INTEGER (0..255)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The low value of a range of TOS byte values. If the
+            referenced parameter is not present in a classifier, this
+            object reports the value of 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.2 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 3 }
+
+wmanIf2fBsProvClsfRuleIpTosHigh OBJECT-TYPE
+        SYNTAX      INTEGER (0..255)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The 8-bit high value of a range of TOS byte values.
+             If the referenced parameter is not present in a classifier,
+             this object reports the value of 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.2 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 4 }
+
+wmanIf2fBsProvClsfRuleIpTosMask OBJECT-TYPE
+        SYNTAX      INTEGER (0..255)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The value of this object specifies the matching parameter
+             for the IP type of service/DSCP [IETF RFC 2474] byte mask.
+             An IP packet with IP type of service (ToS) byte value
+             ip-tos matches this parameter if tos-low less than or
+             equal (ip-tos AND tos-mask) less than or equal tos-high."
+        REFERENCE
+            "Subclause 11.13.19.3.4.2 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 5 }
+
+wmanIf2fBsProvClsfRuleIpProtocol OBJECT-TYPE
+        SYNTAX      Integer32 (0..255)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object indicates the value of the IP Protocol field
+             required for IP packets to match this rule. If the
+             referenced parameter is not present in a classifier, this
+             object reports the value of 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.3 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 6 }
+
+wmanIf2fBsProvClsfRuleIpSrcAddr OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the value of the IP Source Address
+             required for packets to match this rule. An IP packet
+             matches the rule when the packet ip source address bitwise
+             ANDed with the wmanIf2fBsProvClsfRuleIpSrcMask value
+             equals the wmanIf2fBsProvClsfRuleIpSrcAddr value.
+             If the referenced parameter is not present in a classifier,
+             this object reports the value of 0.0.0.0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.4 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 7 }
+
+wmanIf2fBsProvClsfRuleIpSrcMask OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies which bits of a packet's IP Source
+             Address that are compared to match this rule. An IP packet
+             matches the rule when the packet source address bitwise
+             ANDed with the
+             wmanIf2fBsProvClsfRuleIpSrcMask value equals the
+             wmanIf2fBsProvClsfRuleIpSrcAddr value.
+             If the referenced parameter is not present in a classifier,
+             this object reports the value of 0.0.0.0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.4 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 8 }
+
+wmanIf2fBsProvClsfRuleIpDestAddr OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the value of the IP Destination
+             Address required for packets to match this rule. An IP
+             packet matches the rule when the packet IP destination
+             address bitwise ANDed with the
+             wmanIf2fBsProvClsfRuleIpDestMask value equals the
+             wmanIf2fBsProvClsfRuleIpDestAddr value.
+             If the referenced parameter is not present in a 
+             classifier, this object reports the value of 0.0.0.0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.5 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 9 }
+
+wmanIf2fBsProvClsfRuleIpDestMask OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies which bits of a packet's IP 
+             Destination Address that are compared to match this rule.
+             An IP packet matches the rule when the packet destination
+             address bitwise ANDed with the
+             wmanIf2fBsProvClsfRuleIpDestMask value equals the
+             wmanIf2fBsProvClsfRuleIpDestAddr value.
+             If the referenced parameter is not present in a classifier
+             , this object reports the value of 0.0.0.0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.5 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 10 }
+
+wmanIf2fBsProvClsfRuleSrcPortStart OBJECT-TYPE
+        SYNTAX      Integer32 (0..65535)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the low end inclusive range of
+             TCP/UDP source port numbers to which a packet is compared.
+             This object is irrelevant for non-TCP/UDP IP packets.
+             If the referenced parameter is not present in a
+             classifier, this object reports the value of 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.6 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 11 }
+
+wmanIf2fBsProvClsfRuleSrcPortEnd OBJECT-TYPE
+        SYNTAX      Integer32 (0..65535)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the high end inclusive range of
+             TCP/UDP source port numbers to which a packet is compared.
+             This object is irrelevant for non-TCP/UDP IP packets.
+             If the referenced parameter is not present in a classifier,
+             this object reports the value of 65535."
+        REFERENCE
+            "Subclause 11.13.19.3.4.6 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 12 }
+
+wmanIf2fBsProvClsfRuleDestPortStart OBJECT-TYPE
+        SYNTAX      Integer32 (0..65535)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the low end inclusive range of
+             TCP/UDP destination port numbers to which a packet is
+             compared. If the referenced parameter is not present in a
+             classifier, this object reports the value of 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.7 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 13 }
+
+wmanIf2fBsProvClsfRuleDestPortEnd OBJECT-TYPE
+        SYNTAX      Integer32 (0..65535)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the high end inclusive range of
+             TCP/UDP destination port numbers to which a packet is
+             compared. If the referenced parameter is not present in a
+             classifier, this object reports the value of 65535."
+        REFERENCE
+            "Subclause 11.13.19.3.4.7 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 14 }
+
+wmanIf2fBsProvClsfRuleDestMacAddr OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "An Ethernet packet matches an entry when its destination
+             MAC address bitwise ANDed with 
+             wmanIf2fBsProvClsfRuleDestMacMask equals the value of
+             wmanIf2fBsProvClsfRuleDestMacAddr. If the referenced
+             parameter is not present in a classifier, this object
+             reports the value of '000000000000'H."
+        REFERENCE
+            "Subclause 11.13.19.3.4.8 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 15 }
+
+wmanIf2fBsProvClsfRuleDestMacMask OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "An Ethernet packet matches an entry when its destination
+             MAC address bitwise ANDed with
+             wmanIf2fBsProvClsfRuleDestMacMask equals the value of
+             wmanIf2fBsProvClsfRuleDestMacAddr. If the referenced
+             parameter is not present in a classifier, this object
+             reports the value of '000000000000'H."
+        REFERENCE
+            "Subclause 11.13.19.3.4.8 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 16 }
+
+wmanIf2fBsProvClsfRuleSrcMacAddr OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "An Ethernet packet matches this entry when its source
+             MAC address  bitwise ANDed with
+             wmanIf2fBsProvClsfRuleSrcMacMask equals the value
+             of wmanIf2fBsProvClsfRuleSrcMacAddr. If the
+             referenced parameter is not present in a classifier,
+             this object reports the value of '000000000000'H."
+        REFERENCE
+            "Subclause 11.13.19.3.4.9 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 17 }
+
+wmanIf2fBsProvClsfRuleSrcMacMask OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "An Ethernet packet matches an entry when its source
+             MAC address bitwise ANDed with
+             wmanIf2fBsProvClsfRuleSrcMacMask equals the value of
+             wmanIf2fBsProvClsfRuleSrcMacAddr. If the referenced
+             parameter is not present in a classifier, this object
+             reports the value of '000000000000'H."
+        REFERENCE
+            "Subclause 11.13.19.3.4.9 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 18 }
+
+wmanIf2fBsProvClsfRuleEnetProtType OBJECT-TYPE
+        SYNTAX      INTEGER {none(0),
+                             ethertype(1),
+                             dsap(2)}
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object indicates the format of the layer 3 protocol
+             id in the Ethernet packet. A value of none(0) means that
+             the rule does not use the layer 3 protocol type as a
+             matching criteria. A value of ethertype(1) means that the
+             rule applies only to frames which contains an EtherType
+             value. Ethertype values are contained in packets using
+             the Dec-Intel-Xerox (DIX) encapsulation or the RFC1042
+             Sub-Network Access Protocol (SNAP) encapsulation formats.
+             A value of dsap(2) means that the rule applies only to
+             frames using the IEEE802.3 encapsulation format with a
+             Destination Service Access Point (DSAP) other than 0xAA
+             (which is reserved for SNAP). If the Ethernet frame
+             contains an 802.1P/Q Tag header (i.e. EtherType 0x8100),
+             this object applies to the embedded EtherType field within
+             the 802.1P/Q header. If the referenced parameter is not
+             present in a classifier, this object reports the value of
+             0."                     
+        REFERENCE
+            "Subclause 11.13.19.3.4.10 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 19 }
+
+wmanIf2fBsProvClsfRuleEnetProtocol OBJECT-TYPE
+        SYNTAX      Integer32 (0..65535)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "If wmanIf2fBsProvClsfRuleEnetProtocolType is none(0),
+             this object is ignored when considering whether a packet
+             matches the current rule.
+             If wmanIf2fBsProvClsfRuleEnetProtocolType is ethertype(1),
+             this object gives the 16-bit value of the EtherType that
+             the packet must match in order to match the rule.
+             If wmanIf2fBsProvClsfRuleEnetProtocolType is dsap(2), the
+             lower 8 bits of this object's value must match the DSAP
+             byte of the packet in order to match the rule.
+             If the Ethernet frame contains an 802.1P/Q Tag header
+             (i.e. EtherType 0x8100), this object applies to the
+             embedded EtherType field within the 802.1P/Q header.
+             If the referenced parameter is not present in the
+             classifier, the value of this object is reported as 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.10 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 20 }
+
+wmanIf2fBsProvClsfRuleUserPriLow OBJECT-TYPE
+        SYNTAX      Integer32 (0..7)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object applies only to Ethernet frames using the
+             802.1P/Q tag header (indicated with EtherType 0x8100).
+             Such frames include a 16-bit Tag that contains a 3 bit
+             Priority field and a 12 bit VLAN number.
+             Tagged Ethernet packets must have a 3-bit Priority field
+             within the range of wmanIf2fBsProvClsfRuleUserPriLow and
+             wmanIf2fBsProvClsfRuleUserPriHigh in order to match this
+             rule.
+             If the referenced parameter is not present in the
+             classifier, the value of this object is reported as 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.11 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 21 }
+
+wmanIf2fBsProvClsfRuleUserPriHigh OBJECT-TYPE
+        SYNTAX      Integer32 (0..7)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object applies only to Ethernet frames using the
+             802.1P/Q tag header (indicated with EtherType 0x8100).
+             Such frames include a 16-bit Tag that contains a 3 bit
+             Priority field and a 12 bit VLAN number.
+             Tagged Ethernet packets must have a 3-bit Priority
+             field within the range of wmanIf2fBsProvClsfRuleUserPriLow
+             and wmanIf2fBsProvClsfRuleUserPriHigh in order to match
+             this rule.
+             If the referenced parameter is not present in the 
+             classifier, the value of this object is reported as 7."
+        REFERENCE
+            "Subclause 11.13.19.3.4.11 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 22 }
+
+wmanIf2fBsProvClsfRuleVlanId OBJECT-TYPE
+        SYNTAX      Integer32 (0..4095)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object applies only to Ethernet frames using the
+             802.1P/Q tag header.
+             If this object's value is nonzero, tagged packets must
+             have a VLAN Identifier that matches the value in order
+             to match the rule.
+             Only the least significant 12 bits of this object's
+             value are valid.
+             If the referenced parameter is not present in the
+             classifier, the value of this object is reported as 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.12 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 23 }
+
+wmanIf2fBsProvClsfRuleIpv6FlowLabel OBJECT-TYPE
+        SYNTAX      WmanIf2fIpv6FlowLabel
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The value of this field specifies the matching values for
+             the IPv6 Flow label field."
+        ::= { wmanIf2fBsProvClassifierRuleEntry 24 }
+
+wmanIf2fBsProvClsfRuleActionRule OBJECT-TYPE
+        SYNTAX      WmanIf2fActionRule
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The value of this field specifies an action associated with
+             the classifier rule. If this classification action rule
+             exists, its action shall be applied on the packets that
+             match this classifier rule."
+        ::= { wmanIf2fBsProvClassifierRuleEntry 25 }        
+                 
+wmanIf2fBsProvClsfRuleBitMap OBJECT-TYPE
+        SYNTAX      WmanIf2fClassifierMap
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object indicates which parameter encodings were
+             actually present in the entry. A bit set to '1' indicates
+             the corresponding classifier encoding is present, and '0'
+             means otherwise"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 26 }
+
+wmanIf2fBsProvClsfRuleAssociatedPhsi OBJECT-TYPE
+        SYNTAX      INTEGER (1..255)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION 
+            "The Associated PHSI has a value between 1 and 255, which
+             shall mirror the PHSI value of a PHS rule. Packets matching
+             the Packet Classification Rule containing the Associated
+             PHSI parameter shall undergo PHS according to the
+             corresponding PHS rule. A value '0' indicates that no PHS
+             rule is associated with this classifier rule."
+        REFERENCE
+            "Subclause 11.13.19.3.4.13 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvClassifierRuleEntry 27 }
+    
+wmanIf2fBsProvClsfRuleRowStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "This object is used to create a new row or modify or
+             delete an existing row in this table.
+
+             If the implementator of this MIB has choosen not
+             to implement 'dynamic assignment' of profiles, this
+             object is not useful and should return noSuchName
+             upon SNMP request."
+        ::= { wmanIf2fBsProvClassifierRuleEntry 28 }                 
+
+wmanIf2fBsProvPhsRuleTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF WmanIf2fBsProvPhsRuleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION                                                   
+            "This table contains provisioned PHS rules. Each entry
+             contains the data of the header to be suppressed along with
+             its identification - PHSI. The classifier uniquely maps
+             packets to its associated PHS Rule. The receiving entity
+             uses the CID and the PHSI to restore the PHSF. Once a PHSF
+             has been assigned to a PHSI, it shall not be changed. To
+             change the value of a PHSF on a service flow, a new PHS
+             rule shall be defined, the old rule is removed from the
+             service flow, and the new rule is added. When all
+             classification rules associated with the PHS rule are
+             deleted, then the PHS rule shall also be deleted."
+        REFERENCE
+            "Subclause 5.2.3 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsMib 5 }
+
+wmanIf2fBsProvPhsRuleEntry OBJECT-TYPE
+        SYNTAX      WmanIf2fBsProvPhsRuleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION                                                   
+            "This table provides one row for each PHS rule created
+             dynamically by the BS and SS on a given service flow. The
+             PHS rule is defined by the pair (PHSS, PHSM) for each
+             distinct header data."
+        INDEX     { ifIndex,
+                    wmanIf2fBsSsProvMacAddress,
+                    wmanIf2fBsSfId,
+                    wmanIf2fBsProvPhsRulePhsIndex }
+        ::= { wmanIf2fBsProvPhsRuleTable 1 }
+        
+WmanIf2fBsProvPhsRuleEntry::= SEQUENCE {             
+        wmanIf2fBsProvPhsRulePhsIndex           INTEGER,
+        wmanIf2fBsProvPhsRulePhsField           OCTET STRING,
+        wmanIf2fBsProvPhsRulePhsMask            OCTET STRING,
+        wmanIf2fBsProvPhsRulePhsSize            Integer32,
+        wmanIf2fBsProvPhsRulePhsVerify          WmanIf2fPhsRuleVerify,
+        wmanIf2fBsProvPhsRuleRowStatus          RowStatus}
+        
+wmanIf2fBsProvPhsRulePhsIndex OBJECT-TYPE
+        SYNTAX      INTEGER (1..255)
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION 
+            "The PHSI (PHS Index) has a value between 1 and 255, which
+             uniquely references the suppressed byte string. The index
+             is unique per service flow. The uplink and downlink PHSI
+             values are independent of each other."
+        REFERENCE
+            "Subclause 11.13.19.3.7.1 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvPhsRuleEntry 1 }
+        
+wmanIf2fBsProvPhsRulePhsField OBJECT-TYPE
+        SYNTAX      OCTET STRING (SIZE(0..65535))
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION 
+            "The PHSF (PHS Field) is a string of bytes containing the
+             header information to be suppressed by the sending CS and
+             reconstructed by the receiving CS. The most significant
+             byte of the string corresponds to the first byte of the
+             CS-SDU."
+        REFERENCE
+            "Subclause 11.13.19.3.7.2 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvPhsRuleEntry 2 }
+        
+wmanIf2fBsProvPhsRulePhsMask OBJECT-TYPE
+        SYNTAX      OCTET STRING (SIZE(0..65535))
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION 
+            "The PHSM An 8-bit mask that indicates which bytes in the
+             PHS Field (PHSF) to suppress and which bytes to not
+             suppress. The PHSM allows fields, such as sequence numbers
+             or checksums (which vary in value), to be excluded from
+             suppression with the constant bytes around them suppressed.
+             It is encodded as follows:
+             bit 0:
+                0 = don't suppress the 1st byte of the suppression field
+                1 = suppress first byte of the suppression field
+             bit 1:
+                0 = don't suppress the 2nd byte of the suppression field
+                1 = suppress second byte of the suppression field
+             bit x:
+                0 = don't suppress the (x+1) byte of the suppression
+                    field
+                1 = suppress (x+1) byte of the suppression field
+             where the length of the octet string is ceiling
+             (wmanIf2fBsProvPhsRulePhsSize/8)."             
+        REFERENCE
+            "Subclause 11.13.19.3.7.3 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsProvPhsRuleEntry 3 }
+        
+wmanIf2fBsProvPhsRulePhsSize OBJECT-TYPE
+        SYNTAX      Integer32 (0..255)
+        UNITS       "byte"
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The value of this field - PHSS is the total number of bytes 
+             in the header to be suppressed and then restored in a
+             service flow that uses PHS."
+        REFERENCE
+            "Subclause 11.13.19.3.7.4 in IEEE Std 802.16-2004"
+        DEFVAL      {0}
+        ::= { wmanIf2fBsProvPhsRuleEntry 4 }
+
+wmanIf2fBsProvPhsRulePhsVerify OBJECT-TYPE
+        SYNTAX      WmanIf2fPhsRuleVerify
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The value of this field indicates to the sending entity 
+             whether or not the packet header contents are to be
+             verified prior to performing suppression."
+        DEFVAL      { phsVerifyEnable }
+        ::= { wmanIf2fBsProvPhsRuleEntry 5 }
+
+wmanIf2fBsProvPhsRuleRowStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "Row status."
+        ::= { wmanIf2fBsProvPhsRuleEntry 6 }
+
+wmanIf2fBsClassifierRuleTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF WmanIf2fBsClassifierRuleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table contains packet classifier rules associated
+             with created service flows."
+        ::= { wmanIf2fBsMib 6 }
+
+wmanIf2fBsClassifierRuleEntry OBJECT-TYPE
+        SYNTAX      WmanIf2fBsClassifierRuleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+        	"This table provides one row for each packet classifier 
+        	 rule."
+        INDEX     { ifIndex,
+                    wmanIf2fBsSfMacAddress,
+                    wmanIf2fBsSfId,
+                    wmanIf2fBsClassifierRuleIndex }
+        ::= { wmanIf2fBsClassifierRuleTable 1 } 
+
+WmanIf2fBsClassifierRuleEntry ::= SEQUENCE { 
+        wmanIf2fBsClassifierRuleIndex           Unsigned32,
+        wmanIf2fBsClassifierRulePriority        INTEGER,
+        wmanIf2fBsClassifierRuleIpTosLow        INTEGER,
+        wmanIf2fBsClassifierRuleIpTosHigh       INTEGER,
+        wmanIf2fBsClassifierRuleIpTosMask       INTEGER,
+        wmanIf2fBsClassifierRuleIpProtocol      Integer32,
+        wmanIf2fBsClassifierRuleIpSourceAddr    InetAddress,
+        wmanIf2fBsClassifierRuleIpSourceMask    InetAddress,
+        wmanIf2fBsClassifierRuleIpDestAddr      InetAddress,
+        wmanIf2fBsClassifierRuleIpDestMask      InetAddress,
+        wmanIf2fBsClassifierRuleSourcePortStart Integer32,
+        wmanIf2fBsClassifierRuleSourcePortEnd   Integer32,
+        wmanIf2fBsClassifierRuleDestPortStart   Integer32,
+        wmanIf2fBsClassifierRuleDestPortEnd     Integer32,
+        wmanIf2fBsClassifierRuleDestMacAddr     MacAddress,
+        wmanIf2fBsClassifierRuleDestMacMask     MacAddress,
+        wmanIf2fBsClassifierRuleSourceMacAddr   MacAddress,
+        wmanIf2fBsClassifierRuleSourceMacMask   MacAddress,
+        wmanIf2fBsClassifierRuleEnetProtocolTyp INTEGER,
+        wmanIf2fBsClassifierRuleEnetProtocol    Integer32,
+        wmanIf2fBsClassifierRuleUserPriLow      Integer32,
+        wmanIf2fBsClassifierRuleUserPriHigh     Integer32,
+        wmanIf2fBsClassifierRuleVlanId          Integer32,
+        wmanIf2fBsClassifierRulePkts            Counter64,
+        wmanIf2fBsClassifierRuleIpv6FlowLabel   WmanIf2fIpv6FlowLabel,
+        wmanIf2fBsClassifierRuleActionRule      WmanIf2fActionRule,
+        wmanIf2fBsClassifierRuleBitMap          WmanIf2fClassifierMap,
+        wmanIf2fBsClassifierRuleAssociatedPhsi  INTEGER}
+
+wmanIf2fBsClassifierRuleIndex OBJECT-TYPE
+        SYNTAX      Unsigned32 (1..4294967295)
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "An index is assigned to each classifier in the classifiers
+             table"
+        REFERENCE
+            "Subclause 11.13.19.3.4.14 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 1 }
+
+wmanIf2fBsClassifierRulePriority OBJECT-TYPE
+        SYNTAX      INTEGER (0..255)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The value specifies the order of evaluation of the
+             classifiers. The higher the value the higher the 
+             priority. The value of 0 is used as default in
+             provisioned service flows classifiers. The default
+             value of 64 is used for dynamic service flow classifiers.
+             If the referenced parameter is not present in a classifier
+             , this object reports the default value as defined above"
+        REFERENCE
+            "Subclause 11.13.19.3.4.1 in IEEE Std 802.16-2004"
+        DEFVAL    { 0 }
+        ::= { wmanIf2fBsClassifierRuleEntry 2 }
+        
+wmanIf2fBsClassifierRuleIpTosLow OBJECT-TYPE
+        SYNTAX      INTEGER (0..255)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The low value of a range of TOS byte values. If the
+             referenced parameter is not present in a classifier, this
+             object reports the value of 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.2 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 3 }
+
+wmanIf2fBsClassifierRuleIpTosHigh OBJECT-TYPE
+        SYNTAX      INTEGER (0..255)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The 8-bit high value of a range of TOS byte values.
+             If the referenced parameter is not present in a classifier
+             , this object reports the value of 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.2 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 4 }
+
+wmanIf2fBsClassifierRuleIpTosMask OBJECT-TYPE
+        SYNTAX      INTEGER (0..255)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The mask value is bitwise ANDed with TOS byte in an IP
+             packet and this value is used for the range checking of
+             TosLow and TosHigh. If the referenced parameter is not
+             present in a classifier, this object reports the value
+             of 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.2 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 5 }
+
+wmanIf2fBsClassifierRuleIpProtocol OBJECT-TYPE
+        SYNTAX      Integer32 (0..255)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object indicates the value of the IP Protocol field
+             required for IP packets to match this rule. If the
+             referenced parameter is not present in a classifier, this
+             object reports the value of 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.3 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 6 }
+
+wmanIf2fBsClassifierRuleIpSourceAddr OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the value of the IP Source Address
+             required for packets to match this rule. An IP packet
+             matches the rule when the packet ip source address bitwise
+             ANDed with the wmanIf2CmnClassifierRuleIpSourceMask value
+             equals the wmanIf2CmnClassifierRuleIpSourceAddr value.
+             If the referenced parameter is not present in a classifier
+             , this object reports the value of 0.0.0.0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.4 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 7 }
+
+wmanIf2fBsClassifierRuleIpSourceMask OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object specifies which bits of a packet's IP Source
+             Address that are compared to match this rule. An IP packet
+             matches the rule when the packet source address bitwise
+             ANDed with the
+             wmanIf2CmnClassifierRuleIpSourceMask value equals the
+             wmanIf2CmnClassifierRuleIpSourceAddr value.
+             If the referenced parameter is not present in a classifier
+             , this object reports the value of 0.0.0.0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.4 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 8 }
+
+wmanIf2fBsClassifierRuleIpDestAddr OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the value of the IP Destination
+             Address required for packets to match this rule. An IP
+             packet matches the rule when the packet IP destination
+             address bitwise ANDed with the
+             wmanIf2CmnClassifierRuleIpDestMask value equals the
+             wmanIf2CmnClassifierRuleIpDestAddr value.
+             If the referenced parameter is not present in a 
+             classifier, this object reports the value of 0.0.0.0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.5 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 9 }
+
+wmanIf2fBsClassifierRuleIpDestMask OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object specifies which bits of a packet's IP 
+             Destination Address that are compared to match this rule.
+             An IP packet matches the rule when the packet destination
+             address bitwise ANDed with the
+             wmanIf2CmnClassifierRuleIpDestMask value equals the
+             wmanIf2CmnClassifierRuleIpDestAddr value.
+             If the referenced parameter is not present in a classifier
+             , this object reports the value of 0.0.0.0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.5 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 10 }
+
+wmanIf2fBsClassifierRuleSourcePortStart OBJECT-TYPE
+        SYNTAX      Integer32 (0..65535)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the low end inclusive range of
+             TCP/UDP source port numbers to which a packet is compared
+             . This object is irrelevant for non-TCP/UDP IP packets.
+             If the referenced parameter is not present in a
+             classifier, this object reports the value of 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.6 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 11 }
+
+wmanIf2fBsClassifierRuleSourcePortEnd OBJECT-TYPE
+        SYNTAX      Integer32 (0..65535)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the high end inclusive range of
+             TCP/UDP source port numbers to which a packet is compared.
+             This object is irrelevant for non-TCP/UDP IP packets.
+             If the referenced parameter is not present in a classifier,
+             this object reports the value of 65535."
+        REFERENCE
+            "Subclause 11.13.19.3.4.6 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 12 }
+
+wmanIf2fBsClassifierRuleDestPortStart OBJECT-TYPE
+        SYNTAX      Integer32 (0..65535)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the low end inclusive range of
+             TCP/UDP destination port numbers to which a packet is
+             compared. If the referenced parameter is not present
+             in a classifier, this object reports the value of 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.7 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 13 }
+
+wmanIf2fBsClassifierRuleDestPortEnd OBJECT-TYPE
+        SYNTAX      Integer32 (0..65535)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object specifies the high end inclusive range of
+             TCP/UDP destination port numbers to which a packet is
+             compared. If the referenced parameter is not present
+             in a classifier, this object reports the value of
+             65535."
+        REFERENCE
+            "Subclause 11.13.19.3.4.7 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 14 }
+
+wmanIf2fBsClassifierRuleDestMacAddr OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "An Ethernet packet matches an entry when its destination
+             MAC address bitwise ANDed with 
+             wmanIf2CmnClassifierRuleDestMacMask equals the value of
+             wmanIf2CmnClassifierRuleDestMacAddr. If the referenced
+             parameter is not present in a classifier, this object
+             reports the value of '000000000000'H."
+        REFERENCE
+            "Subclause 11.13.19.3.4.8 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 15 }
+
+wmanIf2fBsClassifierRuleDestMacMask OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "An Ethernet packet matches an entry when its destination
+             MAC address bitwise ANDed with
+             wmanIf2CmnClassifierRuleDestMacMask equals the value of
+             wmanIf2CmnClassifierRuleDestMacAddr. If the referenced
+             parameter is not present in a classifier, this object
+             reports the value of '000000000000'H."
+        REFERENCE
+            "Subclause 11.13.19.3.4.8 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 16 }
+
+wmanIf2fBsClassifierRuleSourceMacAddr OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "An Ethernet packet matches this entry when its source
+             MAC address  bitwise ANDed with
+             wmanIf2CmnClassifierRuleSourceMacMask equals the value
+             of wmanIf2CmnClassifierRuleSourceMacAddr. If the
+             referenced parameter is not present in a classifier,
+             this object reports the value of '000000000000'H."
+        REFERENCE
+            "Subclause 11.13.19.3.4.9 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 17 }
+
+wmanIf2fBsClassifierRuleSourceMacMask OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "An Ethernet packet matches an entry when its destination
+             MAC address bitwise ANDed with
+             wmanIf2CmnClassifierRuleSourceMacMask equals the value of
+             wmanIf2CmnClassifierRuleSourceMacAddr. If the referenced
+             parameter is not present in a classifier, this object
+             reports the value of '000000000000'H."
+        REFERENCE
+            "Subclause 11.13.19.3.4.9 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 18 }
+
+wmanIf2fBsClassifierRuleEnetProtocolTyp OBJECT-TYPE
+        SYNTAX      INTEGER {none(0),
+                             ethertype(1),
+                             dsap(2)}
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object indicates the format of the layer 3 protocol
+             id in the Ethernet packet. A value of none(0) means that
+             the rule does not use the layer 3 protocol type as a
+             matching criteria. A value of ethertype(1) means that the
+             rule applies only to frames which contains an EtherType
+             value. Ethertype values are contained in packets using
+             the Dec-Intel-Xerox (DIX) encapsulation or the RFC1042
+             Sub-Network Access Protocol (SNAP) encapsulation formats.
+             A value of dsap(2) means that the rule applies only to
+             frames using the IEEE802.3 encapsulation format with a
+             Destination Service Access Point (DSAP) other than 0xAA
+             (which is reserved for SNAP). If the Ethernet frame
+             contains an 802.1P/Q Tag header (i.e. EtherType 0x8100),
+             this object applies to the embedded EtherType field within
+             the 802.1P/Q header. If the referenced parameter is not
+             present in a classifier, this object reports the value of
+             0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.10 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 19 }
+
+wmanIf2fBsClassifierRuleEnetProtocol OBJECT-TYPE
+        SYNTAX      Integer32 (0..65535)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "If wmanIf2CmnClassifierRuleEnetProtocolTyp is none(0),
+             this object is ignored when considering whether a packet
+             matches the current rule.
+             If wmanIf2CmnClassifierRuleEnetProtocolTyp is ethertype(1)
+             ,this object gives the 16-bit value of the EtherType that
+             the packet must match in order to match the rule.
+             If wmanIf2CmnClassifierRuleEnetProtocolTyp is dsap(2), the
+             lower 8 bits of this object's value must match the DSAP
+             byte of the packet in order to match the rule.
+             If the Ethernet frame contains an 802.1P/Q Tag header
+             (i.e. EtherType 0x8100), this object applies to the
+             embedded EtherType field within the 802.1P/Q header.
+             If the referenced parameter is not present in the
+             classifier, the value of this object is reported as 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.10 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 20 }
+
+wmanIf2fBsClassifierRuleUserPriLow OBJECT-TYPE
+        SYNTAX      Integer32 (0..7)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object applies only to Ethernet frames using the
+             802.1P/Q tag header (indicated with EtherType 0x8100).
+             Such frames include a 16-bit Tag that contains a 3 bit
+             Priority field and a 12 bit VLAN number.
+             Tagged Ethernet packets must have a 3-bit Priority field
+             within the range of wmanIf2CmnClassifierRulePriLow and
+             wmanIf2CmnClassifierRulePriHigh in order to match this
+             rule.
+             If the referenced parameter is not present in the
+             classifier, the value of this object is reported as 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.11 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 21 }
+
+wmanIf2fBsClassifierRuleUserPriHigh OBJECT-TYPE
+        SYNTAX      Integer32 (0..7)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object applies only to Ethernet frames using the
+             802.1P/Q tag header (indicated with EtherType 0x8100).
+             Such frames include a 16-bit Tag that contains a 3 bit
+             Priority field and a 12 bit VLAN number.
+             Tagged Ethernet packets must have a 3-bit Priority
+             field within the range of wmanIf2CmnClassifierRulePriLow
+             and wmanIf2CmnClassifierRulePriHigh in order to match
+             this rule.
+             If the referenced parameter is not present in the 
+             classifier, the value of this object is reported as 7."
+        REFERENCE
+            "Subclause 11.13.19.3.4.11 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 22 }
+
+wmanIf2fBsClassifierRuleVlanId OBJECT-TYPE
+        SYNTAX      Integer32 (0..4095)
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object applies only to Ethernet frames using the
+             802.1P/Q tag header.
+             If this object's value is nonzero, tagged packets must
+             have a VLAN Identifier that matches the value in order
+             to match the rule.
+             Only the least significant 12 bits of this object's
+             value are valid.
+             If the referenced parameter is not present in the
+             classifier, the value of this object is reported as 0."
+        REFERENCE
+            "Subclause 11.13.19.3.4.12 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 23 }
+
+wmanIf2fBsClassifierRulePkts OBJECT-TYPE
+        SYNTAX      Counter64
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object counts the number of packets that have
+             been classified using this entry."
+        ::= { wmanIf2fBsClassifierRuleEntry 25 }
+
+wmanIf2fBsClassifierRuleIpv6FlowLabel OBJECT-TYPE
+        SYNTAX      WmanIf2fIpv6FlowLabel
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The value of this field specifies the matching values for
+             the IPv6 Flow label field."
+        ::= { wmanIf2fBsClassifierRuleEntry 26 }
+
+wmanIf2fBsClassifierRuleActionRule OBJECT-TYPE
+        SYNTAX      WmanIf2fActionRule
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The value of this field specifies an action associated with
+             the classifier rule. If this classification action rule
+             exists, its action shall be applied on the packets that
+             match this classifier rule."
+        ::= { wmanIf2fBsClassifierRuleEntry 27 }
+
+wmanIf2fBsClassifierRuleBitMap OBJECT-TYPE
+        SYNTAX      WmanIf2fClassifierMap
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "This object indicates which parameter encodings were
+             actually present in the entry. A bit set to '1' indicates
+             the corresponding classifier encoding is present, and '0'
+             means otherwise"
+        ::= { wmanIf2fBsClassifierRuleEntry 28 }
+
+wmanIf2fBsClassifierRuleAssociatedPhsi OBJECT-TYPE
+        SYNTAX      INTEGER (1..255)
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION
+            "The Associated PHSI has a value between 1 and 255, which
+             shall mirror the PHSI value of a PHS rule. Packets matching
+             the Packet Classification Rule containing the Associated
+             PHSI parameter shall undergo PHS according to the
+             corresponding PHS rule. A value '0' indicates that no PHS
+             rule is associated with this classifier rule."
+        REFERENCE
+            "Subclause 11.13.19.3.4.13 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsClassifierRuleEntry 29 }
+
+wmanIf2BsPhsRuleTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF WmanIf2BsPhsRuleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table contains PHS rule dictionary entries. Each
+             entry contains the data of the header to be suppressed
+             along with its identification - PHSI. The classifier
+             uniquely maps packets to its associated PHS Rule. The
+             receiving entity uses the CID and the PHSI to restore the
+             PHSF. Once a PHSF has been assigned to a PHSI, it shall
+             not be changed. To change the value of a PHSF on a
+             service flow, a new PHS rule shall be defined, the old
+             rule is removed from the service flow, and the new rule
+             is added. When a classifier is deleted, any associated
+             PHS rule shall also be deleted."
+        REFERENCE
+            "Subclause 5.2.3 in IEEE Std 802.16-2004"
+        ::= { wmanIf2fBsMib 7 }
+
+wmanIf2BsPhsRuleEntry OBJECT-TYPE
+        SYNTAX      WmanIf2BsPhsRuleEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "This table provides one row for each PHS rule created
+             dynamically by the BS and SS on a given service flow. The
+             PHS rule is defined by the pair (PHSS, PHSM) for each
+             distinct header data."
+        INDEX     { ifIndex,
+                    wmanIf2fBsSfMacAddress,
+                    wmanIf2fBsSfCid,
+                    wmanIf2fBsPhsRulePhsIndex }
+        ::= { wmanIf2BsPhsRuleTable 1 }
+
+WmanIf2BsPhsRuleEntry ::= SEQUENCE {
+        wmanIf2fBsPhsRulePhsIndex               INTEGER,
+        wmanIf2fBsPhsRulePhsField               OCTET STRING,
+        wmanIf2fBsPhsRulePhsMask                OCTET STRING,
+        wmanIf2fBsPhsRulePhsSize                Integer32,
+        wmanIf2fBsPhsRulePhsVerify              WmanIf2fPhsRuleVerify}
+
+wmanIf2fBsPhsRulePhsIndex OBJECT-TYPE
+        SYNTAX      INTEGER (1..255)
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION
+            "The PHSI (PHS Index) has a value between 1 and 255, which
+             uniquely references the suppressed byte string. The index
+             is unique per service flow. The uplink and downlink PHSI
+             values are independent of each other."
+        REFERENCE
+            "Subclause 11.13.19.3.7.1 in IEEE Std 802.16-2004"
+        ::= { wmanIf2BsPhsRuleEntry 1 }
+
+wmanIf2fBsPhsRulePhsField OBJECT-TYPE
+        SYNTAX      OCTET STRING (SIZE (0..65535))
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The PHSF (PHS Field) is a string of bytes containing the
+             header information to be suppressed by the sending CS and
+             reconstructed by the receiving CS. The most significant
+             byte of the string corresponds to the first byte of the
+             CS-SDU."
+        REFERENCE
+            "Subclause 11.13.19.3.7.2 in IEEE Std 802.16-2004"
+        ::= { wmanIf2BsPhsRuleEntry 2 }
+
+wmanIf2fBsPhsRulePhsMask OBJECT-TYPE
+        SYNTAX      OCTET STRING (SIZE (0..65535))
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The PHSM An 8-bit mask that indicates which bytes in the
+             PHS Field (PHSF) to suppress and which bytes to not
+             suppress. The PHSM allows fields, such as sequence numbers
+             or checksums (which vary in value), to be excluded from
+             suppression with the constant bytes around them suppressed.
+             It is encodded as follows:
+             bit 0:
+               0 = don't suppress the 1st byte of the suppression field
+               1 = suppress first byte of the suppression field
+             bit 1:
+               0 = don't suppress the 2nd byte of the suppression field
+               1 = suppress second byte of the suppression field
+             bit x:
+               0 = don't suppress the (x+1) byte of the suppression
+                   field
+               1 = suppress (x+1) byte of the suppression field
+             where the length of the octet string is ceiling
+             (wmanIf2CmnPhsRulePhsSize/8)."
+        REFERENCE
+            "Subclause 11.13.19.3.7.3 in IEEE Std 802.16-2004"
+        ::= { wmanIf2BsPhsRuleEntry 3 }
+
+wmanIf2fBsPhsRulePhsSize OBJECT-TYPE
+        SYNTAX      Integer32 (0..255)
+        UNITS       "byte"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The value of this field - PHSS is the total number of bytes 
+             in the header to be suppressed and then restored in a
+             service flow that uses PHS."
+        REFERENCE
+            "Subclause 11.13.19.3.7.4 in IEEE Std 802.16-2004"
+        DEFVAL    { 0 }
+        ::= { wmanIf2BsPhsRuleEntry 4 }
+
+wmanIf2fBsPhsRulePhsVerify OBJECT-TYPE
+        SYNTAX      WmanIf2fPhsRuleVerify
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The value of this field indicates to the sending entity 
+             whether or not the packet header contents are to be
+             verified prior to performing suppression."
+        DEFVAL    { phsVerifyEnable }
+        ::= { wmanIf2BsPhsRuleEntry 5 }
+
+END

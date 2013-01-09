@@ -1,0 +1,1668 @@
+NEC-WIMAX-COMMON-MIB-MODULE DEFINITIONS ::= BEGIN
+IMPORTS
+        MODULE-IDENTITY,
+        OBJECT-TYPE,
+        NOTIFICATION-TYPE, 
+        Counter32,
+        Unsigned32,
+        TimeTicks,
+        IpAddress,
+        Integer32
+            FROM SNMPv2-SMI
+        OBJECT-GROUP, NOTIFICATION-GROUP
+            FROM SNMPv2-CONF
+        TEXTUAL-CONVENTION,RowStatus,MacAddress
+            FROM SNMPv2-TC
+        necwimaxCommonMibModules,
+        necwimaxObjectGroups,
+        ftp,
+        necwimaxNotificationEvents,
+        event,
+        health,
+        alarm,
+        performance,
+        debug
+            FROM NEC-WIMAX-COMMON-REG;
+
+necwimaxCommonMibModule MODULE-IDENTITY
+        LAST-UPDATED      "200803060000Z"
+        ORGANIZATION      "NEC/J MWN"
+        CONTACT-INFO      "NEC/J MWN"
+        DESCRIPTION
+                "The NEC WIMAX Common MIB"
+        REVISION          "200803060000Z"
+        DESCRIPTION       "NEC WiMAX Common MIB: Revision 0.7"
+        ::= { necwimaxCommonMibModules 1 }
+
+-- TEXTUAL-CONVENTION:
+
+AlarmSeverity ::= TEXTUAL-CONVENTION
+        STATUS current
+        DESCRIPTION
+             "Alarm severity per X.733."
+        SYNTAX INTEGER {
+                   clear(1),
+                   warning(2),
+                   minor(3),
+                   major(4),
+                   critical(5) }
+
+AlarmType ::= TEXTUAL-CONVENTION
+        STATUS current
+        DESCRIPTION
+             "Alarm types per X.733/X.736."
+        SYNTAX INTEGER {
+                   communicationAlarm(1),
+                   qualityOfServiceAlarm(2),
+                   processingErrorAlarm(3),
+                   equipmentAlarm(4),
+                   environmentalAlarm(5),
+                   integrityViolationAlarm(6),
+                   operationalViolationAlarm(7),
+                   physicalViolationAlarm(8),
+                   securityViolationAlarm(9),
+                   timeDomainViolationAlarm(10) }
+
+AlarmProbableCause ::= TEXTUAL-CONVENTION
+        STATUS current
+        DESCRIPTION
+             "Probable causes per X.733/X.736.
+              Values 1..50 are used with communications alarms.
+              Values 51..100 are used with equipment alarms.
+              Values 101..150 are used with environmental alarms.
+              Values 151..200 are used with processing error alarms.
+              Values 501..600 are used with any of the violation
+              alarm types."
+        SYNTAX INTEGER {
+                   aIS(1),
+                   callSetUpFailure(2),
+                   degradedSignal(3),
+                   farEndReceiverFailure(4),
+                   framingError(5),
+                   lossOfFrame(6),
+                   lossOfPointer(7),
+                   lossOfSignal(8),
+                   payloadTypeMismatch(9),
+                   transmissionError(10),
+                   remoteAlarmInterface(11),
+                   excessiveBER(12),
+                   pathTraceMismatch(13),
+                   backplaneFailure(51),
+                   dataSetProblem(52),
+                   equipmentIdentifierDuplication(53),
+                   externalIFDeviceProblem(54),
+                   lineCardProblem(55),
+                   multiplexerProblem(56),
+                   nEIdentifierDuplication(57),
+                   powerProblem(58),
+                   processorProblem(59),
+                   protectionPathFailure(60),
+                   receiverFailure(61),
+                   replaceableUnitMissing(62),
+                   replaceableUnitTypeMismatch(63),
+                   synchronizationSourceMismatch(64),
+                   terminalProblem(65),
+                   timingProblem(66),
+                   transmitterFailure(67),
+                   trunkCardProblem(68),
+                   replaceableUnitProblem(69),
+                   airCompressorFailure(101),
+                   airConditioningFailure(102),
+                   airDryerFailure(103),
+                   batteryDischarging(104),
+                   batteryFailure(105),
+                   commercialPowerFailure(106),
+                   coolingFanFailure(107),
+                   engineFailure(108),
+                   fireDetectorFailure(109),
+                   fuseFailure(110),
+                   generatorFailure(111),
+                   lowBatteryThreshold(112),
+                   pumpFailure(113),
+                   rectifierFailure(114),
+                   rectifierHighVoltage(115),
+                   rectifierLowFVoltage(116),
+                   ventilationsSystemFailure(117),
+                   enclosureDoorOpen(118),
+                   explosiveGas(119),
+                   fire(120),
+                   flood(121),
+                   highHumidity(122),
+                   highTemperature(123),
+                   highWind(124),
+                   iceBuildUp(125),
+                   intrusionDetection(126),
+                   lowFuel(127),
+                   lowHumidity(128),
+                   lowCablePressure(129),
+                   lowTemperature(130),
+                   lowWater(131),
+                   smoke(132),
+                   toxicGas(133),
+                   storageCapacityProblem(151),
+                   memoryMismatch(152),
+                   corruptData(153),
+                   outOfCPUCycles(154),
+                   sfwrEnvironmentProblem(155),
+                   sfwrDownloadFailure(156),
+                   duplicateInformation(501),
+                   informationMissing(502),
+                   informationModificationDetected(503),
+                   informationOutOfSequence(504),
+                   unexpectedInformation(505),
+                   denialOfService(506),
+                   outOfService(507),
+                   proceduralError(508),
+                   cableTamper(509),
+                   securityIntrusionDetection(510),
+                   authenticationFailure(511),
+                   breachOfConfidentiality(512),
+                   unauthorisedAccessAttempt(513),
+                   delayedInformation(514),
+                   keyExpired(515),
+                   outOfHoursActivity(516),
+                   otherReasons(517) }
+
+
+-- HEALTH-CHECK:
+-- Health-check between EMS and NE will be performed using
+-- three mechanisms. First, the EMS can poll the NE by
+-- sending a GetRequest for the 
+-- 'trapSequenceCounter' object. Secondly, the NE can
+-- voluntarily and periodially submit 'healthCheckTrap' which
+-- includes the 'trapSequenceCounter' to the EMS. Finally,
+-- each trap submitted by the NE to the EMS will include
+-- the current value of the 'trapSequenceCounter'.
+
+wtimeStamp OBJECT-TYPE
+        SYNTAX  TimeTicks
+        MAX-ACCESS  read-only
+        STATUS current
+        DESCRIPTION  "UTC time since 01 Jan 1970."
+        ::= { health 1 }
+
+trapSequenceCounter OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS  read-only
+        STATUS current
+        DESCRIPTION  
+               "This scalar contains the sequence number of
+                the last trap submitted to EMS. The NE
+                is responsible for incrementing it prior to
+                sending a trap. This counter wraps to 0."
+        ::= { health 2 }
+
+
+-- ALARM TRAP HISTORY WITH GENERIC DATA:
+-- The AlarmGenEntry holds the alarm trap history with generic
+-- data whose index derives from trap sequence number sent to EMS by
+-- the NEs. It is expected that specific alarm data objects
+-- (if applicable) will be included as part of the NE and/or NE
+-- types specific alarms.
+
+alarmGenTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF AlarmGenEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION "Alarm trap history with generic information."
+        ::= { alarm 1 }
+
+alarmGenEntry  OBJECT-TYPE
+        SYNTAX AlarmGenEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+                "Row definition of the alarmGenTable."
+        INDEX   { alarmTrapSequenceNumber }
+        ::= { alarmGenTable 1 }
+
+AlarmGenEntry ::= SEQUENCE {
+        alarmTrapSequenceNumber Unsigned32,
+        alarmDate OCTET STRING,
+        alarmTime OCTET STRING,
+        alarmNeName OCTET STRING,
+        alarmNeType OCTET STRING,
+        specificProblem OCTET STRING,
+        walarmSeverity AlarmSeverity ,
+        walarmType AlarmType,
+        probableCause AlarmProbableCause,
+        alarmSource OBJECT IDENTIFIER,
+        alarmId Unsigned32
+}
+
+alarmTrapSequenceNumber OBJECT-TYPE
+        SYNTAX Unsigned32
+        MAX-ACCESS  not-accessible
+        STATUS current
+        DESCRIPTION  
+              "When an new alarm trap is created, alarmTrapLatestSequenceNumber
+               is incremented, and copied to this scalar."
+        ::= { alarmGenEntry 1 }
+
+alarmDate OBJECT-TYPE
+        SYNTAX  OCTET STRING(SIZE(10))
+        MAX-ACCESS  read-only
+        STATUS current
+        DESCRIPTION
+            "Date when alarm was raised or cleared: MM-DD-YYYY"
+        ::= { alarmGenEntry 2 }
+
+alarmTime OBJECT-TYPE
+        SYNTAX OCTET STRING(SIZE(8))
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "Time when alarm was raised or cleared. A value in
+             the format hh:mm:ss. The time is expressed as a
+             24 hour clock, GMT. Some examples of legal values
+             are: 02:03:33 and 14:59:59."
+        ::= { alarmGenEntry 3 }
+
+alarmNeName OBJECT-TYPE
+        SYNTAX OCTET STRING(SIZE(0..255))
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION "NE Name"
+        ::= { alarmGenEntry 4 }
+
+alarmNeType OBJECT-TYPE
+        SYNTAX OCTET STRING(SIZE(0..15))
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION "NE Type"
+        ::= { alarmGenEntry 5 }
+
+specificProblem OBJECT-TYPE
+        SYNTAX OCTET STRING(SIZE(0..255))
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION "Alarm description."
+        ::= { alarmGenEntry 6 }
+
+walarmSeverity OBJECT-TYPE
+        SYNTAX AlarmSeverity 
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+             "Alarm severity per X.733."
+        ::= { alarmGenEntry 7 }
+
+walarmType OBJECT-TYPE
+        SYNTAX AlarmType
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+           "Alarm types per X.733/X.736."
+        ::= { alarmGenEntry 8 }
+
+probableCause OBJECT-TYPE
+        SYNTAX AlarmProbableCause
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+           "Probable causes per X.733/X.736.
+            Values 1..50 are used with communications alarms.
+            Values 51..100 are used with equipment alarms.
+            Values 101..150 are used with environmental alarms.
+            Values 151..200 are used with processing error alarms.
+            Values 501..600 are used with any of the violation
+            alarm types."
+        ::= { alarmGenEntry 9 }
+
+alarmSource OBJECT-TYPE
+        SYNTAX OBJECT IDENTIFIER
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+           "Source of the alarm. 
+            The SNMP OID for the device will be used.
+            If this information is not present, its value should be
+            set to the OBJECT IDENTIFIER { 0.0 }."
+        ::= { alarmGenEntry 10 }
+
+alarmId OBJECT-TYPE
+        SYNTAX  Unsigned32(0..1048575)
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+             "ID of the alarm.
+              This ID is unique on the same NE type."
+        ::= { alarmGenEntry 11 }
+
+-- ALARM Trap Latest Sequence Number:
+-- When an new alarm trap is created on the AlarmGenEntry, this
+-- number is incremented, and then copied as the index for the newly
+-- added entry. EMS shall utilize this object as a trigger to
+-- activate the trap loss recovery when it starts up.
+
+alarmTrapLatestSequenceNumber OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS  read-only
+        STATUS current
+        DESCRIPTION  
+               "This scalar contains the sequence number of
+                the last alarm trap submitted to EMS. The NE
+                is responsible for incrementing it prior to
+                sending an alarm trap. This counter wraps to 0."
+        ::= { alarm 2 }
+
+
+-- ALARM FILTERING:
+-- The alarmFilter object will be used by the EMS to request
+-- alarm suppression by the NE. That is, the NE is
+-- expected to forward all alarms to EMS (via traps) unless
+-- the alarm satisfies the filtering criteria specified by
+-- the EMS in the alarmFilter. This filtering criteria applies
+-- to the alarms that are forwarded as traps to EMS,
+-- and (when requested) to the file of outstanding alarms.
+-- This filtering criteria does not apply to the Trap 
+-- Recovery Log. 
+
+alarmFilterTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF AlarmFilterEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "Alarm Filter Table to provide the EMS a facility
+             to request NE to filter out specific alarms."
+        ::= { alarm 3 }
+
+alarmFilterEntry  OBJECT-TYPE
+        SYNTAX AlarmFilterEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+                "Row definition of the alarmFilterTable."
+        INDEX   { alarmFilterIndexValue }
+        ::= { alarmFilterTable 1 }
+
+AlarmFilterEntry ::= SEQUENCE {
+        alarmFilterIndexValue Unsigned32,
+        alarmFilterSource OBJECT IDENTIFIER,
+        alarmFilterSeverityMask Integer32,
+        alarmFilterTypeMask Integer32,
+        alarmFilterRowStatus RowStatus
+}
+
+alarmFilterIndexValue OBJECT-TYPE
+    SYNTAX  Unsigned32(1..65535)
+    MAX-ACCESS not-accessible
+    STATUS  current
+    DESCRIPTION
+          "The unique value that identifies each
+           row in the table."
+    ::= { alarmFilterEntry 1 }
+
+alarmFilterSource OBJECT-TYPE
+        SYNTAX OBJECT IDENTIFIER
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+           "Source to which the alarm filter is applied.
+            If this information is not present, its value should be
+            set to the OBJECT IDENTIFIER { 0.0 }."
+        ::= { alarmFilterEntry 2 }
+
+alarmFilterSeverityMask OBJECT-TYPE
+        SYNTAX  Integer32(1..65535)
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+             "The alarm filter severity is implemented as a
+              bit mask. The bits have the following meaning:
+                    Bit 1 = clear,
+                    Bit 2 = warning,
+                    Bit 3 = minor,
+                    Bit 4 = major,
+                    Bit 5 = critical. 
+              The severity definitions are per X.733."
+        ::= { alarmFilterEntry 3 }
+
+alarmFilterTypeMask OBJECT-TYPE
+        SYNTAX Integer32(1..65535)
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+           "The alarm type filter is implemented as a bit
+            mask. The bits have the following meaning per
+            X.733/X.736:
+                   Bit 1 = Communication Alarm,
+                   Bit 2 = Quality Of Service Alarm,
+                   Bit 3 = Processing Error Alarm,
+                   Bit 4 = Equipment Alarm,
+                   Bit 5 = Environmental Alarm,
+                   Bit 6 = Integrity Violation Alarm,
+                   Bit 7 = Operational Violation Alarm,
+                   Bit 8 = Physical Violation Alarm,
+                   Bit 9 = Security Violation Alarm,
+                   Bit 10 = Time Domain Violation Alarm."
+        ::= { alarmFilterEntry 4 }
+
+alarmFilterRowStatus OBJECT-TYPE
+       SYNTAX     RowStatus
+       MAX-ACCESS read-create
+       STATUS     current
+       DESCRIPTION
+              "Row management status."
+       ::= { alarmFilterEntry 5 }
+
+
+-- ACTIVE ALARM LIST WITH GENERIC DATA:
+-- The ActiveAlarmGenEntry holds active alarm list with generic data
+-- whose index derives from its alarm ID. 
+-- When an new alarm occurs,
+--  1) an new entry is created on the ActiveAlarmGenTable to hold this
+--     alarm as the active alarm list. 
+--  2) this new active alarm is notified to EMS via an alarm trap.
+--  3) the alarm trap is logged on the AlarmGenTable as history.
+-- When the existing alarm is self-cleared,
+--  1) the corresponding entry on the ActiveAlarmGenTable is removed.
+--  2) this self-cleared alarm is notified to EMS via an alarm trap as
+--     cleared of the severity.
+--  3) the alarm trap is logged on the AlarmGenTable as history.
+-- EMS shall utilize this table to show the alarm list when it starts up,
+-- and to refresh its alarm list when it re-establishes the connection
+-- after link failure.
+
+activeAlarmGenTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF ActiveAlarmGenEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION "Active alarm list with generic information."
+        ::= { alarm 4 }
+
+activeAlarmGenEntry  OBJECT-TYPE
+        SYNTAX ActiveAlarmGenEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+                "Row definition of the activeAlarmGenTable."
+        INDEX   { activeAlarmId }
+        ::= { activeAlarmGenTable 1 }
+
+ActiveAlarmGenEntry ::= SEQUENCE {
+        activeAlarmId Unsigned32,
+        activeAlarmDate OCTET STRING,
+        activeAlarmTime OCTET STRING,
+        activeAlarmNeName OCTET STRING,
+        activeAlarmNeType OCTET STRING,
+        activeAlarmSpecificProblem OCTET STRING,
+        activeAlarmSeverity AlarmSeverity,
+        activeAlarmType AlarmType,
+        activeAlarmProbableCause AlarmProbableCause,
+        activeAlarmSource OBJECT IDENTIFIER
+}
+
+activeAlarmId OBJECT-TYPE
+        SYNTAX  Unsigned32(0..1048575)
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+             "ID of the alarm.
+              This ID is unique on the same NE type, and identifies
+              each row in the table."
+        ::= { activeAlarmGenEntry 1 }
+
+activeAlarmDate OBJECT-TYPE
+        SYNTAX  OCTET STRING(SIZE(10))
+        MAX-ACCESS  read-only
+        STATUS current
+        DESCRIPTION
+            "Date when alarm was raised: MM-DD-YYYY"
+        ::= { activeAlarmGenEntry 2 }
+
+activeAlarmTime OBJECT-TYPE
+        SYNTAX OCTET STRING(SIZE(8))
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "Time when alarm was raised. A value in the format
+             hh:mm:ss. The time is expressed as a 24 hour clock,
+             GMT. Some examples of legal values are: 02:03:33
+             and 14:59:59."
+        ::= { activeAlarmGenEntry 3 }
+
+activeAlarmNeName OBJECT-TYPE
+        SYNTAX OCTET STRING(SIZE(0..255))
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION "NE Name"
+        ::= { activeAlarmGenEntry 4 }
+
+activeAlarmNeType OBJECT-TYPE
+        SYNTAX OCTET STRING(SIZE(0..15))
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION "NE Type"
+        ::= { activeAlarmGenEntry 5 }
+
+activeAlarmSpecificProblem OBJECT-TYPE
+        SYNTAX OCTET STRING(SIZE(0..255))
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION "Alarm description."
+        ::= { activeAlarmGenEntry 6 }
+
+activeAlarmSeverity OBJECT-TYPE
+        SYNTAX AlarmSeverity 
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+             "Alarm severity per X.733.
+              1=clear is never used as activeAlarmSeverity."
+        ::= { activeAlarmGenEntry 7 }
+
+activeAlarmType OBJECT-TYPE
+        SYNTAX AlarmType
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+           "Alarm types per X.733/X.736."
+        ::= { activeAlarmGenEntry 8 }
+
+activeAlarmProbableCause OBJECT-TYPE
+        SYNTAX AlarmProbableCause
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+           "Probable causes per X.733/X.736.
+            Values 1..50 are used with communications alarms.
+            Values 51..100 are used with equipment alarms.
+            Values 101..150 are used with environmental alarms.
+            Values 151..200 are used with processing error alarms.
+            Values 501..600 are used with any of the violation
+            alarm types."
+        ::= { activeAlarmGenEntry 9 }
+
+activeAlarmSource OBJECT-TYPE
+        SYNTAX OBJECT IDENTIFIER
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+           "Source of the alarm. 
+            The SNMP OID for the device will be used.
+            If this information is not present, its value should be
+            set to the OBJECT IDENTIFIER { 0.0 }."
+        ::= { activeAlarmGenEntry 10 }
+
+
+-- EVENT DATA:
+-- eventGenEntry is the generic part of each event sent
+-- to EMS by the NE. It is expected that specific
+-- event data objects (if applicable) will be included
+-- as part of the NE and/or NE types specific events.
+
+eventGenTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF EventGenEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION "Generic part of event."
+        ::= { event 2 }
+
+eventGenEntry  OBJECT-TYPE
+        SYNTAX EventGenEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+                "Row definition of the eventGenTable."
+        INDEX   { eventTrapSequenceNumber }
+        ::= { eventGenTable 1 }
+
+EventGenEntry ::= SEQUENCE {
+        eventTrapSequenceNumber Unsigned32,
+        eventDate  OCTET STRING,
+        eventTime OCTET STRING,
+        eventNeName  OCTET STRING,
+        eventNeType  OCTET STRING,
+        eventDescription OCTET STRING,
+        eventSource OBJECT IDENTIFIER,
+        eventClass INTEGER
+        }
+
+eventTrapSequenceNumber OBJECT-TYPE
+        SYNTAX Unsigned32
+        MAX-ACCESS  not-accessible
+        STATUS current
+        DESCRIPTION  
+              "When a new trap is created, eventTrapLatestSequenceNumber
+               is incremented, and copied to this scalar."
+        ::= { eventGenEntry 1 }
+
+eventDate OBJECT-TYPE
+        SYNTAX  OCTET STRING(SIZE(10))
+        MAX-ACCESS  read-only
+        STATUS current
+        DESCRIPTION
+            "Date when alarm was raised or cleared: MM-DD-YYYY"
+        ::= { eventGenEntry 2 }
+
+eventTime OBJECT-TYPE
+        SYNTAX OCTET STRING(SIZE(8))
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "Time when alarm was raised or cleared. A value in
+             the format hh:mm:ss. The time is expressed as a
+             24 hour clock, GMT. Some examples of legal values
+             are: 02:03:33 and 14:59:59."
+        ::= { eventGenEntry 3 }
+
+eventNeName OBJECT-TYPE
+        SYNTAX OCTET STRING(SIZE(0..255))
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION "NE Name"
+        ::= { eventGenEntry 4 }
+
+eventNeType OBJECT-TYPE
+        SYNTAX OCTET STRING(SIZE(0..15))
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION "NE Name"
+        ::= { eventGenEntry 5 }
+
+eventDescription OBJECT-TYPE
+        SYNTAX  OCTET STRING (SIZE (0..255))
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION "Event description."
+        ::= { eventGenEntry 6 }
+
+eventSource OBJECT-TYPE
+        SYNTAX OBJECT IDENTIFIER
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION "Source of the event.
+                     If this information is not present, its value should be
+            set to the OBJECT IDENTIFIER { 0.0 }."
+        ::= { eventGenEntry 7 }
+
+eventClass OBJECT-TYPE
+        SYNTAX Integer32(1..65535)
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+           "Event class categories such: Procedures,
+            File-system, Database, etc. The full enumeration
+            of event types depends on the NE, and is to be
+            defined by each NE vendor in their respective
+            NE ICD. The EMS will be design to support each
+            NE enumeration."
+        ::= { eventGenEntry 8 }
+
+
+-- EVENT Trap Latest Sequence Number:
+-- When an new event trap is created on the EventGenEntry, this
+-- number is incremented, and then copied as the index for the newly
+-- added entry. EMS shall utilize this object as a trigger to
+-- activate the trap loss recovery when it starts up.
+
+eventTrapLatestSequenceNumber OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS  read-only
+        STATUS current
+        DESCRIPTION  
+               "This scalar contains the sequence number of
+                the last event trap submitted to EMS. The NE
+                is responsible for incrementing it prior to
+                sending an event trap. This counter wraps to 0."
+        ::= { event 3 }
+
+
+-- EVENT FILTERING:
+-- The eventFilter object will be used by the EMS to request
+-- NE to notify only the events which correspond to source
+-- or class values.
+-- Note that this is a different mechanism as compared to alarms
+-- filtering. In alarm filtering, the EMS expects to receive all
+-- alarms, unless suppressed via filters. In event filtering,
+-- the EMS does not expect any events, unless requested via
+-- event filters. 
+
+eventFilterTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF EventFilterEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION 
+            "Table to provide the EMS a facility to request
+             NE to filter for specific events."
+        ::= { event 4 }
+
+eventFilterEntry  OBJECT-TYPE
+        SYNTAX EventFilterEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+                "Row definition of the eventFilterTable."
+        INDEX   { eventFilterIndexValue }
+        ::= { eventFilterTable 1 }
+
+EventFilterEntry ::= SEQUENCE {
+        eventFilterIndexValue Unsigned32,
+        eventFilterSource OBJECT IDENTIFIER,
+        eventFilterClass INTEGER,
+        eventFilterRowStatus RowStatus
+        }
+
+eventFilterIndexValue OBJECT-TYPE
+    SYNTAX  Unsigned32(1..65535)
+    MAX-ACCESS not-accessible
+    STATUS  current
+    DESCRIPTION
+          "The unique value that identifies each
+           row in the table."
+    ::= { eventFilterEntry 1 }
+
+eventFilterSource OBJECT-TYPE
+        SYNTAX  OBJECT IDENTIFIER
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+           "Source to which the event filter is applied.
+            If this information is not present, its value should be
+            set to the OBJECT IDENTIFIER { 0.0 }."
+        ::= { eventFilterEntry 2 }
+
+eventFilterClass OBJECT-TYPE
+        SYNTAX Integer32(1..65535)
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+           "Event class categories such: Equipment, Communication,
+            Database, etc. The full enumeration of event types
+            depends on the NE, and is to be defined by each NE
+            vendor in their respective ICD. The EMS will be
+            design to support each NE enumeration."
+        ::= { eventFilterEntry 3 }
+
+eventFilterRowStatus OBJECT-TYPE
+       SYNTAX     RowStatus
+       MAX-ACCESS read-create
+       STATUS     current
+       DESCRIPTION
+              "Row management status."
+       ::= { eventFilterEntry 4 }
+
+-- FILE DOWNLOAD:
+-- The reliable file transfer mechanism implemented
+-- in this MIB is focused around the ftpDownXferState
+-- object, which identified the current state of the
+-- download process. The EMS requests a download, and
+-- sets this object to 'wait'. When the NE is ready
+-- for the download, it sets this object to 'ready'.
+-- The EMS, which is polling the object (waiting for
+-- the 'ready' state, performs the FTP, and sets the
+-- object to 'complete'. The NE examines the file
+-- transferred, and sets the object to either 'fail'
+-- or 'success'. 
+
+ftpDownTable OBJECT-TYPE 
+        SYNTAX SEQUENCE OF FtpDownEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION " "
+        ::= { ftp 1 }
+
+ftpDownEntry OBJECT-TYPE
+        SYNTAX FtpDownEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "Entry/Row description for the ftpDownTable"
+        INDEX { ftpDownIndex }
+        ::= { ftpDownTable 1 }
+
+FtpDownEntry ::= SEQUENCE {
+        ftpDownIndex INTEGER,
+        ftpDownIpAddress IpAddress,
+        ftpDownFileName OCTET STRING,
+        ftpDownFileType INTEGER,
+        ftpDownFileFormat INTEGER,
+        ftpDownFileSize Unsigned32,
+        ftpDownFileChecksum INTEGER,
+        ftpDownPath OCTET STRING,
+        ftpDownUser OCTET STRING,
+        ftpDownPasswd OCTET STRING,
+        ftpDownXferState INTEGER,
+        ftpDownXferDescription OCTET STRING,
+        ftpDownRowStatus RowStatus
+}
+
+ftpDownIndex OBJECT-TYPE
+        SYNTAX  Integer32(1..65535)
+        MAX-ACCESS not-accessible
+        STATUS  current
+        DESCRIPTION
+            "The unique value that identifies this a row."
+        ::= { ftpDownEntry 1 }
+
+ftpDownIpAddress OBJECT-TYPE
+        SYNTAX IpAddress
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION 
+            "This is the Ftp Server IpAddress to be used to
+             download the file."
+        ::= { ftpDownEntry 2 }
+
+ftpDownFileName OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE (0..100))
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "The file name."
+        ::= { ftpDownEntry 3 }
+
+ftpDownFileType OBJECT-TYPE
+        SYNTAX INTEGER {        
+                   software(1),
+                   configuration(2), 
+                   license(5)
+               }
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "The file type, possible values must be completed."
+        ::= { ftpDownEntry 4 }
+
+ftpDownFileFormat OBJECT-TYPE
+        SYNTAX INTEGER { 
+                   binary(1),
+                   ascii(2) 
+               }
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "The file format to be used to setup the FTP session"
+        ::= { ftpDownEntry 5 }
+
+ftpDownFileSize OBJECT-TYPE
+        SYNTAX Unsigned32(1..1000000000)
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "The file size in bytes."
+        ::= { ftpDownEntry 6 }
+
+ftpDownFileChecksum OBJECT-TYPE
+        SYNTAX Integer32(1..6553500)
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION "The file checksum in bytes."
+        ::= { ftpDownEntry 7 }
+
+ftpDownPath OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE (0..256))
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "This is the path to be used to download the file."
+        ::= { ftpDownEntry 8 }
+
+ftpDownUser OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE(0..31))
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION 
+            "The user name for ftp login"
+        ::= { ftpDownEntry 9 }
+
+ftpDownPasswd OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE(0..31))
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "The password for ftp login"
+        ::= { ftpDownEntry 10 }
+
+ftpDownXferState OBJECT-TYPE
+        SYNTAX INTEGER {
+                   wait(1),
+                   ready(2), 
+                   complete(3), 
+                   fail(4), 
+                   success(5),
+                   processing(6),
+                   consistencyFail(7)
+               }
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION 
+            "Current state of the transfer."
+        ::= { ftpDownEntry 11 }
+
+ftpDownXferDescription OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE (0..1024))
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "Any descriptions associated to any
+             ftpDownXferState change is put in here."
+        ::= { ftpDownEntry 12 }
+
+ftpDownRowStatus OBJECT-TYPE
+        SYNTAX RowStatus
+        MAX-ACCESS read-create
+        STATUS current
+        DESCRIPTION
+            "active(1),
+             notInService(2),
+             createAndGo(4),
+             destory(6)"
+        ::= { ftpDownEntry 13 }
+
+
+-- FILE UPLOAD:
+
+ftpUpTable OBJECT-TYPE 
+        SYNTAX SEQUENCE OF FtpUpEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION " "
+        ::= { ftp 2 }
+
+ftpUpEntry OBJECT-TYPE
+        SYNTAX FtpUpEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "Entry/Row description for the ftpUpTable."
+        INDEX { ftpUpIndex }
+        ::= { ftpUpTable 1 }
+
+FtpUpEntry ::= SEQUENCE {
+        ftpUpIndex INTEGER,
+        ftpUpIpAddress IpAddress,
+        ftpUpFileName OCTET STRING,
+        ftpUpFileType INTEGER,
+        ftpUpFileFormat INTEGER,
+        ftpUpFileSize Unsigned32,
+        ftpUpFileChecksum INTEGER,
+        ftpUpPath OCTET STRING,
+        ftpUpUser OCTET STRING,
+        ftpUpPasswd OCTET STRING,
+        ftpUpXferState INTEGER,
+        ftpUpXferDescription OCTET STRING,
+        ftpUpRowStatus RowStatus
+}
+
+ftpUpIndex OBJECT-TYPE
+    SYNTAX  Integer32(1..65535)
+    MAX-ACCESS not-accessible
+    STATUS  current
+    DESCRIPTION
+        "The unique value that identifies this a row."
+    ::= { ftpUpEntry 1 }
+
+ftpUpIpAddress OBJECT-TYPE
+        SYNTAX IpAddress
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION 
+            "This is the Ftp Server IpAddress to be used to
+             upload the file."
+        ::= { ftpUpEntry 2 }
+
+ftpUpFileName OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE (0..100))
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "The file name, suggested to provide unique file
+             names for most file types, such as: xxxyyyyyy.zzz
+             where xxx is the NE (HPN, PCS, ...) and yyyyyy
+             is the UTC elapsed time and zzz is used for (prf-
+             performance, cnf-configuration, ..), That can
+             minimize the possibility that file name looks
+             different on different platforms."
+        ::= { ftpUpEntry 3 }
+
+ftpUpFileType OBJECT-TYPE
+        SYNTAX INTEGER {        
+            software(1),
+            configuration(2), 
+            license(5)
+                }
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "The file type, possible values must be completed."
+        ::= { ftpUpEntry 4 }
+
+ftpUpFileFormat OBJECT-TYPE
+        SYNTAX INTEGER { 
+            binary(1),
+            ascii(2) 
+                }
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION "The file format to setup the ftp session."
+        ::= { ftpUpEntry 5 }
+
+ftpUpFileSize OBJECT-TYPE
+        SYNTAX Unsigned32(1..1000000000)
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION "The file size in bytes."
+        ::= { ftpUpEntry 6 }
+
+ftpUpFileChecksum OBJECT-TYPE
+        SYNTAX Integer32(1..6553500)
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION "The file size checksum."
+        ::= { ftpUpEntry 7 }
+
+ftpUpPath OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE (0..256))
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "This is the path to be used to determine where
+             the file to be uploaded is located."
+        ::= { ftpUpEntry 8 }
+
+ftpUpUser OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE(0..31))
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION 
+            "The user name for ftp login"
+        ::= { ftpUpEntry 9 }
+
+ftpUpPasswd OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE(0..31))
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "The password for ftp login"
+        ::= { ftpUpEntry 10 }
+
+ftpUpXferState OBJECT-TYPE
+        SYNTAX INTEGER {
+            wait(1),
+            ready(2), 
+            fail(3), 
+            success(4)
+                }
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION "The file format."
+        ::= { ftpUpEntry 11 }
+
+ftpUpXferDescription OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE (0..1024))
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "Any descriptions associated to change of
+             ftpUpXferState."
+        ::= { ftpUpEntry 12 }
+
+ftpUpRowStatus OBJECT-TYPE
+        SYNTAX  RowStatus
+        MAX-ACCESS  read-create
+        STATUS current
+        DESCRIPTION
+            "Row creation/activation or deletion/deactivation state."
+        ::= { ftpUpEntry 13 }
+
+
+-- CALL TRACE VIA FTP: 
+-- To start to collect call trace log(s),
+--  1) a manager creates the target MS list for the call trace on the
+--     CallTraceMsTable.
+--  2) a manager turns on the callTraceOpeMode with callTraceFtpIpAddress,
+--     callTraceFtpUser, callTraceFtpPasswd, callTraceFtpPath, and
+--     callTraceAutoOffTimer.
+-- To stop collecting the call trace log(s),
+--  1) a manager turns off the callTraceOpeMode.
+-- To modify the target MS(s) for the call trace,
+--  1) a manager stops the current call trace if it is currently running.
+--  2) a manager re-creates the target MS list for the call trace on the
+--     CallTraceMsTable.
+--  3) a manager turns on the callTraceOpeMode with callTraceFtpIpAddress,
+--     callTraceFtpUser, callTraceFtpPasswd, callTraceFtpPath, and
+--     callTraceAutoOffTimer.
+
+callTrace    OBJECT IDENTIFIER ::= { debug 1 }
+
+callTraceMsTable OBJECT-TYPE 
+        SYNTAX SEQUENCE OF CallTraceMsEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION " "
+        ::= { callTrace 1 }
+
+callTraceMsEntry OBJECT-TYPE
+        SYNTAX CallTraceMsEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "Entry/Row description for the callTraceMsTable."
+        INDEX { callTraceMsIndex }
+        ::= { callTraceMsTable 1 }
+
+CallTraceMsEntry ::= SEQUENCE {
+        callTraceMsIndex Unsigned32,
+        callTraceMsId MacAddress,
+        callTraceMsRowStatus RowStatus
+}
+
+callTraceMsIndex OBJECT-TYPE
+        SYNTAX Unsigned32
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION "MS table index for call trace"
+        ::= { callTraceMsEntry 1 }
+
+callTraceMsId OBJECT-TYPE
+        SYNTAX MacAddress
+        MAX-ACCESS read-create
+        STATUS current
+        DESCRIPTION "MS ID for call trace"
+	::= { callTraceMsEntry 2 }
+
+callTraceMsRowStatus OBJECT-TYPE
+        SYNTAX RowStatus
+        MAX-ACCESS read-create
+        STATUS current
+        DESCRIPTION 
+              "The status of this conceptual row.
+               To create a row in this table, a manager must
+               set this object to createAndGo(4).
+               Until instances of all corresponding columns are
+               appropriately configured, the value of the
+               corresponding instance of the callTraceMsRowStatus
+               column is 'notReady'.
+               In particular, a newly created row cannot be made
+               active until the corresponding instance of
+               callTraceMsId has been set.
+               The following object can be modified while the
+               value of this object is active(1):
+                 - callTraceMsId
+               To remove a row in this table, a manager must
+               set this object to destroy(6)."
+        ::= { callTraceMsEntry 3 }
+
+callTraceFtpIpAddress OBJECT-TYPE
+        SYNTAX IpAddress
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION "The IP address for ftp"
+        ::= { callTrace 2 }
+
+callTraceFtpUser OBJECT-TYPE
+        SYNTAX OCTET STRING
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION "The user name for ftp login"
+        ::= { callTrace 3 }
+
+callTraceFtpPasswd OBJECT-TYPE
+        SYNTAX OCTET STRING
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION "The password for ftp login"
+        ::= { callTrace 4 }
+
+callTraceFtpPath OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE (0..256))
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "This is the path to be used to determine where
+             the call trace file to be uploaded is located."
+        ::= { callTrace 5 }
+
+callTraceAutoOffTimer OBJECT-TYPE
+        SYNTAX Unsigned32(60..3600)
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            " "
+        ::= { callTrace 6 }
+
+callTraceOpeMode OBJECT-TYPE
+        SYNTAX INTEGER {
+            off(0),
+            on(1)
+                }
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+              "The operation mode of the call trace.               
+               To start call trace, a manager must set this object
+               to on(1) with the corresponding instance of
+               callTraceFtpUser, callTraceFtpPasswd, callTraceFtpPath,
+               and callTraceAutoOffTimer.
+               The following object may not be modified while the
+               value of this object is on(1):
+                 - callTraceFtpUser
+                 - callTraceFtpPasswd
+                 - callTraceFtpPath
+                 - callTraceAutoOffTimer
+               An attempt to set these objects while this object is
+               on(1) will result in an inconsistentValue error.
+               To stop the call trace, a manager must set this
+               object to off(0)."
+	DEFVAL { off }
+        ::= { callTrace 7 }
+
+callTraceState OBJECT-TYPE
+        SYNTAX INTEGER {
+            init(0),
+            processing(1),
+            lastFtpCompleted(2),
+            lastFtpFailed(3)
+                }
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+              "The state of the call trace.
+               When an NE starts up, it sets this object to init(0).
+               When a manager sets callTraceOpeMode to on(1) and then
+               an NE starts to collect call trace logs successfully,
+               the NE sets this object to processing(1).
+               When a manager sets callTraceOpeMode to off(0) while
+               collecting the logs, the NE stops to collect them and
+               starts to upload the collected logs to the manager via
+               FTP. And then, the NE sets this object to
+               lastFtpCompleted(2) or lastFtpFailed(3) according to
+               the status of the FTP.
+               When a manager requests to destory all the rows on
+               callTraceMsTable and then the NE has no active row on
+               that table, the NE sets this object to init(0)."
+	DEFVAL { init }
+        ::= { callTrace 8 }
+
+
+-- BULK PERFORMANCE DATA COLLECTION VIA FTP:
+-- To start to collect bulk performance data,
+--  1) a manager turns on the bulkPmOpeMode with bulkPmFtpIpAddress,
+--     bulkPmFtpUser, bulkPmFtpPasswd, bulkPmFtpPath, and bulkPmFtpInterval.
+-- To stop collecting bulk performance data,
+--  1) a manager turns off the bulkPmOpeMode.
+-- Without specifying performance data, the bulkPmTable, an agent collects
+-- whole available performance data.
+
+bulkPm       OBJECT IDENTIFIER ::= { performance 1 }
+
+bulkPmTable OBJECT-TYPE 
+        SYNTAX SEQUENCE OF BulkPmEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION " "
+        ::= { bulkPm 1 }
+
+bulkPmEntry OBJECT-TYPE
+        SYNTAX BulkPmEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "Entry/Row description for the bulkPmTable."
+        INDEX { bulkPmIndex }
+        ::= { bulkPmTable 1 }
+
+BulkPmEntry ::= SEQUENCE {
+        bulkPmIndex Unsigned32,
+        bulkPmId Unsigned32,
+        bulkPmInterval Unsigned32,
+        bulkPmRowStatus RowStatus
+}
+
+bulkPmIndex OBJECT-TYPE
+        SYNTAX Unsigned32
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION "PM table index for bulk performance"
+        ::= { bulkPmEntry 1 }
+
+bulkPmId OBJECT-TYPE
+        SYNTAX Unsigned32
+        MAX-ACCESS read-create
+        STATUS current
+        DESCRIPTION "PM ID for bulk performance"
+	::= { bulkPmEntry 2 }
+
+bulkPmInterval OBJECT-TYPE
+        SYNTAX Unsigned32
+        MAX-ACCESS read-create
+        STATUS current
+        DESCRIPTION "Interval timer for each PM ID"
+	::= { bulkPmEntry 3 }
+
+bulkPmRowStatus OBJECT-TYPE
+        SYNTAX RowStatus
+        MAX-ACCESS read-create
+        STATUS current
+        DESCRIPTION 
+              "The status of this conceptual row.
+               To create a row in this table, a manager must
+               set this object to either createAndGo(4).
+               Until instances of all corresponding columns are
+               appropriately configured, the value of the
+               corresponding instance of the bulkPmRowStatus
+               column is 'notReady'.
+               In particular, a newly created row cannot be made
+               active until the corresponding instances of
+               bulkPmId and bulkPmInterval have been set.
+               The following object may not be modified while the
+               value of this object is active(1):
+                 - bulkPmId
+                 - bulkPmInterval
+               An attempt to set this object while the value of
+               bulkPmRowStatus is active(1) will result in
+               an inconsistentValue error.
+               To remove a row in this table, a manager must
+               set this object to destroy(6)."
+        ::= { bulkPmEntry 4 }
+
+bulkPmFtpIpAddress OBJECT-TYPE
+        SYNTAX IpAddress
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION "The IP address for ftp"
+        ::= { bulkPm 2 }
+
+bulkPmFtpUser OBJECT-TYPE
+        SYNTAX OCTET STRING
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION "The user name for ftp login"
+        ::= { bulkPm 3 }
+
+bulkPmFtpPasswd OBJECT-TYPE
+        SYNTAX OCTET STRING
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION "The password for ftp login"
+        ::= { bulkPm 4 }
+
+bulkPmFtpPath OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE (0..256))
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "This is the path to be used to determine where
+             the bulk performance file to be uploaded is located."
+        ::= { bulkPm 5 }
+
+bulkPmFtpInterval OBJECT-TYPE
+        SYNTAX Unsigned32(60..3600)
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "This is the interval timer on how often FTP is occurred."
+	DEFVAL { 600 }
+        ::= { bulkPm 6 }
+
+bulkPmOpeMode OBJECT-TYPE
+        SYNTAX INTEGER {
+            off(0),
+            on(1)
+                }
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+              "The operation mode of the bulk performance.
+               To start to collect bulk performance, a manager must
+               set this object to on(1) with the corresponding instances
+               of bulkPmFtpUser, bulkPmFtpPasswd, bulkPmFtpPath, and
+               bulkPmFtpInterval.
+               The following objects may not be modified while the
+               value of this object is on(1):
+                 - bulkPmFtpUser
+                 - bulkPmFtpPasswd
+                 - bulkPmFtpPath
+                 - bulkPmFtpInterval
+               An attempt to set these objects while this object is
+               on(1) will result in an inconsistentValue error.
+               To stop collecting the bulk performance, a manager must
+               set this object to off(0)."
+	DEFVAL { off }
+        ::= { bulkPm 7 }
+
+bulkPmState OBJECT-TYPE
+        SYNTAX INTEGER {
+            init(0),
+            processing(1),
+            lastFtpCompleted(2),
+            lastFtpFailed(3)
+                }
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+              "The state of the bulk performance.
+               When an NE starts up, it sets this object to init(0).
+               When a manager sets bulkPmOpeMode to on(1) and then
+               an NE starts to collect performance data successfully,
+               the NE sets this object to processing(1).
+               When a manager sets bulkPmOpeMode to off(0) while
+               collecting the bulk performance, the NE stops to collect
+               them and starts to upload the collected performance data
+               to the manager via FTP. And then, the NE sets this object
+               to lastFtpCompleted(2) or lastFtpFailed(3) according to
+               the status of the FTP.
+               When a manager requests to destory all the rows on
+               bulkPmTable and then the NE has no active row on that
+               table, the NE sets this object to init(0)."
+	DEFVAL { init }
+        ::= { bulkPm 8 }
+
+
+-- NEC WIMAX ENTERPRISE TRAPS:
+
+alarmInfoTrap NOTIFICATION-TYPE
+        OBJECTS {
+            alarmTrapSequenceNumber,
+            alarmDate,
+            alarmTime,
+            alarmNeName,
+            alarmNeType,
+            walarmSeverity,
+            walarmType,
+            probableCause,
+            specificProblem,
+            alarmSource,
+            alarmId
+                }
+        STATUS   current
+        DESCRIPTION
+            "NE notify the EMS of any alarm through this
+             trap. Note that alarmTrapSequenceNumber must not be
+             incremented."
+
+        ::=  { necwimaxNotificationEvents 1 }
+
+eventInfoTrap NOTIFICATION-TYPE
+        OBJECTS {
+            eventTrapSequenceNumber,
+            eventDate,
+            eventTime,
+            eventNeName,
+            eventNeType,
+            eventClass,
+            eventDescription,
+            eventSource
+                }
+        STATUS   current
+        DESCRIPTION
+            "NE notify the EMS of any events through this
+             trap."
+        ::=  { necwimaxNotificationEvents 2 }
+
+healthCheckTrap NOTIFICATION-TYPE
+        OBJECTS {
+            wtimeStamp,
+            trapSequenceCounter
+                }
+        STATUS   current
+        DESCRIPTION
+            "NE notify the EMS with the health-check
+             event. Note healthCheckTrapSeqNumber must not
+             be incremented."
+        ::=  { necwimaxNotificationEvents 3 }
+
+downLoadFileRequestTrap NOTIFICATION-TYPE
+        OBJECTS {
+            ftpDownFileName,
+            ftpDownFileType,
+            ftpDownPath}
+        STATUS  current
+        DESCRIPTION
+            "NE notify the EMS that file is required
+             to be downloaded."
+        ::= { necwimaxNotificationEvents 4 }
+
+upLoadFileRequestTrap NOTIFICATION-TYPE
+        OBJECTS {
+            ftpUpFileName,
+            ftpUpFileType,
+            ftpUpFileFormat,
+            ftpUpFileSize,
+            ftpUpFileChecksum,
+            ftpUpPath}
+        STATUS  current
+        DESCRIPTION
+            "NE notify the EMS that file is required
+             to be downloaded."
+        ::= { necwimaxNotificationEvents 5 }
+
+
+-- OBJECT GROUPS:
+
+commonGroup OBJECT-GROUP
+        OBJECTS         {
+            trapSequenceCounter,
+            wtimeStamp
+        }
+        STATUS          current
+        DESCRIPTION     "The object-group for events."
+        ::= { necwimaxObjectGroups 1 }
+
+alarmGroup OBJECT-GROUP
+        OBJECTS         {
+            alarmTrapSequenceNumber,
+            alarmDate,
+            alarmTime,
+            alarmNeName,
+            alarmNeType,
+            walarmSeverity,
+            walarmType,
+            probableCause,
+            specificProblem,
+            alarmSource,
+            alarmId,
+            activeAlarmId,
+            activeAlarmDate,
+            activeAlarmTime,
+            activeAlarmNeName,
+            activeAlarmNeType,
+            activeAlarmSeverity,
+            activeAlarmType,
+            activeAlarmProbableCause,
+            activeAlarmSpecificProblem,
+            activeAlarmSource,
+            alarmFilterSource,
+            alarmFilterSeverityMask,
+            alarmFilterTypeMask
+        }
+        STATUS          current
+        DESCRIPTION     "The object-group for alarms."
+        ::= { necwimaxObjectGroups 2 }
+
+eventGroup OBJECT-GROUP
+        OBJECTS         {
+            eventDate,
+            eventTime,
+            eventDescription,
+            eventTrapSequenceNumber,
+            eventNeName,
+            eventNeType,
+            eventSource,
+            eventClass,
+            eventFilterSource,
+            eventFilterClass
+        }
+        STATUS          current
+        DESCRIPTION     "The object-group for alarms."
+        ::= { necwimaxObjectGroups 3 }
+
+ftpGroup OBJECT-GROUP
+        OBJECTS         {
+            ftpUpIpAddress,
+            ftpUpFileName,
+            ftpUpFileType,
+            ftpUpFileFormat,
+            ftpUpFileSize,
+            ftpUpFileChecksum,
+            ftpUpPath,
+            ftpUpUser,
+            ftpUpPasswd,
+            ftpUpXferState,
+            ftpUpXferDescription,
+            ftpDownIpAddress,
+            ftpDownFileName,
+            ftpDownFileType,
+            ftpDownFileFormat,
+            ftpDownFileSize,
+            ftpDownFileChecksum,
+            ftpDownPath,
+            ftpDownUser,
+            ftpDownPasswd,
+            ftpDownXferState,
+            ftpDownXferDescription,
+            ftpUpPath
+                }
+        STATUS          current
+        DESCRIPTION     "The object-group for ftp."
+        ::= { necwimaxObjectGroups 4 }
+
+callTraceGroup OBJECT-GROUP
+        OBJECTS         {
+            callTraceMsIndex,
+            callTraceMsId, 
+            callTraceMsRowStatus,
+            callTraceFtpIpAddress,
+            callTraceFtpUser,
+            callTraceFtpPasswd,
+            callTraceFtpPath,
+            callTraceAutoOffTimer,
+            callTraceOpeMode,
+            callTraceState
+        }
+        STATUS          current
+        DESCRIPTION     "The object-group for call trace."
+        ::= { necwimaxObjectGroups 5 }
+
+bulkPmGroup OBJECT-GROUP
+        OBJECTS         {
+            bulkPmIndex,
+            bulkPmId,
+            bulkPmInterval,
+            bulkPmRowStatus,
+            bulkPmFtpIpAddress,
+            bulkPmFtpUser,
+            bulkPmFtpPasswd,
+            bulkPmFtpPath,
+            bulkPmFtpInterval,
+            bulkPmOpeMode,
+            bulkPmState
+        }
+        STATUS          current
+        DESCRIPTION     "The object-group for bulk performance."
+        ::= { necwimaxObjectGroups 6 }
+
+eventNotificationGroup NOTIFICATION-GROUP
+        NOTIFICATIONS {
+            alarmInfoTrap,
+            healthCheckTrap,
+            downLoadFileRequestTrap,
+            upLoadFileRequestTrap
+        }
+        STATUS current
+        DESCRIPTION "The events for a controller"
+        ::= { event 5 }
+
+END
