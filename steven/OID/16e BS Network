@@ -1,0 +1,58 @@
+Use ASN Gateway(true)
+ASMAX-EBS-MIB::asxEbsAsnCfgUseAsnGateway.1 (1.3.6.1.4.1.989.1.16.2.7.3.6.1.2.1):1
+
+ASN Gateway Protocol Family(Generic[hardcode])(Integer32)
+ASMAX-EBS-MIB::asxEbsBsCfgAsnGatewayProtocolFamily.1 (1.3.6.1.4.1.989.1.16.2.7.4.1.1.12.1):0
+
+ASN Gateway Protocol Version:R1.0v1.2(only one option)(Integer32)
+ASMAX-EBS-MIB::asxEbsBsCfgAsnGatewayProtocolVersion.1 (1.3.6.1.4.1.989.1.16.2.7.4.1.1.13.1):3
+
+ASN Gateway Keep alive method(0:disable,1:r6,2:ping)(Integer32)
+ASMAX-EBS-MIB::asxEbsAsnCfgAsnGatewayKeepaliveMethod.1 (1.3.6.1.4.1.989.1.16.2.7.3.6.1.19.1):0
+
+----------------------------------------------
+The IPv4 or IPv6 address used by the BS when talking to this sector's ASN-Gateway
+ASMAX-EBS-MIB::asxEbsAsnCfgBsInetAddress.1 (1.3.6.1.4.1.989.1.16.2.7.3.6.1.8.1):0a030903 (OctString)
+ASMAX-EBS-MIB::asxEbsAsnCfgBsNetMask.1 (1.3.6.1.4.1.989.1.16.2.7.3.6.1.13.1): ffff0000(OctString)
+
+ASMAX-EBS-MIB::asxEbsBsStaticIpRouteRowStatus.1 (1.3.6.1.4.1.989.1.16.2.7.4.3.1.5.1):2(Integer32)
+-----------------------------------------------
+Asn ip address type(Integer32)
+ASMAX-EBS-MIB::asxEbsAsnCfgInetAddressType.1 (1.3.6.1.4.1.989.1.16.2.7.3.6.1.3.1):1
+
+ASN ip address(OctetString)
+ASMAX-EBS-MIB::asxEbsAsnCfgInetAddress.1 (1.3.6.1.4.1.989.1.16.2.7.3.6.1.4.1): 0a0309fa
+
+Paging controller
+type
+
+ASMAX-EBS-MIB::asxEbsAsnCfgPcIpAddressType.1 (1.3.6.1.4.1.989.1.16.2.7.3.6.1.14.1):1(Integer32)
+
+address
+ASMAX-EBS-MIB::asxEbsAsnCfgPcIpAddress.1 (1.3.6.1.4.1.989.1.16.2.7.3.6.1.15.1): 00000000(OctetString)
+
+
+
+Use NTP:True(Integer32)
+ASMAX-EBS-MIB::asxEbsBsCfgUseNtp.1 (1.3.6.1.4.1.989.1.16.2.7.4.1.1.37.1):1
+
+ASMAX-EBS-MIB::asxEbsBsNtpServerRowStatus.1 (1.3.6.1.4.1.989.1.16.2.7.4.4.1.4.1):2(Integer32)
+
+NTP address Type:(ipv4)(Integer32)
+ASMAX-EBS-MIB::asxEbsBsNtpServerIpAddressType.1 (1.3.6.1.4.1.989.1.16.2.7.4.4.1.2.1):1
+
+Ntp address:10.3.9.254(OctetString)
+ASMAX-EBS-MIB::asxEbsBsNtpServerIpAddress.1 (1.3.6.1.4.1.989.1.16.2.7.4.4.1.3.1): 0a0309fe
+
+ASMAX-EBS-MIB::asxEbsBsNtpServerRowStatus.1 (1.3.6.1.4.1.989.1.16.2.7.4.4.1.4.1):1(Integer32)
+
+ASMAX-EBS-MIB::asxEbsBsNtpServerRowStatus.2 (1.3.6.1.4.1.989.1.16.2.7.4.4.1.4.2):6(Integer32)
+ASMAX-EBS-MIB::asxEbsBsNtpServerRowStatus.3 (1.3.6.1.4.1.989.1.16.2.7.4.4.1.4.3):6(Integer32)
+ASMAX-EBS-MIB::asxEbsBsNtpServerRowStatus.4 (1.3.6.1.4.1.989.1.16.2.7.4.4.1.4.4):6(Integer32)
+
+
+
+
+
+
+
