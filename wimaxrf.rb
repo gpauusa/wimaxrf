@@ -25,7 +25,7 @@
 #
 # == Description
 #
-require 'omf-aggmgr/ogs/gridService'
+require 'omf-aggmgr/ogs/legacyGridService'
 require 'snmp/mib'
 require 'omf-aggmgr/ogs_wimaxrf/necbs.rb'
 require 'omf-aggmgr/ogs_wimaxrf/airspanbs.rb'
@@ -37,7 +37,7 @@ require 'omf-aggmgr/ogs_wimaxrf/sftablesParser'
 
 CONF_DIR = '/usr/share/omf-aggmgr-5.2/omf-aggmgr/ogs_wimaxrf/'
 
-class WimaxrfService < GridService
+class WimaxrfService < LegacyGridService
   # used to register/mount the service, the service's url will be based on it
   name 'wimaxrf'
   info 'Service to configure and control WIMAX (Basestation) RF Section'

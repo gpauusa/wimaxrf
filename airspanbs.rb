@@ -35,9 +35,10 @@ class BSStat < OML4R::MPBase
   param :dlpdu, :type => :double
 end
 
-EXTRA_AIR_MODULES = ["AIRSPAN-ASMAX-COMMON-MIB",
-                     "ASMAX-EBS-MIB", "ASMAX-ESTATS-MIB",
-                     "WMAN-DEV-MIB", "WMAN-IF2-BS-MIB"]
+EXTRA_AIR_MODULES = []
+#                   ["AIRSPAN-ASMAX-COMMON-MIB",
+#                    "ASMAX-EBS-MIB", "ASMAX-ESTATS-MIB",
+#                    "WMAN-DEV-MIB", "WMAN-IF2-BS-MIB"]
 
 class AirBs < Netdev
   attr_reader :nomobiles, :serial, :tpsduul, :tppduul, :tpsdudl, :tppdud
@@ -124,14 +125,12 @@ class AirBs < Netdev
       debug("Checking mobile stats...")
       get_mobile_stats
       debug("...done")
-      #bsMonitor
     end
     scheduler.every "#{@globalinterval}s" do
       unless @globaloml.nil?
         debug("Global BS Data collection")
         get_bs_main_params
-        #get_bs_pdu_counters
-        # TODO
+        # TODO: global data stats
         BSStat.inject(@frequency, @power, @nomobiles, @tpsduul, @tppduul, @tpsdudl, @tppdudl)
       end
     end
