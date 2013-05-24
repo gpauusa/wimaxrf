@@ -6,34 +6,8 @@ require 'omf-aggmgr/ogs_wimaxrf/circularBuffer'
 require 'omf-aggmgr/ogs_wimaxrf/dpClick1'
 require 'omf-aggmgr/ogs_wimaxrf/dpOpenflow'
 require 'omf-aggmgr/ogs_wimaxrf/authenticator'
-require 'omf-aggmgr/ogs_wimaxrf/oml4r.rb'
+require 'omf-aggmgr/ogs_wimaxrf/measurements'
 require 'rufus/scheduler'
-
-
-class ClStat < OML4R::MPBase
-  version "01"
-  name  :client
-  param :ma
-  param :mac
-  param :ulrssi, :type => :double
-  param :ulcinr, :type => :double
-  param :dlrssi, :type => :double
-  param :dlcinr, :type => :double
-  param :mcsulmod
-  param :mcsdlmod
-end
-
-class BSStat < OML4R::MPBase
-  version "02"
-  name  :bs
-  param :frequency, :type => :double
-  param :power, :type => :double
-  param :noclient
-  param :ulsdu, :type => :double
-  param :ulpdu, :type => :double
-  param :dlsdu, :type => :double
-  param :dlpdu, :type => :double
-end
 
 EXTRA_AIR_MODULES = []
 #                   ["AIRSPAN-ASMAX-COMMON-MIB",
@@ -45,53 +19,14 @@ class AirBs < Netdev
   attr_accessor :dp, :auth
   attr_reader :asnHost, :sndPort, :rcvPort
 
-  attr_reader :localoml, :globaloml
-
-  OMLNAME1 = "wimax_clients#{ClStat.get_ver}"
-  OMLFILE1 = "/var/log/#{OMLNAME1}.dat"
-  OMLNAME2 = "wimax_bss#{BSStat.get_ver}"
-  OMLFILE2 = "/var/log/#{OMLNAME2}.dat"
-
   def initialize(dp, auth, bsconfig, asnconfig)
-    debug("initialize")
-    @localoml = nil
-    @globaloml = nil
     @dp = dp
     @asnHost = asnconfig['asnip'] || 'localhost'
-    nID = bsconfig['bsid'] || Socket.gethostname
-    oml_opts1 = { :expID => OMLNAME1, :appID => OMLNAME1, :nodeID => nID, :omlFile => OMLFILE1 }
-    @localomlfile = OML4R::Oml4r.new(nil,oml_opts1)
-    oml_opts2 = { :expID => OMLNAME2, :appID => OMLNAME2, :nodeID => nID, :omlFile => OMLFILE2 }
-    @globalomlfile = OML4R::Oml4r.new(nil,oml_opts2)
-    if !bsconfig['localoml'].nil?
-      oml_opts1[:omlPort] = "3003"
-      oml_opts1.merge!(bsconfig['localoml'])
-      @localinterval = bsconfig['localoml']['interval'] || 10
-      begin
-        @localoml = OML4R::Oml4r.new(nil,oml_opts1)
-        debug("Send client stats with APP_ID=#{@localoml.appID} node=#{@localoml.nodeID} server:#{@localoml.omlServer} every #{@localinterval} sec.")
-        ClStat.attach(@localoml)
-      rescue Exception => ex
-        debug("Failed to connect with local OML: #{oml_opts1}\n#{ex}")
-        @localoml = nil
-      end
-    end
-    if !bsconfig['globaloml'].nil?
-      oml_opts2[:omlPort] = "3003"
-      oml_opts2.merge!(bsconfig['globaloml'])
-      @globalinterval = bsconfig['globaloml']['interval'] || 300
-      begin
-        @globaloml = OML4R::Oml4r.new(nil,oml_opts2)
-        debug("Send global BS stats with APP_ID=#{@globaloml.appID} node=#{@globaloml.nodeID} server:#{@globaloml.omlServer} every #{@globalinterval} sec." )
-        BSStat.attach(@globaloml)
-      rescue Exception => ex
-        debug("Failed to connect with global OML: #{oml_opts2}\n#{ex}")
-        @globaloml = nil
-      end
-    end
-
     @auth = auth
+
     super(bsconfig)
+
+    @meas = Measurements.new(bsconfig['bsid'], bsconfig['stats'])
 
     EXTRA_AIR_MODULES.each { |mod|
       add_snmp_module(mod)
@@ -117,22 +52,21 @@ class AirBs < Netdev
     }
 
     scheduler = Rufus::Scheduler.start_new
-    scheduler.every "#{@localinterval}s" do
-      debug("Local BS Data collection")
-      get_mobile_stations
+    # Local stats gathering
+    scheduler.every "#{@meas.localinterval}s" do
+      get_mobile_stations()
       debug("Found #{@nomobiles} mobiles")
-      get_bs_stats
+      get_bs_stats()
       debug("Checking mobile stats...")
-      get_mobile_stats
+      get_mobile_stats()
       debug("...done")
     end
-    scheduler.every "#{@globalinterval}s" do
-      unless @globaloml.nil?
-        debug("Global BS Data collection")
-        get_bs_main_params
-        # TODO: global data stats
-        BSStat.inject(@frequency, @power, @nomobiles, @tpsduul, @tppduul, @tpsdudl, @tppdudl)
-      end
+    # Global stats gathering
+    scheduler.every "#{@meas.globalinterval}s" do
+      debug("BS Data collection")
+      get_bs_main_params()
+      get_bs_stats()
+      @meas.bsstats(@frequency, @power, @nomobiles, @tpsduul, @tppduul, @tpsdudl, @tppdudl)
     end
   end
 
@@ -188,22 +122,15 @@ class AirBs < Netdev
 
   def get_mobile_stats
     @mobs.each do |mac, ms|
-      unless @localoml.nil?
-        get_ms_data_stats(ms.snmp_mac)
-        get_ms_rf_stats(ms.snmp_mac)
-        # TODO ClStat.inject(...)
-      end
+      get_ms_stats(ms.snmp_mac)
     end
   end
 
-  def get_ms_data_stats(mac)
+  def get_ms_stats(mac)
     # ASMAX-ESTATS-MIB::asxEstatsActiveMsUlBytes.1.<MacAddr>
     uplink_bytes = snmp_get("1.3.6.1.4.1.989.1.16.2.9.6.1.1.1." + mac).to_i
     # ASMAX-ESTATS-MIB::asxEstatsActiveMsDlBytes.1.<MacAddr>
     downlink_bytes = snmp_get("1.3.6.1.4.1.989.1.16.2.9.6.1.2.1." + mac).to_i
-  end
-
-  def get_ms_rf_stats(mac)
     # ASMAX-ESTATS-MIB::asxEstatsMsDlRssi.1.<MacAddr>
     dl_rssi = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.1.1." + mac).to_i
     # ASMAX-ESTATS-MIB::asxEstatsMsDlCinr.1.<MacAddr>
@@ -214,5 +141,6 @@ class AirBs < Netdev
     ul_cinr = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.5.1." + mac).to_i
     # ASMAX-ESTATS-MIB::asxEstatsMsUlTxPower.1.<MacAddr>
     ul_txpower = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.13.1." + mac).to_i
+#    @meas.clstats(ma, mac, ul_rssi, ul_cinr, dl_rssi, dl_cinr, m.mcsulmod, m.mcs dlmod)
   end
 end

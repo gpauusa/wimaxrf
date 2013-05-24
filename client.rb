@@ -1,4 +1,3 @@
-require 'omf-aggmgr/ogs_wimaxrf/measPoint'  
 
 class Client
   # we should really keep some history rather then just the latest values
