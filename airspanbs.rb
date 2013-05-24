@@ -58,7 +58,9 @@ class AirBs < Netdev
       debug("Found #{@nomobiles} mobiles")
       get_bs_stats()
       debug("Checking mobile stats...")
-      get_mobile_stats()
+      @mobs.each do |mac, ms|
+        get_ms_stats(ms.snmp_mac)
+      end
       debug("...done")
     end
     # Global stats gathering
@@ -120,12 +122,6 @@ class AirBs < Netdev
     end
   end
 
-  def get_mobile_stats
-    @mobs.each do |mac, ms|
-      get_ms_stats(ms.snmp_mac)
-    end
-  end
-
   def get_ms_stats(mac)
     # ASMAX-ESTATS-MIB::asxEstatsActiveMsUlBytes.1.<MacAddr>
     uplink_bytes = snmp_get("1.3.6.1.4.1.989.1.16.2.9.6.1.1.1." + mac).to_i
@@ -141,6 +137,6 @@ class AirBs < Netdev
     ul_cinr = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.5.1." + mac).to_i
     # ASMAX-ESTATS-MIB::asxEstatsMsUlTxPower.1.<MacAddr>
     ul_txpower = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.13.1." + mac).to_i
-#    @meas.clstats(ma, mac, ul_rssi, ul_cinr, dl_rssi, dl_cinr, m.mcsulmod, m.mcs dlmod)
+#    @meas.clstats(ma, mac, ul_rssi, ul_cinr, dl_rssi, dl_cinr, m.mcsulmod, m.mcsdlmod)
   end
 end
