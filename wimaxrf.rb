@@ -57,10 +57,10 @@ class WimaxrfService < LegacyGridService
     raise("Missing default interface configuration") if @@config['datapath']['default_interface'] == nil
     @auth = Authenticator.new() 
     raise("Missing configuration 'database'") if @@config['database'] == nil
-    dbConfig = @@config['database']
-    debug("#{dbConfig}")
-    #file under service directory
-    DataMapper.setup(:default, "sqlite://#{CONF_DIR}/#{dbConfig['dbFile']}")
+    # file under service directory
+    dbFile = "#{CONF_DIR}/#{@@config['database']['dbFile']}"
+    debug("Loading database file #{dbFile}")
+    DataMapper.setup(:default, "sqlite://#{dbFile}")
     DataMapper.auto_upgrade!
     dpconfig = findAllDataPaths()
     dpconfig.each{ |dpc|
