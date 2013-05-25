@@ -81,11 +81,6 @@ class WimaxrfService < LegacyGridService
       @@bs = NecBs.new( @dpath, @auth, config['bs'], config['asngw'] )
       debug("wimaxrf", "NEC basestation loaded")
     end
-    error("Missing configuration 'database'") if @@config['database'] == nil
-    dbConfig = @@config['database']
-    #file under service directory
-    DataMapper.setup(:default, "sqlite://#{CONF_DIR}/#{dbConfig['dbFile']}")
-    DataMapper.auto_upgrade!
 #    if not checkMandatoryParameters
 #      #setMandatoryParameters
 #    end
