@@ -53,10 +53,11 @@ class WimaxrfService < LegacyGridService
   
   def self.configure(config)
     @@config = config
-    raise("Missing basestation configuration section 'bs' in wimaxrf.yaml") if @@config['bs'] == nil
-    raise("Missing default interface configuration") if @@config['datapath']['default_interface'] == nil
+    ['bs', 'database', 'datapath'].each do |sect|
+      raise("Missing configuration section \"#{sect}\" in wimaxrf.yaml") unless @@config[sect]
+    end
+    raise("Missing default_interface in wimaxrf.yaml") unless @@config['datapath']['default_interface']
     @auth = Authenticator.new() 
-    raise("Missing configuration 'database'") if @@config['database'] == nil
     # file under service directory
     dbFile = "#{CONF_DIR}/#{@@config['database']['dbFile']}"
     debug("Loading database file #{dbFile}")
