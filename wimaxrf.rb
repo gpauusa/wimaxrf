@@ -35,7 +35,7 @@ require 'omf-aggmgr/ogs_wimaxrf/sftablesParser'
 require 'omf-aggmgr/ogs_wimaxrf/util'
 require 'omf-aggmgr/ogs_wimaxrf/authenticator'
 
-CONF_DIR = '/usr/share/omf-aggmgr-5.2/omf-aggmgr/ogs_wimaxrf/'
+CONF_DIR = '/usr/share/omf-aggmgr-5.4/omf-aggmgr/ogs_wimaxrf'
 
 class WimaxrfService < LegacyGridService
   # used to register/mount the service, the service's url will be based on it
