@@ -1,10 +1,10 @@
 class Authenticator < MObject
   attr_reader :maclist, :config
-  
+
   def add_client(mac,interface,vlan, ipaddr=nil)
     client = AuthClient.first_or_create(:macaddr=>mac,:vlan=>vlan,:ipaddress=>ipaddr,:interface=>interface)
     client.save
-  end 
+  end
 
   def add_ip_address(mac, ipaddr)
   end
@@ -13,10 +13,11 @@ class Authenticator < MObject
     client = AuthClient.get(mac)
     client.destroy
   end
+
   def del_all_clients()
     AuthClient.destroy
   end
-  
+
   def update_client(mac,uHash={})
     client = AuthClient.get(mac)
     client.update(uHash)
@@ -41,7 +42,4 @@ class Authenticator < MObject
     end
     return clients
   end
-  
-
- end
-
+end

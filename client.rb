@@ -1,4 +1,3 @@
-
 class Client
   # we should really keep some history rather then just the latest values
   attr_reader :mac,:snmp_mac           # Basic MAC addresses
@@ -86,6 +85,4 @@ class Client
   def to_snmp( mac )
     mac.split(":").map{|s| s.to_i(16).to_s}.join(".")
   end
-
-
 end
