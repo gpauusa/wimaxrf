@@ -1,4 +1,3 @@
-require 'socket'
 require 'omf-aggmgr/ogs_wimaxrf/client'
 require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
 require 'omf-aggmgr/ogs_wimaxrf/netdev'
@@ -17,46 +16,66 @@ EXTRA_AIR_MODULES = []
 class AirBs < Netdev
   attr_reader :nomobiles, :serial, :tpsduul, :tppduul, :tpsdudl, :tppdud
   attr_accessor :dp, :auth
-  attr_reader :asnHost, :sndPort, :rcvPort
 
   def initialize(dp, auth, bsconfig, asnconfig)
-    @dp = dp
-    @asnHost = asnconfig['asnip'] || 'localhost'
-    @auth = auth
-
     super(bsconfig)
 
+    @dp = dp
+    @auth = auth
     @meas = Measurements.new(bsconfig['bsid'], bsconfig['stats'])
+    @mobs = MobileClients.new(@dp)
 
     EXTRA_AIR_MODULES.each { |mod|
       add_snmp_module(mod)
     }
 
-    # set frequency
+    # Set frequency
     #snmp_set("wmanIf2BsCmnPhyDownlinkCenterFreq.1", 2572000)
-    get_bs_main_params
-    info("Airspan BS (Serial# #{@serial}) at #{@frequency} MHz with #{@power} dBm")
-    # Prepare constants
-    #@mSDUOID = get_oid("necWimaxBsSsPmDlThroughputSduCounter").to_s
+    get_bs_main_params()
+    info("Airspan BS (Serial# #{@serial}) at #{@frequency} MHz and #{@power} dBm")
 
-    @mobs = MobileClients.new(@dp)
-
-    @traphandler = Thread.new {
-      debug("Creating trap handler")
-      m = SNMP::TrapListener.new do |manager|
-        manager.on_trap_default do |trap|
-          debug trap.inspect
+    debug("Creating trap handler")
+    SNMP::TrapListener.new(:Host => "0.0.0.0") do |manager|
+      # Handle traps for client (de)registration
+      # WMAN-IF2-BS-MIB::wmanif2BsSsRegisterTrap
+      manager.on_trap("1.0.8802.16.2.1.1.2.0.5") do |trap|
+        debug("Received wmanif2BsSsRegisterTrap: #{trap.inspect}")
+        macaddr = nil
+        status = nil
+        trap.each_varbind do |vb|
+          # WMAN-IF2-BS-MIB::wmanif2BsSsNotificationMacAddr
+          if vb.name.to_s == "1.0.8802.16.2.1.1.2.1.1.1"
+            macaddr = arr_to_hex_mac(vb.value)
+          # WMAN-IF2-BS-MIB::wmanIf2BsSsRegisterStatus
+          elsif vb.name.to_s == "1.0.8802.16.2.1.1.2.1.1.8"
+            status = vb.value.to_i
+          end
+        end
+        if macaddr.nil?
+          debug("Missing SsNotificationMacAddr in trap")
+        elsif status == 1 # registration
+          create_ms_datapath(macaddr)
+        elsif status == 2 # deregistration
+          delete_ms_datapath(macaddr)
+        else
+          debug("Missing or invalid SsRegisterStatus in trap")
         end
       end
-      m.join
-    }
+    end
+
+    # TODO: handle already registered clients on startup
+    #root = "1.3.6.1.4.1.989.1.16.2.9.6.1.1.1"
+    #snmp_get_multi(root) do |row|
+    #  mac = row.name.index(root).map {|a| "%02x" % a}.join(":")
+    #  create_ms_datapath(mac)
+    #end
 
     scheduler = Rufus::Scheduler.start_new
     # Local stats gathering
     scheduler.every "#{@meas.localinterval}s" do
+      get_bs_stats()
       get_mobile_stations()
       debug("Found #{@nomobiles} mobiles")
-      get_bs_stats()
       debug("Checking mobile stats...")
       @mobs.each do |mac, ms|
         get_ms_stats(ms.snmp_mac)
@@ -87,8 +106,8 @@ class AirBs < Netdev
   end
 
   def get_bs_stats
-    get_bs_temperature_stats
-    get_bs_voltage_stats
+    get_bs_temperature_stats()
+    get_bs_voltage_stats()
   end
 
   def get_bs_temperature_stats
@@ -108,18 +127,6 @@ class AirBs < Netdev
     rescue Exception => e
       @nomobiles = 0
     end
-    return unless @nomobiles > 0
-    root = "1.3.6.1.4.1.989.1.16.2.9.6.1.1.1"
-    snmp_get_multi(root) do |row|
-      mac = row.name.index(root).map {|a| "%02x" % a}.join(":")
-      aip = @auth.getIP(mac)
-      if aip.nil? then
-        debug "Denied unknown client: "+mac
-      else
-        @mobs.add(mac, aip[1], aip[0])
-        debug "Client ["+mac+"] added to vlan "+aip[1]
-      end
-    end
   end
 
   def get_ms_stats(mac)
@@ -138,5 +145,24 @@ class AirBs < Netdev
     # ASMAX-ESTATS-MIB::asxEstatsMsUlTxPower.1.<MacAddr>
     ul_txpower = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.13.1." + mac).to_i
 #    @meas.clstats(ma, mac, ul_rssi, ul_cinr, dl_rssi, dl_cinr, m.mcsulmod, m.mcsdlmod)
+  end
+
+  def create_ms_datapath(mac)
+    client = @auth.get(mac)
+    if client.nil? then
+      debug "Denied unknown client [#{mac}]"
+    else
+      @mobs.add(mac, client.dpname, client.ipaddress)
+      debug "Client [#{mac}] added to datapath #{client.dpname}"
+    end
+  end
+
+  def delete_ms_datapath(mac)
+    if @mobs.has_mac?(mac) then
+      @mobs.delete(mac)
+      debug "Client [#{mac}] deleted"
+    else
+      debug "Client [#{mac}] is not registered"
+    end
   end
 end
