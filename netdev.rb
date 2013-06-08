@@ -1,9 +1,8 @@
 require 'snmp'
 require 'monitor'
-require 'net/telnet'
-require 'rubygems'
 require 'net/ssh'
 require 'net/scp'
+require 'net/telnet'
 
 class Netdev < MObject
   attr_reader :host, :port
@@ -14,22 +13,20 @@ class Netdev < MObject
     @host = config['ip']
     @port = config['snmp_port'] || 161
     @readcommunity = config['read_community'] || "private"
-    @writecommunity  = config['write_community'] || "private"
+    @writecommunity = config['write_community'] || "private"
     @manager = SNMP::Manager.new(:Host => @host, :Community => @readcommunity,
-                                 :Port=> @port, :WriteCommunty => @writecommunity
-                                )
+                                 :Port => @port, :WriteCommunity => @writecommunity)
     @snmp_lock = Monitor.new
     @telnetuser = config[:telnetuser]
     @telnetpass = config[:telnetpass]
     @telnetprompt = config[:telnetprompt] || "[$%#>] \z/n"
-    if @telnetuser 
-      @sw = Net::Telnet::new("Host" => @host,"Timeout"=> 10,"Prompt" => @telnetuser )
+    if @telnetuser
+      @sw = Net::Telnet::new("Host" => @host, "Timeout" => 10, "Prompt" => @telnetuser)
       sw.login(@telnetuser)
     end
     @sshuser = config[:sshuser] || "root"
     @sshpass = config[:sshpass] || ''
     debug("Initialized networking device at #{@host}")
-
   end
 
   def close
@@ -46,7 +43,6 @@ class Netdev < MObject
     raise "Invalid MAC" unless mac.length == 6
     mac.unpack("CCCCCC").join(".")
   end
-
 
   def telnet_get(command)
     #logs in and retrieves OF info from switch
