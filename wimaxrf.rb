@@ -767,38 +767,38 @@ class WimaxrfService < LegacyGridService
   end
 
   def self.createDatapath(dpc)
-    debug("createDatapath #{dpc['name']}")
+    debug("Creating datapath #{dpc['name']}")
     case dpc['type']
       when 'simple'
-        @dpath[dpc['name'].to_s] = Click1Datapath.new( dpc )
+        @dpath[dpc['name'].to_s] = Click1Datapath.new(dpc)
       when 'click'
-        @dpath[dpc['name'].to_s] = Click1Datapath.new( dpc )
+        @dpath[dpc['name'].to_s] = Click1Datapath.new(dpc)
       when 'mf'
-        @dpath[dpc['name'].to_s] = MFristDatapath.new( dpc )
+        @dpath[dpc['name'].to_s] = MFirstDatapath.new(dpc)
       when 'openflow'
-        @dpath[dpc['name'].to_s] = OpenFlowDatapath.new( dpc )
+        @dpath[dpc['name'].to_s] = OpenFlowDatapath.new(dpc)
       else
-        raise("Unknown datapath type #{dpc['type']} for vlan = #{dpc['name']}")
+        raise("Unknown datapath type \"#{dpc['type']}\" for vlan #{dpc['name']}")
     end
   end
 
   def self.deleteDataPath(vlan,interface)
     message = ''
     begin
-      if vlan!='0'
+      if vlan != '0'
         dp = Datapath.get(interface,vlan)
         if dp != nil
           # check is there any client with this vlan
           nodes = @auth.list_clients(interface,vlan)
           if nodes.empty?
             # if type click vconfig del
-            if dp.type=='click' and @manageInterface
+            if dp.type == 'click' and @manageInterface
               command = "vconfig rem #{interface}.#{vlan}"
               if not system(command)
                 message = "Cannot delete datapath; command #{command} failed with #{$?.exitstatus}"
               end
             end
-            dpname=dp.name
+            dpname = dp.name
             if dp.destroy
               #remove from hash
               @dpath.delete(dpname)
