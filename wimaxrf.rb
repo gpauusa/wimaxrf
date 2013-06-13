@@ -26,7 +26,6 @@
 # == Description
 #
 require 'omf-aggmgr/ogs/legacyGridService'
-require 'snmp/mib'
 require 'omf-aggmgr/ogs_wimaxrf/dpClick1.rb'
 require 'omf-aggmgr/ogs_wimaxrf/dpOpenflow.rb'
 require 'omf-aggmgr/ogs_wimaxrf/dpMFirst.rb'
@@ -35,7 +34,7 @@ require 'omf-aggmgr/ogs_wimaxrf/sftablesParser'
 require 'omf-aggmgr/ogs_wimaxrf/util'
 require 'omf-aggmgr/ogs_wimaxrf/authenticator'
 
-CONF_DIR = '/usr/share/omf-aggmgr-5.4/omf-aggmgr/ogs_wimaxrf'
+WIMAXRF_DIR = File.expand_path(File.dirname(__FILE__))
 
 class WimaxrfService < LegacyGridService
   # used to register/mount the service, the service's url will be based on it
@@ -58,7 +57,7 @@ class WimaxrfService < LegacyGridService
 
     @auth = Authenticator.new
 
-    dbFile = "#{CONF_DIR}/#{@@config['database']['dbFile']}"
+    dbFile = "#{WIMAXRF_DIR}/#{@@config['database']['dbFile']}"
     debug("Loading database file #{dbFile}")
     DataMapper.setup(:default, "sqlite://#{dbFile}")
     DataMapper.auto_upgrade!
@@ -85,7 +84,7 @@ class WimaxrfService < LegacyGridService
 #    end
   end
 
-#  eval(File.open('/usr/share/omf-aggmgr-5.4/omf-aggmgr/ogs_wimaxrf/necurls.rb').read)
+#  eval(File.open("#{WIMAXRF_DIR}/necurls.rb").read)
 
   def self.findAllDataPaths()
     result = Datapath.all()
@@ -684,7 +683,7 @@ class WimaxrfService < LegacyGridService
 #  s_description "Restore Base Station parameters from default configuration"
 #  service 'bs/default' do |req, res|
 #    responseText=''
-#    aFileName = "#{CONF_DIR}/#{@@config['reset']['file']}"
+#    aFileName = "#{WIMAXRF_DIR}/#{@@config['reset']['file']}"
 #    if File.file?(aFileName)
 #      file = File.open(aFileName, "r")
 #      input = file.read

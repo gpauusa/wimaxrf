@@ -79,21 +79,21 @@
 
   def self.checkAndSetParam( req, name, p )
     if ((p[:name] =~ /\[/) != 0)
-     p "N=#{p[:name]} D=#{default} P=#{param}" 
+     p "N=#{p[:name]} D=#{default} P=#{param}"
      value = getParam(req,name)
     else
       value = getParamDef(req,name,p[:default])
     end
     if value
-      if (p[:type] == 'binary') 
+      if (p[:type] == 'binary')
         value = (value == "true") ? "1" : "0"
       end
       debug("Setting BS parameter #{p[:bsname]} to [#{value}]")
       ret = @@bs.wiset(p[:bsname],value)
       if ret =~ /Err/
         error "Error setting #{name}"
-        raise "Error setting #{name}" 
-      end 
+        raise "Error setting #{name}"
+      end
       return true if ret =~ /reboot/
     end
     return false
@@ -114,15 +114,15 @@
       bsst = bsst.merge(value)
     }
     #bsst = @@bs.wiget(servDef.getCategoryName)[servDef.getCategoryName]
-  
+
     p bsst
     sst = {}
     servDef.each { |n,p|
       next unless p[:bsname]
-      if (p[:type] == 'binary') 
+      if (p[:type] == 'binary')
         sst[n.to_s] = bsst[p[:bsname]] == 1 ? "true" : "false"
       else
-        if bsst[p[:bsname]] 
+        if bsst[p[:bsname]]
           sst[n.to_s] = bsst[p[:bsname]]
         end
       end
@@ -139,13 +139,13 @@
         bsst = bsst.merge(value)
     }
     #bsst = @@bs.wiget(servDef.getCategoryName)[servDef.getCategoryName]
-  
+
     p bsst
     p query,query.empty?
     sst = {}
     servDef.each { |n,p|
       p n,p[:bsname],query.has_key?(n.to_s)
-      
+
       #next unless p[:bsname]
       next unless ( (p[:bsname] && (query.empty?)) || ((not query.empty?) && ( query.has_key?(n.to_s)) && (p[:bsname])))
       param = Hash.new
@@ -154,17 +154,17 @@
         param['value'] = b[0].strip
         c = b[1].split
         param['afterreboot'] =  c[0].strip
-        if (p[:type] == 'binary') 
+        if (p[:type] == 'binary')
           param['afterreboot'] = param['afterreboot'] == "1" ? "true" : "false"
         end
       else
         param['value'] = bsst[p[:bsname]]
       end
-      if (p[:type] == 'binary') 
+      if (p[:type] == 'binary')
         param['value'] = param['value'] == "1" ? "true" : "false"
         param['type'] = p[:type]
       end
-       param['desc'] = p[:help] 
+       param['desc'] = p[:help]
        sst[n.to_s] = param
     }
     sst
@@ -173,9 +173,9 @@
   s_description "Get Basestation Static Parameter"
   service 'bs/get' do |req, res|
     query = getAllParams(req)
-    if not query.empty?        
+    if not query.empty?
       msgEmpty = "Failed to get basestation status"
-      #take first parameter 
+      #take first parameter
       replyXML = buildXMLReply("STATUS", msgEmpty, msgEmpty) { |root, dummy|
         bsEl = root.add_element("BaseStation")
         query.each{|key,value|
@@ -185,9 +185,9 @@
       self.setResponse(res, replyXML)
     else
       raise HTTPStatus::BadRequest, "Missing parameter"
-    end    
+    end
   end
-    
+
 
   s_description "Set Basestation Static Parameter"
   service 'bs/set' do |req, res|
@@ -216,7 +216,7 @@
       }
       attDef
   end
- 
+
 def self.setFromXml(docNew)
   responseText=""
   hash_conf = @@bs.wigetAll()
@@ -227,12 +227,12 @@ def self.setFromXml(docNew)
     # report and error
     responseText='BaseStation attribute is missing'
   else
-    bsEl.elements.each {|c1| 
+    bsEl.elements.each {|c1|
       #go trough all group of attributes
       c1.elements.each {|c|
         # go trough all attributes for the group
         # find that attribute in current configuration
-        
+
         temp = hash_conf[c1.name][c.name]
         if temp==nil
           #report an error
@@ -293,7 +293,7 @@ def self.setMandatoryParameters
   #resultAll is a hash of bs class categories
   #we nedd to integrate all categories in one hash....
   result = Hash.new
-  resultAll.each{|key,value| 
+  resultAll.each{|key,value|
     result.merge!(value)
   }
   bsid = mac2Hex(@@config['bs']['bsid'])
@@ -382,7 +382,7 @@ def self.checkMandatoryParameters
   #resultAll is a hash of bs class categories
   #we nedd to integrate all categories in one hash....
   result = Hash.new
-  resultAll.each{|key,value| 
+  resultAll.each{|key,value|
     result.merge!(value)
   }
   bsid = mac2Hex(@@config['bs']['bsid'])
@@ -446,7 +446,7 @@ end
   s_description "Restore Base Station parameters from default configuration"
   service 'bs/default' do |req, res|
     responseText=''
-    aFileName = "#{CONF_DIR}/#{@@config['reset']['file']}"
+    aFileName = "#{WIMAXRF_DIR}/#{@@config['reset']['file']}"
     if File.file?(aFileName)
       file = File.open(aFileName, "r")
       input = file.read
@@ -456,14 +456,14 @@ end
       responseText = responseText + setFromXml(docNew)
     else
       responseText = "Reset file #{aFileName} DOESN'T exist"
-    end  
+    end
    res.body = responseText
  end
-   
+
   #services defind base on base station param classes
   NecBs::PARAMS_CLASSES.each {|pc|
     claseName = eval pc
-    
+
   s_description claseName.getInfo
   claseName.each { |n,p|
     s_param n,p[:name],p[:help]
@@ -473,16 +473,16 @@ end
     query = getAllParams(req)
     query_string = req.query_string()
     if ((not query.empty?) && (query_string.include? "="))
-      begin 
+      begin
         if processServiceQuerry( claseName, req )
           res.body = "BS needs to be rebooted for changes to take effect"
         else
           res.body = "OK"
-        end         
+        end
       rescue Exception => e
         res.body = e.message
       end
-    else   
+    else
       msgEmpty = "Failed to get basestation status"
       replyXML = buildXMLReply("STATUS", msgEmpty, msgEmpty) { |root, dummy|
         bsEl = root.add_element(claseName.getName.capitalize())
@@ -493,7 +493,7 @@ end
     end
   end
     }
-    
+
   s_description "Set/Get Modulation-coding scheme."
   s_param :dl, '[dl]', 'Array of Dl link profile specification.'
   s_param :ul, '[ul]', 'Array of Up link profile specification.'
@@ -523,7 +523,7 @@ end
       res.body = responseText
     end
   end
-  
+
   def self.setULorDL(name,no,listOfValues)
     profileValues = listOfValues.split(",")
     #profilesValues.sort!
@@ -541,7 +541,7 @@ end
     end
     return ret
   end
-  
+
   def self.getULorDL(name,no)
     d_value = 255
     i=1
@@ -560,10 +560,10 @@ end
     end
     return root
   end
-  
-    
+
+
     #------------ talk to db ---------------#
-    
+
   s_description "This service saves current BS configuration to database."
   s_param :name, 'name', 'Name of configuration.'
   service 'bs/config/save' do |req, res|
@@ -580,14 +580,14 @@ end
     end
     self.setResponse(res,replyXML)
  end
- 
+
   s_description "This service load BS configuration from database."
   s_param :name, 'name', 'Name of configuration.'
   service 'bs/config/load' do |req, res|
     name = getParam(req, :name.to_s)
     conf = Configuration.first(:fields => [:configuration],:name => name)
     xmlConfig = conf.configuration
-    
+
     begin
       if xmlConfig != nil
         docNew = REXML::Document.new(xmlConfig.to_s)
@@ -600,7 +600,7 @@ end
     end
     res.body = responseText
  end
-  
+
  s_description "This service lists names of all BS configurations from database."
   service 'bs/config/list' do |req, res|
     msgEmpty = "There is no saved configurations"
@@ -614,7 +614,7 @@ end
     }
     self.setResponse(res,replyXML)
  end
- 
+
   s_description "This service deletes BS configuration from database."
   s_param :name, 'name', 'Name of configuration.'
   service 'bs/config/delete' do |req, res|
@@ -627,7 +627,7 @@ end
     end
     res.body = responseText
  end
- 
+
  s_description "Show named BS configuration from database."
   s_param :name, 'name', 'Name of configuration.'
   service 'bs/config/show' do |req, res|
@@ -637,6 +637,7 @@ end
     doc = REXML::Document.new(xmlConfig.to_s)
     self.setResponse(res,doc)
  end
+
  # ---------- Implement sftables ------------------#
   #        sftables -L
   s_description "Show sftables list."
@@ -644,5 +645,3 @@ end
     replyXML = SFTableParser.sftableList
     self.setResponse(res,replyXML)
   end
-  
-
