@@ -168,8 +168,8 @@ class WimaxrfService < LegacyGridService
   # - value =  the value for the new XML element to add
   #
   def self.addXMLElement(parent, name, value)
-     el = parent.add_element(name)
-     el.add_text(value)
+    el = parent.add_element(name)
+    el.add_text(value)
   end
 
   def self.addXMLElementFromArray(parent,name,value)
@@ -189,7 +189,7 @@ class WimaxrfService < LegacyGridService
   end
 
   def self.addXMLElementsFromHash(parent, elems, isatt=true)
-    m_isatt=isatt
+    m_isatt = isatt
     elems.each_pair { |key,val|
       if val.is_a?(Hash)
         m_isatt=false
@@ -210,8 +210,8 @@ class WimaxrfService < LegacyGridService
             el.add_text(val)
           end
         end
-       end
-     }
+      end
+    }
   end
 
   def self.getAllParams(req)
@@ -429,16 +429,16 @@ class WimaxrfService < LegacyGridService
 #  end
 
   def self.authorize(req, res)
-   puts "Checking authorization"
-   WEBrick::HTTPAuth.basic_auth(req, res, 'orbit') {|user, pass|
-     # this block returns true if
-     # authentication token is valid
-     isAuth = user == 'gnome' && pass == 'super'
-     puts "user: #{user} pw: #{pass} isAuth: #{isAuth}"
-     isAuth
-   }
-   true
- end
+    puts "Checking authorization"
+    WEBrick::HTTPAuth.basic_auth(req, res, 'orbit') {|user, pass|
+      # this block returns true if
+      # authentication token is valid
+      isAuth = user == 'gnome' && pass == 'super'
+      puts "user: #{user} pw: #{pass} isAuth: #{isAuth}"
+      isAuth
+    }
+    true
+  end
 
 # def self.findAttributeDef(name)
 #   attDef=nil
@@ -883,14 +883,14 @@ class WimaxrfService < LegacyGridService
     setResponse(res, root)
   end
 
-   s_description "Clean all Datapaths "
+  s_description "Delete all datapaths"
   service 'datapath/clean' do |req, res|
     message =''
     @auth.del_all_clients
     dpaths = Datapath.all
     dpaths.each do |dp|
       message = message+"\n" + deleteDataPath(dp.vlan,dp.interface)
-     end
+    end
     res.body = message
   end
 
@@ -910,7 +910,7 @@ class WimaxrfService < LegacyGridService
       replyXML = buildXMLReply("Clients", '', ex)
     end
     self.setResponse(res,replyXML)
- end
+  end
 
   def self.loadDataPath(docNew)
     #get datapath attributes from xml
@@ -954,9 +954,9 @@ class WimaxrfService < LegacyGridService
       responseText = ex
     end
     res.body = responseText
- end
+  end
 
- s_description "This service list all datapath client configurations from database."
+  s_description "This service list all datapath client configurations from database."
   service 'datapath/config/list' do |req, res|
     msgEmpty = "There is no saved datapath configurations"
     result = DataPathConfig.all()
@@ -968,7 +968,7 @@ class WimaxrfService < LegacyGridService
       addXMLElementFromArray(root,"name",listConfig)
     }
     self.setResponse(res,replyXML)
- end
+  end
 
   s_description "This service deletes saved datapath client configuration from database."
   s_param :name, 'name', 'Name of configuration.'
@@ -981,9 +981,9 @@ class WimaxrfService < LegacyGridService
       responseText = "There is no datapath configuration #{name} in database"
     end
     res.body = responseText
- end
+  end
 
- s_description "Show named datapath client configuration from database."
+  s_description "Show named datapath client configuration from database."
   s_param :name, 'name', 'Name of saved status.'
   service 'datapath/config/show' do |req, res|
     name = getParam(req, :name.to_s)
@@ -998,9 +998,9 @@ class WimaxrfService < LegacyGridService
       addXMLElement(root, "ERROR", "#{msg}")
       self.setResponse(res,root)
     end
- end
+  end
 
- s_description "Add client to datapath"
+  s_description "Add client to datapath"
   s_param :vlan, 'vlan', 'Vlan number.'
   s_param :macaddr, 'macaddr', 'Mac address.'
   s_param :ipaddress, 'ipaddress', 'Mac address.'
