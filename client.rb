@@ -13,17 +13,17 @@ class Client
     @ul = nil
     @dl = nil
     @vlan = nil
-    @dpname=nil
-    @basic_measurement = Hash.new()
-    @extended_measurement = Hash.new()
+    @dpname = nil
+    @basic_measurement = Hash.new
+    @extended_measurement = Hash.new
     @tppdudl = @tppduul = @tpsdudl = @tpsduul = 0
     @lastts = nil
     @debug = debug
   end
 
   def du_reading( pduul, pdudl, sduul, sdudl, ts=nil )
-    ts = Time.now.to_f if ts.nil?   
-    if !(@lastts.nil?)
+    ts = Time.now.to_f if ts.nil?
+    if !@lastts.nil?
       tdiff = ts - @lastts
       @tppdudl = 8.0 * (pdudl - @pdudl)/tdiff
       @tppduul = 8.0 * (pduul - @pduul)/tdiff
@@ -31,9 +31,9 @@ class Client
       @tpsduul = 8.0 * (sduul - @sduul)/tdiff
     end
     @pdudl = pdudl
-    @pduul = pduul 
+    @pduul = pduul
     @sdudl = sdudl
-    @sduul = sduul 
+    @sduul = sduul
     @lastts = ts
   end
 

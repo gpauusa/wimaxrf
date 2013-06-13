@@ -9,14 +9,15 @@ class Click1Datapath < DataPath
   attr_reader :click_command, :click_conf
   attr_reader :def_gw, :net_mask, :def_ip
   attr_reader :slices,:auth, :port, :vlan
+
   $asn_gre_conf = "/etc/asnctrl_gre.conf"
-  
-  def onAppEvent (name, id, msg = nil)
+
+  def onAppEvent(name, id, msg = nil)
     puts "ClickDatapath1: name=>'#{name}' id=>'#{id}' msg=>'#{msg}'"
   end
-  
+
   def initialize(config = {})
-   super()
+   super
    @vlan = config['vlan'] || 0
    @port = config['eth_port'] || "eth0"
    @def_gw = config['def_gw'] || "10.41.0.1"
@@ -27,7 +28,7 @@ class Click1Datapath < DataPath
    @click_conf += "-#{@vlan}"
    @app = nil
    @app_id = "CDP-#{@vlan}"
-   puts "Adding #{@app_id}" 
+   puts "Adding #{@app_id}"
   end
 
   def createclickconfiguration(file)
@@ -36,7 +37,7 @@ switch :: EtherSwitch;
 #{@port}_queue :: Queue;
 "
     # If we don't have VLAN or it is 0 then we don;t have vlans
-    if ((@vlan.nil?) || (@vlan == '0')) then 
+    if @vlan.nil? || @vlan == '0'
       file << "
 FromDevice(#{@port}, PROMISC 1) -> [0]switch;
 switch[0] -> #{@port}_queue -> ToDevice(#{port});
@@ -48,8 +49,8 @@ switch[0] -> #{@port}_queue -> ToDevice(#{@port}.#{@vlan});
 "
     end
     i = 1
-    @mobiles.each { |mac,client|
-      next unless (client.ul != nil and client.dl != nil and client.ip != nil);
+    @mobiles.each do |mac, client|
+      next unless (client.ul != nil and client.dl != nil and client.ip != nil)
       file << "// ---  Client #{i} -------- //"
       file << "
 AddressInfo(c_#{i} #{client.ip} #{client.mac});
@@ -72,11 +73,11 @@ cf_#{i}[2] -> Strip(14) -> dlgreq_#{i} :: Queue -> dlgre_#{i};
 ulgre_#{i} -> GetIPAddress(16) -> arq_#{i} -> [#{i}]switch;
 "
       i += 1
-    }
+    end
   end
-  
+
   def stop()
-    return if (@app.nil?)    
+    return if @app.nil?
     begin
       @app.kill(@app_id)
     rescue Exception => ex
@@ -87,11 +88,11 @@ ulgre_#{i} -> GetIPAddress(16) -> arq_#{i} -> [#{i}]switch;
 
   def start()
     return unless (@mobiles.length > 0)
-    File.delete(@click_conf+".bak") if File.exist?(@click_conf+".bak") 
+    File.delete(@click_conf+".bak") if File.exist?(@click_conf+".bak")
     File.rename(@click_conf,@click_conf+".bak") if File.exist?(@click_conf)
-    open(@click_conf, 'w') { |f| 
-      createclickconfiguration(f); 
-      f.close 
+    open(@click_conf, 'w') { |f|
+      createclickconfiguration(f);
+      f.close
     }
     @app = ExecApp.new( @app_id, self, "#{@click_command} #{@click_conf}");
     return(@app)

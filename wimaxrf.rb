@@ -769,9 +769,7 @@ class WimaxrfService < LegacyGridService
   def self.createDatapath(dpc)
     debug("Creating datapath #{dpc['name']}")
     case dpc['type']
-      when 'simple'
-        @dpath[dpc['name'].to_s] = Click1Datapath.new(dpc)
-      when 'click'
+      when 'simple', 'click'
         @dpath[dpc['name'].to_s] = Click1Datapath.new(dpc)
       when 'mf'
         @dpath[dpc['name'].to_s] = MFirstDatapath.new(dpc)
@@ -804,8 +802,8 @@ class WimaxrfService < LegacyGridService
               @dpath.delete(dpname)
               message = "Datapath #{interface}.#{vlan} deleted"
             else
-                message = "Database ERROR for datapath #{vlan}"
-             end
+              message = "Database error for datapath #{vlan}"
+            end
           else
             message = "Cannot delete datapath. There are still clients with vlan=#{vlan}."
           end

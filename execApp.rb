@@ -150,7 +150,7 @@ class ExecApp < MObject
   # @param pipe Pipe to read from
   #
   def monitorAppPipe(name, pipe)
-    Thread.new() {
+    Thread.new {
       begin
         while true do
           s = pipe.readline.chomp
@@ -168,6 +168,7 @@ class ExecApp < MObject
   end
 end
 
+
 if $0 == __FILE__
   MObject.initLog('test')
 
@@ -176,9 +177,9 @@ if $0 == __FILE__
       puts "onAppEvent: name=>'#{name}' id=>'#{id}' msg=>'#{msg}'"
     end
   end
+
 #  w = ExecApp.new(:testApp, TestMock.new, "ping -c 3 external1")
   w = ExecApp.new(:commServer, TestMock.new, '../c/commServer/commServer -d 8 -l - --iface eth1')
-
 #  w = ExecApp.new(:testApp, "foo -c")
   gets
   puts "Threads: #{Thread.list.join(', ')}"

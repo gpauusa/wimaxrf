@@ -4,13 +4,11 @@ require 'omf-aggmgr/ogs_wimaxrf/client'
 require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
 require 'omf-aggmgr/ogs_wimaxrf/netdev'
 require 'omf-aggmgr/ogs_wimaxrf/circularBuffer'
-require 'omf-aggmgr/ogs_wimaxrf/dpClick1'
-require 'omf-aggmgr/ogs_wimaxrf/dpOpenflow'
 require 'omf-aggmgr/ogs_wimaxrf/authenticator'
 require 'omf-aggmgr/ogs_wimaxrf/necbsparams'
 require 'rufus/scheduler'
 
-EXTRA_NEC_MODULES  = ["WMAN-DEV-MIB","WMAN-IF2-MIB","WMAN-IF2M-MIB","NEC-WIMAX-COMMON-REG",
+EXTRA_NEC_MODULES = ["WMAN-DEV-MIB","WMAN-IF2-MIB","WMAN-IF2M-MIB","NEC-WIMAX-COMMON-REG",
   "NEC-WIMAX-COMMON-MIB-MODULE","NEC-WIMAX-BS-DEV-MIB","NEC-WIMAX-BS-IF-MIB"]
 
 ASN_GRE_CONF = '/etc/asnctrl_gre.conf'
@@ -30,9 +28,9 @@ class NecBs < Netdev
     @rcvPort = asnconfig['asnrcvport'] || 54321
     @sndPort = asnconfig['asnsndport'] || 54322
     @auth = auth
-    
+
     super(bsconfig)
-    
+
     @meas = Measurements.new(bsconfig['bsid'], bsconfig['stats'])
 
     EXTRA_NEC_MODULES.each { |mod|
