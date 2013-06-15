@@ -86,52 +86,32 @@ class WimaxrfService < LegacyGridService
 
 #  eval(File.open("#{WIMAXRF_DIR}/necurls.rb").read)
 
-  def self.findAllDataPaths()
-    result = Datapath.all()
-    dtps = Array.new
-    result.each {|dtp|
-      dtconf = Hash.new
-      dtconf['vlan'] = dtp.vlan
-      dtconf['type'] = dtp.type
-      dtconf['name'] = dtp.name
-      dtconf['interface'] = dtp.interface
-      if dtp.dpattributes != nil
-        dtp.dpattributes.each{|att| dtconf[att.name]=att.value }
+  def self.findAllDataPaths
+    datapaths = []
+    Datapath.all.each do |dtp|
+      dpconf = {}
+      dpconf['vlan'] = dtp.vlan
+      dpconf['type'] = dtp.type
+      dpconf['name'] = dtp.name
+      dpconf['interface'] = dtp.interface
+      if dtp.dpattributes
+        dtp.dpattributes.each {|att| dpconf[att.name] = att.value}
       end
-      dtps << dtconf
-    }
-    return dtps
+      datapaths << dpconf
+    end
+    datapaths
   end
 
-  # check database for datapath with vlan
-  def self.checkDatapath(interface,vlan)
-    result = Datapath.get(interface,vlan)
-    if result
-      return true
-    else
-      return false
-    end
+  # check database for datapath with given interface and vlan
+  def self.datapathExists?(interface, vlan)
+    !!Datapath.get(interface, vlan)
   end
 
-  # check interfaces for vlan
-  def self.checkIfDataPath(interface,vlan)
-    result = `ifconfig | grep #{interface}.#{vlan}`
-    if result.empty?
-      # datapath does not exist
-      return false
-    else
-      return true
-    end
-  end
-
-  def self.checkInterface(interface)
-    result = `ifconfig | grep #{interface}`
-    if result.empty?
-      # interface does not exist
-      return false
-    else
-      return true
-    end
+  # returns true if the given interface exists, false otherwise
+  def self.interfaceExists?(interface, vlan=nil)
+    interface += ".#{vlan}" if vlan
+    result = `ip link show | grep "#{interface}:"`
+    !result.empty?
   end
 
 
@@ -717,21 +697,19 @@ class WimaxrfService < LegacyGridService
   end
 
   def self.addDataPath(vlan,type,interface,params)
+    return "Cannot create datapath: interface #{interface} doesn't exist" unless interfaceExists?(interface)
     success = true
     message = "Datapath #{interface} #{vlan} added"
     command = "vconfig add #{interface} #{vlan}"
-    if not checkInterface(interface)
-      return "Cannot create datapath; Interface #{interface} doesn't exist"
-    end
     if @manageInterface
-      if not checkIfDataPath(interface,vlan)
+      if !interfaceExists?(interface, vlan)
         if type == 'click'
-          if vlan!='0' #not checkDatapath(interface,vlan) and
+          if vlan!='0' #not datapathExists?(interface, vlan) and
             if not system(command)
               success = false
               message = "Cannot create datapath; command #{command} failed with #{$?.exitstatus}"
             end
-            if checkDatapath(interface,vlan)
+            if datapathExists?(interface, vlan)
               success = false
             end
           else
@@ -742,14 +720,14 @@ class WimaxrfService < LegacyGridService
         message = "Datapath #{interface}.#{vlan} alerady exists"
       end
     else
-      if not checkIfDataPath(interface,vlan)
+      if !interfaceExists?(interface, vlan)
         succes = false
         message = "Cannot create datapath; Interface #{interface}.#{vlan} doesn't exist"
       end
     end
     # add to database
     if success
-      dpc = Hash.new
+      dpc = {}
       begin
         newDP = Datapath.first_or_create({:vlan=>vlan,:interface=>interface},:type=>type)
         dpc['vlan'] = vlan
@@ -1011,8 +989,8 @@ class WimaxrfService < LegacyGridService
     ipaddress = getParam(req, 'ipaddress')
     interface = getParam(req, 'interface')
     begin
-      if checkDatapath(interface,vlan)
-        @auth.add_client(macaddr,interface,vlan, ipaddress)
+      if datapathExists?(interface, vlan)
+        @auth.add_client(macaddr, interface, vlan, ipaddress)
         res.body = "Client added"
       else
         res.body = "Can not add client, datapath with vlan=#{vlan} does not exist"
@@ -1070,7 +1048,7 @@ class WimaxrfService < LegacyGridService
     updateHash = Hash.new
     updateMobile=false
     message = " "
-    if checkDatapath(interface,vlan)
+    if datapathExists?(interface, vlan)
       if aclient.vlan != vlan or aclient.interface != interface
         updateHash[:vlan]=vlan
         updateHash[:interface]=interface
