@@ -677,71 +677,57 @@ class WimaxrfService < LegacyGridService
 #   res.body = responseText
 # end
 
-  s_description "Add datapath....."
-  s_param :vlan, 'vlan', 'Vlan number.'
-  s_param :type, 'type', 'Type of datapath, can be: simple, click, mf and openflow '
-  s_param :interface, '[interface]', 'Name of the ethernet card that hosts the VLAN'
+  s_description "Add datapath"
+  s_param :type, 'type', 'Type of datapath, can be: simple, click, mf, openflow'
+  s_param :vlan, 'vlan', 'VLAN ID'
+  s_param :interface, '[interface]', 'Name of the network interface that hosts the VLAN'
   service 'datapath/add' do |req, res|
     vlan = getParam(req, 'vlan')
     type = getParam(req, 'type')
     params = getAllParams(req)
-    if(req.query.has_key?('interface'))
-      interface = getParam(req,'interface')
+    if req.query.has_key?('interface')
+      interface = getParam(req, 'interface')
       params.delete('interface')
     else
       interface = @datapathif
     end
     params.delete('vlan')
     params.delete('type')
-    res.body = addDataPath(vlan,type,interface,params)
+    res.body = addDataPath(type, vlan, interface, params)
   end
 
-  def self.addDataPath(vlan,type,interface,params)
+  def self.addDataPath(type,vlan,interface,params)
+    return "Datapath #{interface}-#{vlan} already exists" if datapathExists?(interface, vlan)
     return "Cannot create datapath: interface #{interface} doesn't exist" unless interfaceExists?(interface)
-    success = true
-    message = "Datapath #{interface} #{vlan} added"
-    command = "vconfig add #{interface} #{vlan}"
     if @manageInterface
-      if !interfaceExists?(interface, vlan)
-        if type == 'click'
-          if vlan!='0' #not datapathExists?(interface, vlan) and
-            if not system(command)
-              success = false
-              message = "Cannot create datapath; command #{command} failed with #{$?.exitstatus}"
-            end
-            if datapathExists?(interface, vlan)
-              success = false
-            end
-          else
-            message = "Datapath #{interface}.#{vlan} alerady exists"
-          end
+      if type == 'click' and vlan != '0'
+        if interfaceExists?(interface, vlan)
+          return "Cannot create datapath: manage_interface is true but #{interface}.#{vlan} already exists"
         end
-      else
-        message = "Datapath #{interface}.#{vlan} alerady exists"
+        debug("Creating VLAN #{interface}.#{vlan}")
+        cmd = "ip link add link #{interface} name #{interface}.#{vlan} type vlan id #{vlan}"
+        if not system(cmd)
+          return "Cannot create VLAN: command \"#{cmd}\" failed with status #{$?.exitstatus}"
+        end
       end
-    else
-      if !interfaceExists?(interface, vlan)
-        succes = false
-        message = "Cannot create datapath; Interface #{interface}.#{vlan} doesn't exist"
-      end
+    elsif vlan != '0' and not interfaceExists?(interface, vlan)
+      return "Cannot create datapath: interface #{interface}.#{vlan} doesn't exist"
     end
+
     # add to database
-    if success
-      dpc = {}
-      begin
-        newDP = Datapath.first_or_create({:vlan=>vlan,:interface=>interface},:type=>type)
-        dpc['vlan'] = vlan
-        dpc['type'] = type
-        dpc['name'] = newDP.name
-        params.each {|name,value|
-          dpc[name] = value
-          newDP.dpattributes.first_or_create(:name=>name,:value=>value,:vlan=>vlan)
-        }
-        newDP.save
-        createDatapath(dpc)
-      end
+    newdp = Datapath.first_or_create({:vlan => vlan, :interface => interface}, :type => type)
+    dpc = {}
+    dpc['vlan'] = vlan
+    dpc['type'] = type
+    dpc['name'] = newdp.name
+    params.each do |name, value|
+      dpc[name] = value
+      newdp.dpattributes.first_or_create(:name => name, :value => value, :vlan => vlan)
     end
-    message
+    newdp.save
+
+    createDatapath(dpc)
+    "Datapath #{interface}-#{vlan} added"
   end
 
   def self.createDatapath(dpc)
@@ -754,7 +740,7 @@ class WimaxrfService < LegacyGridService
       when 'openflow'
         @dpath[dpc['name'].to_s] = OpenFlowDatapath.new(dpc)
       else
-        raise("Unknown datapath type \"#{dpc['type']}\" for vlan #{dpc['name']}")
+        raise "Unknown type \"#{dpc['type']}\" for datapath #{dpc['name']}"
     end
   end
 
@@ -897,7 +883,7 @@ class WimaxrfService < LegacyGridService
     type = dp.attributes["type"]
     interface = dp.attributes["interface"]
     debug("#{vlan} #{type} #{interface} ")
-    params = Hash.new
+    params = {}
     dp.elements.each do |att|
       debug("#{att.name}")
       if (att.name <=> "Clients")!=0 #element Clients define clients not datapath attribute
@@ -905,7 +891,7 @@ class WimaxrfService < LegacyGridService
       end
     end
     debug("#{params}")
-    addDataPath(vlan,type,interface,params)
+    addDataPath(type,vlan,interface,params)
     clientsXml = dp.elements["Clients"]
     message = "Complete"
     message = loadClients(interface,vlan,clientsXml)
@@ -938,7 +924,7 @@ class WimaxrfService < LegacyGridService
   service 'datapath/config/list' do |req, res|
     msgEmpty = "There is no saved datapath configurations"
     result = DataPathConfig.all()
-    listConfig = Array.new
+    listConfig = []
     result.each {|conf|
       listConfig << conf.name
     }
@@ -1280,7 +1266,7 @@ class WimaxrfService < LegacyGridService
 #  service 'bs/config/list' do |req, res|
 #    msgEmpty = "There is no saved configurations"
 #    result = Configuration.all()
-#    listConfig = Array.new
+#    listConfig = []
 #    result.each {|conf|
 #      listConfig << conf.name
 #    }
