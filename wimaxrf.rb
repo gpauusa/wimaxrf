@@ -677,7 +677,7 @@ class WimaxrfService < LegacyGridService
 # end
 
   s_description "Add datapath"
-  s_param :type, 'type', 'Type of datapath, can be: simple, click, mf, openflow'
+  s_param :type, 'type', 'Type of datapath, can be: click, mf, openflow'
   s_param :vlan, 'vlan', 'VLAN ID'
   s_param :interface, '[interface]', 'Name of the network interface that hosts the VLAN'
   service 'datapath/add' do |req, res|
@@ -732,7 +732,7 @@ class WimaxrfService < LegacyGridService
   def self.createDatapath(dpc)
     debug("Creating datapath #{dpc['name']}")
     case dpc['type']
-      when 'simple', 'click'
+      when 'click'
         @dpath[dpc['name'].to_s] = Click1Datapath.new(dpc)
       when 'mf'
         @dpath[dpc['name'].to_s] = MFirstDatapath.new(dpc)
