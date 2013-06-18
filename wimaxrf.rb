@@ -677,7 +677,7 @@ class WimaxrfService < LegacyGridService
 # end
 
   s_description "Add datapath"
-  s_param :type, 'type', 'Type of datapath, can be: click, mf, openflow'
+  s_param :type, 'type', 'Type of datapath, can be: click1, click2, mf, openflow'
   s_param :vlan, 'vlan', 'VLAN ID'
   s_param :interface, '[interface]', 'Name of the network interface that hosts the VLAN'
   service 'datapath/add' do |req, res|
@@ -699,7 +699,7 @@ class WimaxrfService < LegacyGridService
     return "Datapath #{interface}-#{vlan} already exists" if datapathExists?(interface, vlan)
     return "Cannot create datapath: interface #{interface} doesn't exist" unless interfaceExists?(interface)
     if @manageInterface
-      if type == 'click' and vlan != '0'
+      if (type == 'click1' or type == 'click2') and vlan != '0'
         if interfaceExists?(interface, vlan)
           return "Cannot create datapath: manage_interface is true but #{interface}.#{vlan} already exists"
         end
@@ -732,8 +732,10 @@ class WimaxrfService < LegacyGridService
   def self.createDatapath(dpc)
     debug("Creating datapath #{dpc['name']}")
     case dpc['type']
-      when 'click'
+      when 'click1'
         @dpath[dpc['name'].to_s] = Click1Datapath.new(dpc)
+      when 'click2'
+        @dpath[dpc['name'].to_s] = Click2Datapath.new(dpc)
       when 'mf'
         @dpath[dpc['name'].to_s] = MFirstDatapath.new(dpc)
       when 'openflow'
@@ -762,8 +764,7 @@ class WimaxrfService < LegacyGridService
           # check is there any client with this vlan
           nodes = @auth.list_clients(interface,vlan)
           if nodes.empty?
-            # if type click vconfig del
-            if dp.type == 'click' and @manageInterface
+            if (dp.type == 'click1' or dp.type == 'click2') and @manageInterface
               command = "vconfig rem #{interface}.#{vlan}"
               if not system(command)
                 message = "Cannot delete datapath; command #{command} failed with #{$?.exitstatus}"
