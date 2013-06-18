@@ -213,7 +213,7 @@ class WimaxrfService < LegacyGridService
     self.setResponse(res, replyXML)
   end
 
-  s_description "Get status of WiMAX RF  service"
+  s_description "Get status of WiMAX RF service"
   service 'bs/status' do |req, res|
     msgEmpty = "Failed to get basestation status"
     replyXML = buildXMLReply("STATUS", msgEmpty, msgEmpty) { |root, dummy|
@@ -223,7 +223,6 @@ class WimaxrfService < LegacyGridService
       pdu = bsEl.add_element("Throughput")
       addXMLElementsFromHash(pdu,@@bs.get_bs_pdu_stats())
       mbEl = bsEl.add_element("Clients")
-
       #add_attribute_hash(mbEl)
     }
     self.setResponse(res, replyXML)
@@ -744,6 +743,16 @@ class WimaxrfService < LegacyGridService
     end
   end
 
+  s_description "Delete datapath"
+  s_param :vlan, 'vlan', 'VLAN ID'
+  s_param :interface, 'interface', 'Name of the network interface that hosts the VLAN'
+  service 'datapath/delete' do |req, res|
+    vlan = getParam(req, 'vlan')
+    interface = getParam(req, 'interface')
+    # delete from database
+    res.body = deleteDataPath(vlan,interface)
+  end
+
   def self.deleteDataPath(vlan,interface)
     message = ''
     begin
@@ -783,18 +792,7 @@ class WimaxrfService < LegacyGridService
     message
   end
 
-  s_description "Delete datapath....."
-  s_param :vlan, 'vlan', 'Vlan number.'
-  s_param :interface, 'interface', 'Name of the ethernet card that hosts the VLAN'
-  service 'datapath/delete' do |req, res|
-    vlan = getParam(req, 'vlan')
-    interface = getParam(req, 'interface')
-    # delete from database
-    res.body = deleteDataPath(vlan,interface)
-  end
-
-
-  s_description "List all datapaths..."
+  s_description "List all available datapaths"
   service 'datapath/list' do |req, res|
     dpaths = Datapath.all
     root = REXML::Element.new("DataPaths")
@@ -810,6 +808,16 @@ class WimaxrfService < LegacyGridService
         end
       end
     end
+    setResponse(res, root)
+  end
+
+  s_description "Get the status of a datapath"
+  s_param :vlan, 'vlan', 'VLAN ID'
+  s_param :interface, 'interface', 'Name of the network interface that hosts the VLAN'
+  service 'datapath/status' do |req, res|
+    vlan = getParam(req, 'vlan')
+    interface = getParam(req, 'interface')
+    root = getDatapathStatus(interface,vlan)
     setResponse(res, root)
   end
 
@@ -837,16 +845,6 @@ class WimaxrfService < LegacyGridService
     root
   end
 
-  s_description "Datapath status..."
-  s_param :vlan, 'vlan', 'Vlan number.'
-  s_param :interface, 'interface', 'Name of the ethernet card that hosts the VLAN'
-  service 'datapath/status' do |req, res|
-    vlan = getParam(req, 'vlan')
-    interface = getParam(req, 'interface')
-    root = getDatapathStatus(interface,vlan)
-    setResponse(res, root)
-  end
-
   s_description "Delete all datapaths"
   service 'datapath/clean' do |req, res|
     message =''
@@ -858,11 +856,10 @@ class WimaxrfService < LegacyGridService
     res.body = message
   end
 
-
   s_description "This service saves current datapath client configuration database."
-  s_param :name, 'name', 'Name of status.'
-  s_param :vlan, 'vlan', 'Vlan number.'
-  s_param :interface, 'interface', 'Name of the ethernet card that hosts the VLAN'
+  s_param :name, 'name', 'Name of status'
+  s_param :vlan, 'vlan', 'VLAN ID'
+  s_param :interface, 'interface', 'Name of the network interface that hosts the VLAN'
   service 'datapath/config/save' do |req, res|
     name = getParam(req, :name.to_s)
     vlan = getParam(req, :vlan.to_s)
@@ -874,6 +871,27 @@ class WimaxrfService < LegacyGridService
       replyXML = buildXMLReply("Clients", '', ex)
     end
     self.setResponse(res,replyXML)
+  end
+
+  s_description "This service loads datapath client configuration from database."
+  s_param :name, 'name', 'Name of client\'s status'
+  service 'datapath/config/load' do |req, res|
+    name = getParam(req, :name.to_s)
+    conf = DataPathConfig.first(:fields => [:status],:name => name)
+    #if config end
+    begin
+      if conf != nil
+    xmlConfig = conf.status
+        docNew = REXML::Document.new(xmlConfig.to_s)
+        #@auth.del_all_clients
+        responseText = loadDataPath(docNew)
+      else
+        responseText = "There is no #{name} datapath configuration saved"
+      end
+    rescue Exception => ex
+      responseText = ex
+    end
+    res.body = responseText
   end
 
   def self.loadDataPath(docNew)
@@ -898,106 +916,6 @@ class WimaxrfService < LegacyGridService
     debug("#{message}")
     message
   end
-
-  s_description "This service load datapath client configuration from database."
-  s_param :name, 'name', 'Name of client\'s status.'
-  service 'datapath/config/load' do |req, res|
-    name = getParam(req, :name.to_s)
-    conf = DataPathConfig.first(:fields => [:status],:name => name)
-    #if config end
-    begin
-      if conf != nil
-    xmlConfig = conf.status
-        docNew = REXML::Document.new(xmlConfig.to_s)
-        #@auth.del_all_clients
-        responseText = loadDataPath(docNew)
-      else
-        responseText = "There is no #{name} datapath configuration saved"
-      end
-    rescue Exception => ex
-      responseText = ex
-    end
-    res.body = responseText
-  end
-
-  s_description "This service list all datapath client configurations from database."
-  service 'datapath/config/list' do |req, res|
-    msgEmpty = "There is no saved datapath configurations"
-    result = DataPathConfig.all()
-    listConfig = []
-    result.each {|conf|
-      listConfig << conf.name
-    }
-    replyXML = buildXMLReply("Status", listConfig, msgEmpty){ |root, dummy|
-      addXMLElementFromArray(root,"name",listConfig)
-    }
-    self.setResponse(res,replyXML)
-  end
-
-  s_description "This service deletes saved datapath client configuration from database."
-  s_param :name, 'name', 'Name of configuration.'
-  service 'datapath/config/delete' do |req, res|
-    name = getParam(req, :name.to_s)
-    conf = DataPathConfig.first(:name => name)
-    if conf.destroy
-      responseText = "Datapath configuration #{name} successfully deleted from database"
-    else
-      responseText = "There is no datapath configuration #{name} in database"
-    end
-    res.body = responseText
-  end
-
-  s_description "Show named datapath client configuration from database."
-  s_param :name, 'name', 'Name of saved status.'
-  service 'datapath/config/show' do |req, res|
-    name = getParam(req, :name.to_s)
-    conf = DataPathConfig.first(:fields => [:status],:name => name)
-    if conf != nil
-      xmlConfig = conf.status
-      doc = REXML::Document.new(xmlConfig.to_s)
-      self.setResponse(res,doc)
-    else
-      root = REXML::Element.new("DataPath")
-      msg = "There is no #{name} datapath configuration saved"
-      addXMLElement(root, "ERROR", "#{msg}")
-      self.setResponse(res,root)
-    end
-  end
-
-  s_description "Add client to datapath"
-  s_param :vlan, 'vlan', 'Vlan number.'
-  s_param :macaddr, 'macaddr', 'Mac address.'
-  s_param :ipaddress, 'ipaddress', 'Mac address.'
-  s_param :interface, 'interface', 'Interface.'
-  service 'datapath/clients/add' do |req, res|
-    macaddr = getParam(req, 'macaddr')
-    vlan = getParam(req, 'vlan')
-    ipaddress = getParam(req, 'ipaddress')
-    interface = getParam(req, 'interface')
-    begin
-      if datapathExists?(interface, vlan)
-        @auth.add_client(macaddr, interface, vlan, ipaddress)
-        res.body = "Client added"
-      else
-        res.body = "Can not add client, datapath with vlan=#{vlan} does not exist"
-      end
-    rescue Exception => e
-      res.body = e.message
-    end
-  end
-
-  s_description "Delete client from datapath"
-  s_param :macaddr, 'macaddr', 'Mac address.'
-  service 'datapath/clients/delete' do |req, res|
-    macaddr = getParam(req, 'macaddr')
-    begin
-      @auth.del_client(macaddr)
-      res.body = "Client #{macaddr} deleted"
-    rescue Exception => e
-      res.body = e.message
-    end
-  end
-
 
   def self.loadClients(interface,vlan,docNew)
     message = " "
@@ -1029,40 +947,89 @@ class WimaxrfService < LegacyGridService
     message
   end
 
-  def self.modifyClient(macaddr,interface,vlan,ipaddress)
-    aclient=@auth.get(macaddr)
-    updateHash = Hash.new
-    updateMobile=false
-    message = " "
-    if datapathExists?(interface, vlan)
-      if aclient.vlan != vlan or aclient.interface != interface
-        updateHash[:vlan]=vlan
-        updateHash[:interface]=interface
-        updateMobile=true
-        message << "Vlan for #{macaddr} updated"
-      end
-    else
-      message << "Can not modify client's vlan, datapath with interface=#{interface} and vlan=#{vlan} does not exist"
-    end
-    if ipaddress!=nil and ipaddress != aclient.ipaddress
-      updateHash[:ipaddress]=ipaddress
-      updateMobile=true
-      message << "\nIP address for #{macaddr} updated"
-    end
-    if updateMobile
-      @auth.update_client(macaddr,updateHash)
-      # We should really check if anything changed before we do this!!!!!!
-      @@bs.modifyMobile(macaddr)
-    end
-    message
+  s_description "This service lists all datapath client configurations from database."
+  service 'datapath/config/list' do |req, res|
+    msgEmpty = "There is no saved datapath configurations"
+    result = DataPathConfig.all()
+    listConfig = []
+    result.each {|conf|
+      listConfig << conf.name
+    }
+    replyXML = buildXMLReply("Status", listConfig, msgEmpty){ |root, dummy|
+      addXMLElementFromArray(root,"name",listConfig)
+    }
+    self.setResponse(res,replyXML)
   end
 
+  s_description "This service deletes saved datapath client configuration from database."
+  s_param :name, 'name', 'Name of configuration'
+  service 'datapath/config/delete' do |req, res|
+    name = getParam(req, :name.to_s)
+    conf = DataPathConfig.first(:name => name)
+    if conf.destroy
+      responseText = "Datapath configuration #{name} successfully deleted from database"
+    else
+      responseText = "There is no datapath configuration #{name} in database"
+    end
+    res.body = responseText
+  end
 
-  s_description "Modify client's vlan and/or IP address..."
-  s_param :vlan, '[vlan]', 'Vlan number.'
-  s_param :interface, '[interface]', 'Interface.'
-  s_param :ipaddress, '[ipaddress]', 'IP address.'
-  s_param :macaddr, 'macaddr', 'Mac address.'
+  s_description "Show named datapath client configuration from database."
+  s_param :name, 'name', 'Name of saved status'
+  service 'datapath/config/show' do |req, res|
+    name = getParam(req, :name.to_s)
+    conf = DataPathConfig.first(:fields => [:status],:name => name)
+    if conf != nil
+      xmlConfig = conf.status
+      doc = REXML::Document.new(xmlConfig.to_s)
+      self.setResponse(res,doc)
+    else
+      root = REXML::Element.new("DataPath")
+      msg = "There is no #{name} datapath configuration saved"
+      addXMLElement(root, "ERROR", "#{msg}")
+      self.setResponse(res,root)
+    end
+  end
+
+  s_description "Add client to datapath"
+  s_param :vlan, 'vlan', 'VLAN ID'
+  s_param :macaddr, 'macaddr', 'Client MAC address'
+  s_param :ipaddress, 'ipaddress', 'Client IP address'
+  s_param :interface, 'interface', 'Datapath interface'
+  service 'datapath/clients/add' do |req, res|
+    macaddr = getParam(req, 'macaddr')
+    vlan = getParam(req, 'vlan')
+    ipaddress = getParam(req, 'ipaddress')
+    interface = getParam(req, 'interface')
+    begin
+      if datapathExists?(interface, vlan)
+        @auth.add_client(macaddr, interface, vlan, ipaddress)
+        res.body = "Client added"
+      else
+        res.body = "Can not add client, datapath with vlan=#{vlan} does not exist"
+      end
+    rescue Exception => e
+      res.body = e.message
+    end
+  end
+
+  s_description "Delete client from datapath"
+  s_param :macaddr, 'macaddr', 'Client MAC address'
+  service 'datapath/clients/delete' do |req, res|
+    macaddr = getParam(req, 'macaddr')
+    begin
+      @auth.del_client(macaddr)
+      res.body = "Client #{macaddr} deleted"
+    rescue Exception => e
+      res.body = e.message
+    end
+  end
+
+  s_description "Change client's VLAN and/or IP address"
+  s_param :macaddr, 'macaddr', 'Client MAC address'
+  s_param :vlan, '[vlan]', 'New VLAN ID'
+  s_param :interface, '[interface]', 'New interface'
+  s_param :ipaddress, '[ipaddress]', 'New IP address'
   service 'datapath/clients/modify' do |req, res|
     macaddr = getParam(req, 'macaddr')
     message = "modifyClient: "
@@ -1094,11 +1061,39 @@ class WimaxrfService < LegacyGridService
     end
   end
 
-  s_description "Current datapaths client configuration"
-  s_param :vlan, '[vlan]', 'Vlan number.'
-  s_param :interface, '[interface]', 'Interface.'
+  def self.modifyClient(macaddr,interface,vlan,ipaddress)
+    aclient=@auth.get(macaddr)
+    updateHash = Hash.new
+    updateMobile=false
+    message = " "
+    if datapathExists?(interface, vlan)
+      if aclient.vlan != vlan or aclient.interface != interface
+        updateHash[:vlan]=vlan
+        updateHash[:interface]=interface
+        updateMobile=true
+        message << "Vlan for #{macaddr} updated"
+      end
+    else
+      message << "Can not modify client's vlan, datapath with interface=#{interface} and vlan=#{vlan} does not exist"
+    end
+    if ipaddress!=nil and ipaddress != aclient.ipaddress
+      updateHash[:ipaddress]=ipaddress
+      updateMobile=true
+      message << "\nIP address for #{macaddr} updated"
+    end
+    if updateMobile
+      @auth.update_client(macaddr,updateHash)
+      # We should really check if anything changed before we do this!!!!!!
+      @@bs.modifyMobile(macaddr)
+    end
+    message
+  end
+
+  s_description "List current clients configuration"
+  s_param :vlan, '[vlan]', 'VLAN ID'
+  s_param :interface, '[interface]', 'Name of the network interface that hosts the VLAN'
   service 'datapath/clients/list' do |req, res|
-  if(req.query.has_key?('vlan'))
+  if req.query.has_key?('vlan')
       vlan = getParam(req,'vlan')
       interface = getParam(req, 'interface')
     else
