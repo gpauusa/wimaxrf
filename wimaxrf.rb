@@ -706,7 +706,7 @@ class WimaxrfService < LegacyGridService
         debug("Creating VLAN #{interface}.#{vlan}")
         cmd = "ip link add link #{interface} name #{interface}.#{vlan} type vlan id #{vlan}"
         if not system(cmd)
-          return "Cannot create VLAN: command \"#{cmd}\" failed with status #{$?.exitstatus}"
+          return "Could not create VLAN: command \"#{cmd}\" failed with status #{$?.exitstatus}"
         end
       end
     elsif vlan != '0' and not interfaceExists?(interface, vlan)
@@ -765,9 +765,10 @@ class WimaxrfService < LegacyGridService
           nodes = @auth.list_clients(interface,vlan)
           if nodes.empty?
             if (dp.type == 'click1' or dp.type == 'click2') and @manageInterface
-              command = "vconfig rem #{interface}.#{vlan}"
-              if not system(command)
-                message = "Cannot delete datapath; command #{command} failed with #{$?.exitstatus}"
+              debug("Deleting VLAN #{interface}.#{vlan}")
+              cmd = "ip link delete #{interface}.#{vlan}"
+              if not system(cmd)
+                message = "Could not delete VLAN: command \"#{cmd}\" failed with status #{$?.exitstatus}"
               end
             end
             dpname = dp.name
