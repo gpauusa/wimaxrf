@@ -683,6 +683,10 @@ class WimaxrfService < LegacyGridService
   service 'datapath/add' do |req, res|
     vlan = getParam(req, 'vlan')
     type = getParam(req, 'type')
+    # backward compatibility
+    if type == 'click'
+      type = 'click1'
+    end
     params = getAllParams(req)
     if req.query.has_key?('interface')
       interface = getParam(req, 'interface')
@@ -699,7 +703,7 @@ class WimaxrfService < LegacyGridService
     return "Datapath #{interface}-#{vlan} already exists" if datapathExists?(interface, vlan)
     return "Cannot create datapath: interface #{interface} doesn't exist" unless interfaceExists?(interface)
     if @manageInterface
-      if (type == 'click1' or type == 'click2') and vlan != '0'
+      if type.start_with?('click') and vlan != '0'
         if interfaceExists?(interface, vlan)
           return "Cannot create datapath: manage_interface is true but #{interface}.#{vlan} already exists"
         end
@@ -732,7 +736,7 @@ class WimaxrfService < LegacyGridService
   def self.createDatapath(dpc)
     debug("Creating datapath #{dpc['name']}")
     case dpc['type']
-      when 'click1'
+      when 'click1', 'click' # backward compatibility
         @dpath[dpc['name'].to_s] = Click1Datapath.new(dpc)
       when 'click2'
         @dpath[dpc['name'].to_s] = Click2Datapath.new(dpc)
@@ -764,7 +768,7 @@ class WimaxrfService < LegacyGridService
           # check is there any client with this vlan
           nodes = @auth.list_clients(interface,vlan)
           if nodes.empty?
-            if (dp.type == 'click1' or dp.type == 'click2') and @manageInterface
+            if dp.type.start_with?('click') and @manageInterface
               debug("Deleting VLAN #{interface}.#{vlan}")
               cmd = "ip link delete #{interface}.#{vlan}"
               if not system(cmd)
