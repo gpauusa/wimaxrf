@@ -1,3 +1,23 @@
+module MacAddress
+  def self.bin2dec(mac)
+    raise "Invalid MAC address '#{mac}'" unless mac.length == 6
+    mac.unpack("CCCCCC").join(".")
+  end
+
+  def self.bin2hex(mac)
+    raise "Invalid MAC address '#{mac}'" unless mac.length == 6
+    mac.unpack("H2H2H2H2H2H2").join(":")
+  end
+
+  def self.dec2hex(mac)
+    mac.split(".").map { |a| "%02x" % a }.join(":")
+  end
+
+  def self.hex2dec(mac)
+    mac.split(":").map { |a| a.to_i(16) }.join(".")
+  end
+end
+
 def ip2Hex(a)
   if a =~ /^0x/
     hexString = a

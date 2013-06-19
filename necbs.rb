@@ -6,6 +6,7 @@ require 'omf-aggmgr/ogs_wimaxrf/netdev'
 require 'omf-aggmgr/ogs_wimaxrf/circularBuffer'
 require 'omf-aggmgr/ogs_wimaxrf/authenticator'
 require 'omf-aggmgr/ogs_wimaxrf/necbsparams'
+require 'omf-aggmgr/ogs_wimaxrf/util'
 require 'rufus/scheduler'
 
 EXTRA_NEC_MODULES = ["WMAN-DEV-MIB","WMAN-IF2-MIB","WMAN-IF2M-MIB","NEC-WIMAX-COMMON-REG",
@@ -205,7 +206,7 @@ class NecBs < Netdev
         #           #Kill the client
         #           debug "Denied unknown client: "+mac
         #         else
-        #           @mobs.add(mac,aip[1],aip[0],arr_to_dec_mac(mac))
+        #           @mobs.add(mac,aip[1],aip[0],MacAddress.bin2dec(mac))
         #           debug "Client ["+mac+"] added to vlan "+aip[1]
         #         end
       }

@@ -1,13 +1,13 @@
 require 'omf-aggmgr/ogs_wimaxrf/client'
 require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
 require 'omf-aggmgr/ogs_wimaxrf/netdev'
-require 'omf-aggmgr/ogs_wimaxrf/circularBuffer'
 require 'omf-aggmgr/ogs_wimaxrf/authenticator'
 require 'omf-aggmgr/ogs_wimaxrf/measurements'
+require 'omf-aggmgr/ogs_wimaxrf/util'
 require 'rufus/scheduler'
 
 EXTRA_AIR_MODULES = []
-#                   ["AIRSPAN-ASMAX-COMMON-MIB",
+#                   ["AIRSPAN-ASMAX-COMMON-MIB", "ASMAX-AD-BRIDGE-MIB",
 #                    "ASMAX-EBS-MIB", "ASMAX-ESTATS-MIB",
 #                    "WMAN-DEV-MIB", "WMAN-IF2-BS-MIB"]
 
@@ -43,7 +43,7 @@ class AirBs < Netdev
         trap.each_varbind do |vb|
           # WMAN-IF2-BS-MIB::wmanif2BsSsNotificationMacAddr
           if vb.name.to_s == "1.0.8802.16.2.1.1.2.1.1.1"
-            macaddr = arr_to_hex_mac(vb.value)
+            macaddr = MacAddress.bin2hex(vb.value)
           # WMAN-IF2-BS-MIB::wmanIf2BsSsRegisterStatus
           elsif vb.name.to_s == "1.0.8802.16.2.1.1.2.1.1.8"
             status = vb.value.to_i

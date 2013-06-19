@@ -1,3 +1,5 @@
+require 'omf-aggmgr/ogs_wimaxrf/util'
+
 class Client
   # we should really keep some history rather then just the latest values
   attr_reader :mac, :snmp_mac                 # Basic MAC addresses
@@ -9,7 +11,7 @@ class Client
 
   def initialize(m, basic, debug=nil)
     @mac = m
-    @snmp_mac = to_snmp(m)
+    @snmp_mac = MacAddress.hex2dec(m)
     @ip = nil
     @ul = nil
     @dl = nil
@@ -70,20 +72,6 @@ class Client
 
   def rssi_reading(rssi)
     @rssi = rssi
-  end
-
-  def to_string_mac(mac)
-    raise "Invalid MAC" unless mac.length == 6
-    mac.unpack("H2H2H2H2H2H2").join(":")
-  end
-
-  def to_snmp_mac(mac)
-    raise "Invalid MAC #{mac}" unless mac.length == 6
-    mac.unpack("CCCCCC").join(".")
-  end
-
-  def to_snmp(mac)
-    mac.split(":").map { |s| s.to_i(16).to_s }.join(".")
   end
 
 end

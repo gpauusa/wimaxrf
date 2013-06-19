@@ -34,16 +34,6 @@ class Netdev < MObject
     @sw.close unless @sw.nil?
   end
 
-  def arr_to_hex_mac(mac)
-    raise "Invalid MAC" unless mac.length == 6
-    mac.unpack("H2H2H2H2H2H2").join(":")
-  end
-
-  def arr_to_dec_mac(mac)
-    raise "Invalid MAC" unless mac.length == 6
-    mac.unpack("CCCCCC").join(".")
-  end
-
   def telnet_get(command)
     #logs in and retrieves OF info from switch
     @sw.cmd(command).split(/\n/)
