@@ -64,7 +64,7 @@ class AirBs < Netdev
     # TODO: handle already registered clients on startup
     #root = "1.3.6.1.4.1.989.1.16.2.9.6.1.1.1"
     #snmp_get_multi(root) do |row|
-    #  mac = row.name.index(root).map {|a| "%02x" % a}.join(":")
+    #  mac = row.name.index(root).map { |a| "%02x" % a }.join(":")
     #  create_ms_datapath(mac)
     #end
 

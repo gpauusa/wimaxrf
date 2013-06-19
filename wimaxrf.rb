@@ -95,7 +95,7 @@ class WimaxrfService < LegacyGridService
       dpconf['name'] = dtp.name
       dpconf['interface'] = dtp.interface
       if dtp.dpattributes
-        dtp.dpattributes.each {|att| dpconf[att.name] = att.value}
+        dtp.dpattributes.each { |att| dpconf[att.name] = att.value }
       end
       datapaths << dpconf
     end
@@ -130,14 +130,14 @@ class WimaxrfService < LegacyGridService
   #
   def self.buildXMLReply(replyName, result, msg, &block)
     root = REXML::Element.new("#{replyName}")
-    if (result == :Error)
+    if result == :Error
       addXMLElement(root, "ERROR", "Error when accessing the Inventory Database")
-    elsif (result == nil || result.empty?)
-    addXMLElement(root, "ERROR", "#{msg}")
+    elsif result == nil || result.empty?
+      addXMLElement(root, "ERROR", "#{msg}")
     else
       yield(root, result)
     end
-    return root
+    root
   end
 
   #
@@ -300,7 +300,7 @@ class WimaxrfService < LegacyGridService
 #      end
 #      return true if ret =~ /reboot/
 #    end
-#    return false
+#    false
 #  end
 
 #  def self.processServiceQuerry( servDef, req )
@@ -312,11 +312,9 @@ class WimaxrfService < LegacyGridService
 #  end
 
 #  def self.processServiceStatusOLD( servDef, req )
-#    bsst = Hash.new
+#    bsst = {}
 #    a = @@bs.wiget(servDef.getCategoryName)
-#    a.each {|key, value|
-#      bsst = bsst.merge(value)
-#    }
+#    a.each { |key, value| bsst = bsst.merge(value) }
 #    #bsst = @@bs.wiget(servDef.getCategoryName)[servDef.getCategoryName]
 #
 #    p bsst
@@ -336,12 +334,10 @@ class WimaxrfService < LegacyGridService
 
 
 #  def self.processServiceStatus( servDef, req )
-#    bsst = Hash.new
+#    bsst = {}
 #    query = getAllParams(req)
 #    a = @@bs.wiget(servDef.getCategoryName)
-#    a.each {|key, value|
-#        bsst = bsst.merge(value)
-#    }
+#    a.each { |key, value| bsst = bsst.merge(value) }
 #    #bsst = @@bs.wiget(servDef.getCategoryName)[servDef.getCategoryName]
 #
 #    p bsst
@@ -352,7 +348,7 @@ class WimaxrfService < LegacyGridService
 #
 #      #next unless p[:bsname]
 #      next unless ( (p[:bsname] && (query.empty?)) || ((not query.empty?) && ( query.has_key?(n.to_s)) && (p[:bsname])))
-#      param = Hash.new
+#      param = {}
 #      if bsst[p[:bsname]] =~ /->/
 #        b = bsst[p[:bsname]].split('->')
 #        param['value'] = b[0].strip
@@ -382,9 +378,7 @@ class WimaxrfService < LegacyGridService
 #      #take first parameter
 #      replyXML = buildXMLReply("STATUS", msgEmpty, msgEmpty) { |root, dummy|
 #        bsEl = root.add_element("BaseStation")
-#        query.each{|key,value|
-#          addXMLElementsFromHash(bsEl,@@bs.wiget(key))
-#        }
+#        query.each { |key,value| addXMLElementsFromHash(bsEl,@@bs.wiget(key)) }
 #      }
 #      self.setResponse(res, replyXML)
 #    else
@@ -398,9 +392,7 @@ class WimaxrfService < LegacyGridService
 #    query = getAllParams(req)
 #    responseText=''
 #    if not query.empty?
-#      query.each{|key,value|
-#        responseText = responseText+"\n"+@@bs.wiset(key,value)
-#      }
+#      query.each { |key,value| responseText = responseText+"\n"+@@bs.wiset(key,value) }
 #      res.body = responseText
 #    else
 #      raise HTTPStatus::BadRequest, "Missing parameter"
@@ -409,19 +401,19 @@ class WimaxrfService < LegacyGridService
 
   def self.authorize(req, res)
     puts "Checking authorization"
-    WEBrick::HTTPAuth.basic_auth(req, res, 'orbit') {|user, pass|
+    WEBrick::HTTPAuth.basic_auth(req, res, 'orbit') do |user, pass|
       # this block returns true if
       # authentication token is valid
       isAuth = user == 'gnome' && pass == 'super'
       puts "user: #{user} pw: #{pass} isAuth: #{isAuth}"
       isAuth
-    }
+    end
     true
   end
 
 # def self.findAttributeDef(name)
 #   attDef=nil
-#   NecBs::PARAMS_CLASSES.each {|pc|
+#   NecBs::PARAMS_CLASSES.each { |pc|
 #    claseName = eval pc
 #    claseName.each { |n,p|
 #      if name == p[:bsname]
@@ -443,9 +435,9 @@ class WimaxrfService < LegacyGridService
 #    # report and error
 #    responseText='BaseStation attribute is missing'
 #  else
-#    bsEl.elements.each {|c1|
+#    bsEl.elements.each { |c1|
 #      #go trough all group of attributes
-#      c1.elements.each {|c|
+#      c1.elements.each { |c|
 #        # go trough all attributes for the group
 #        # find that attribute in current configuration
 #
@@ -488,7 +480,7 @@ class WimaxrfService < LegacyGridService
 #    else
 #      responseText = "No changes made - current configuration is the requested"
 #    end
-#    return responseText
+#    responseText
 #end
 
 
@@ -508,10 +500,8 @@ class WimaxrfService < LegacyGridService
 #  resultAll = @@bs.wiget(className.getCategoryName)
 #  #resultAll is a hash of bs class categories
 #  #we nedd to integrate all categories in one hash....
-#  result = Hash.new
-#  resultAll.each{|key,value|
-#    result.merge!(value)
-#  }
+#  result = {}
+#  resultAll.each { |key,value| result.merge!(value) }
 #  bsid = mac2Hex(@@config['bs']['bsid'])
 #  asngwip = ip2Hex(@@config['asngw']['ip'])
 #  asngwid = id2Hex(@@config['asngw']['id'])
@@ -579,7 +569,7 @@ class WimaxrfService < LegacyGridService
 #  if changed
 #    responseText = responseText +"\n"+"These mandatory parameters will be changed on reboot"
 #  end
-#  return responseText
+#  responseText
 #end
 
 #def self.checkMandatoryParameters
@@ -597,10 +587,8 @@ class WimaxrfService < LegacyGridService
 #  resultAll = @@bs.wiget(className.getCategoryName)
 #  #resultAll is a hash of bs class categories
 #  #we nedd to integrate all categories in one hash....
-#  result = Hash.new
-#  resultAll.each{|key,value|
-#    result.merge!(value)
-#  }
+#  result = {}
+#  resultAll.each { |key,value| result.merge!(value) }
 #  bsid = mac2Hex(@@config['bs']['bsid'])
 #  asngwip = ip2Hex(@@config['asngw']['ip'])
 #  asngwid = id2Hex(@@config['asngw']['id'])
@@ -829,7 +817,7 @@ class WimaxrfService < LegacyGridService
 
   def self.getDatapathStatus(interface,vlan)
     root = REXML::Element.new("DataPath")
-    dpath = Datapath.first(:vlan => vlan,:interface=>interface)
+    dpath = Datapath.first(:vlan => vlan,:interface => interface)
     if dpath != nil
       root.add_attribute("vlan",dpath.vlan )
       root.add_attribute("type", dpath.type)
@@ -872,7 +860,7 @@ class WimaxrfService < LegacyGridService
     interface = getParam(req, :interface.to_s)
     replyXML = getDatapathStatus(interface,vlan)
     begin
-      conf = DataPathConfig.first_or_create({:name=>name}).update({:status=>replyXML.to_s,:vlan=>vlan})
+      conf = DataPathConfig.first_or_create({:name => name}).update({:status => replyXML.to_s, :vlan => vlan})
     rescue Exception => ex
       replyXML = buildXMLReply("Clients", '', ex)
     end
@@ -883,7 +871,7 @@ class WimaxrfService < LegacyGridService
   s_param :name, 'name', 'Name of client\'s status'
   service 'datapath/config/load' do |req, res|
     name = getParam(req, :name.to_s)
-    conf = DataPathConfig.first(:fields => [:status],:name => name)
+    conf = DataPathConfig.first(:fields => [:status], :name => name)
     #if config end
     begin
       if conf != nil
@@ -910,7 +898,7 @@ class WimaxrfService < LegacyGridService
     params = {}
     dp.elements.each do |att|
       debug("#{att.name}")
-      if (att.name <=> "Clients")!=0 #element Clients define clients not datapath attribute
+      if (att.name <=> "Clients") != 0 #element Clients define clients not datapath attribute
         params[att.name]=att.text
       end
     end
@@ -931,22 +919,22 @@ class WimaxrfService < LegacyGridService
         message << "NOT a valid datapath clients configuration"
       else
         message << "Load complete"
-        clients.each {|c|
-          if (c.attributes["macaddr"])
+        clients.each do |c|
+          if c.attributes["macaddr"]
             macaddr = c.attributes["macaddr"]
             ipaddress = c.attributes["ipaddress"]
-          client = @auth.get(macaddr)
-          if not client
-            @auth.add_client(macaddr,interface,vlan,ipaddress)
-            message << "\nCLIENT "+ c.attributes["macaddr"] + ' ADDED'
-          else
-            modifyClient(macaddr,interface,vlan,ipaddress)
-            message << "\nCLIENT "+ c.attributes["macaddr"] + ' MODIFIED'
+            client = @auth.get(macaddr)
+            if not client
+              @auth.add_client(macaddr,interface,vlan,ipaddress)
+              message << "\nCLIENT "+ c.attributes["macaddr"] + ' ADDED'
+            else
+              modifyClient(macaddr,interface,vlan,ipaddress)
+              message << "\nCLIENT "+ c.attributes["macaddr"] + ' MODIFIED'
+            end
           end
         end
-      }
-    end
-    rescue Exception=>ex
+      end
+    rescue Exception => ex
       MObject.debug("#{ex}\n(at #{ex.backtrace})")
       message = ex
     end
@@ -958,13 +946,11 @@ class WimaxrfService < LegacyGridService
     msgEmpty = "There is no saved datapath configurations"
     result = DataPathConfig.all()
     listConfig = []
-    result.each {|conf|
-      listConfig << conf.name
-    }
-    replyXML = buildXMLReply("Status", listConfig, msgEmpty){ |root, dummy|
+    result.each { |conf| listConfig << conf.name }
+    replyXML = buildXMLReply("Status", listConfig, msgEmpty) do |root, dummy|
       addXMLElementFromArray(root,"name",listConfig)
-    }
-    self.setResponse(res,replyXML)
+    end
+    self.setResponse(res, replyXML)
   end
 
   s_description "This service deletes saved datapath client configuration from database."
@@ -984,7 +970,7 @@ class WimaxrfService < LegacyGridService
   s_param :name, 'name', 'Name of saved status'
   service 'datapath/config/show' do |req, res|
     name = getParam(req, :name.to_s)
-    conf = DataPathConfig.first(:fields => [:status],:name => name)
+    conf = DataPathConfig.first(:fields => [:status], :name => name)
     if conf != nil
       xmlConfig = conf.status
       doc = REXML::Document.new(xmlConfig.to_s)
@@ -1069,7 +1055,7 @@ class WimaxrfService < LegacyGridService
 
   def self.modifyClient(macaddr,interface,vlan,ipaddress)
     aclient=@auth.get(macaddr)
-    updateHash = Hash.new
+    updateHash = {}
     updateMobile=false
     message = " "
     if datapathExists?(interface, vlan)
@@ -1123,7 +1109,7 @@ class WimaxrfService < LegacyGridService
 
 
 #  #services defind base on base station param classes
-#  NecBs::PARAMS_CLASSES.each {|pc|
+#  NecBs::PARAMS_CLASSES.each { |pc|
 #    claseName = eval pc
 #
 #  s_description claseName.getInfo
@@ -1201,7 +1187,7 @@ class WimaxrfService < LegacyGridService
 #      key = (name+k.to_s).to_sym
 #      @@bs.wiset(key, d_value)
 #    end
-#    return ret
+#    ret
 #  end
 
 #  def self.getULorDL(name,no)
@@ -1220,7 +1206,7 @@ class WimaxrfService < LegacyGridService
 #        addXMLElement(root, key, value.to_s)
 #      end
 #    end
-#    return root
+#    root
 #  end
 
 
@@ -1236,7 +1222,7 @@ class WimaxrfService < LegacyGridService
 #        addXMLElementsFromHash(bsEl,@@bs.wigetAll())
 #      }
 #    begin
-#      conf = Configuration.first_or_create({:name=>name}).update({:configuration=>replyXML.to_s})
+#      conf = Configuration.first_or_create({:name => name}).update({:configuration => replyXML.to_s})
 #    rescue Exception => ex
 #      replyXML = buildXMLReply("Configuration", '', ex)
 #    end
@@ -1247,7 +1233,7 @@ class WimaxrfService < LegacyGridService
 #  s_param :name, 'name', 'Name of configuration.'
 #  service 'bs/config/load' do |req, res|
 #    name = getParam(req, :name.to_s)
-#    conf = Configuration.first(:fields => [:configuration],:name => name)
+#    conf = Configuration.first(:fields => [:configuration], :name => name)
 #    xmlConfig = conf.configuration
 #
 #    begin
@@ -1268,9 +1254,7 @@ class WimaxrfService < LegacyGridService
 #    msgEmpty = "There is no saved configurations"
 #    result = Configuration.all()
 #    listConfig = []
-#    result.each {|conf|
-#      listConfig << conf.name
-#    }
+#    result.each { |conf| listConfig << conf.name }
 #    replyXML = buildXMLReply("Configurations", listConfig, msgEmpty){ |root, dummy|
 #      addXMLElementFromArray(root,"name",listConfig)
 #    }
@@ -1294,7 +1278,7 @@ class WimaxrfService < LegacyGridService
 #  s_param :name, 'name', 'Name of configuration.'
 #  service 'bs/config/show' do |req, res|
 #    name = getParam(req, :name.to_s)
-#    conf = Configuration.first(:fields => [:configuration],:name => name)
+#    conf = Configuration.first(:fields => [:configuration], :name => name)
 #    xmlConfig = conf.configuration
 #    doc = REXML::Document.new(xmlConfig.to_s)
 #    self.setResponse(res,doc)

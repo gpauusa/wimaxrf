@@ -1,8 +1,9 @@
 class Authenticator < MObject
   attr_reader :maclist, :config
 
-  def add_client(mac,interface,vlan, ipaddr=nil)
-    client = AuthClient.first_or_create(:macaddr=>mac,:vlan=>vlan,:ipaddress=>ipaddr,:interface=>interface)
+  def add_client(mac, interface, vlan, ipaddr=nil)
+    client = AuthClient.first_or_create(:macaddr => mac, :vlan => vlan,
+                                        :ipaddress => ipaddr, :interface => interface)
     client.save
   end
 
@@ -14,32 +15,31 @@ class Authenticator < MObject
     client.destroy
   end
 
-  def del_all_clients()
+  def del_all_clients
     AuthClient.destroy
   end
 
-  def update_client(mac,uHash={})
+  def update_client(mac, uHash={})
     client = AuthClient.get(mac)
     client.update(uHash)
   end
 
   def get(mac)
-    return AuthClient.get(mac)
+    AuthClient.get(mac)
   end
 
   def getIP(mac)
     client = AuthClient.get(mac)
-    return nil if (client.nil?)
-    return client.ipaddress, client.vlan
+    client.nil? ? nil : (client.ipaddress, client.vlan)
   end
 
-  def list_clients(interface,vlan=nil)
-    if (vlan != nil)
+  def list_clients(interface, vlan=nil)
+    if vlan
       # Condition by vlan
-      clients = AuthClient.all(:vlan=>vlan.to_s,:interface=>interface)
+      AuthClient.all(:vlan => vlan.to_s, :interface => interface)
     else
-      clients = AuthClient.all
+      AuthClient.all
     end
-    return clients
   end
+
 end

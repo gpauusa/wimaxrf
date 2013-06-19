@@ -96,7 +96,7 @@
       end
       return true if ret =~ /reboot/
     end
-    return false
+    false
   end
 
   def self.processServiceQuerry( servDef, req )
@@ -108,7 +108,7 @@
   end
 
   def self.processServiceStatusOLD( servDef, req )
-    bsst = Hash.new
+    bsst = {}
     a = @@bs.wiget(servDef.getCategoryName)
     a.each {|key, value|
       bsst = bsst.merge(value)
@@ -132,7 +132,7 @@
 
 
   def self.processServiceStatus( servDef, req )
-    bsst = Hash.new
+    bsst = {}
     query = getAllParams(req)
     a = @@bs.wiget(servDef.getCategoryName)
     a.each {|key, value|
@@ -148,7 +148,7 @@
 
       #next unless p[:bsname]
       next unless ( (p[:bsname] && (query.empty?)) || ((not query.empty?) && ( query.has_key?(n.to_s)) && (p[:bsname])))
-      param = Hash.new
+      param = {}
       if bsst[p[:bsname]] =~ /->/
         b = bsst[p[:bsname]].split('->')
         param['value'] = b[0].strip
@@ -267,14 +267,13 @@ def self.setFromXml(docNew)
       }
     }
   end #if bsEl==nil
-    if changed
-      responseText = responseText +"\n"+"These parameters will be changed on reboot"
-    else
-      responseText = "No changes made - current configuration is the requested"
-    end
-    return responseText
+  if changed
+    responseText = responseText +"\n"+"These parameters will be changed on reboot"
+  else
+    responseText = "No changes made - current configuration is the requested"
+  end
+  responseText
 end
-
 
 def self.setMandatoryParameters
   changed = false
@@ -292,7 +291,7 @@ def self.setMandatoryParameters
   resultAll = @@bs.wiget(className.getCategoryName)
   #resultAll is a hash of bs class categories
   #we nedd to integrate all categories in one hash....
-  result = Hash.new
+  result = {}
   resultAll.each{|key,value|
     result.merge!(value)
   }
@@ -363,7 +362,7 @@ def self.setMandatoryParameters
   if changed
     responseText = responseText +"\n"+"These mandatory parameters will be changed on reboot"
   end
-  return responseText
+  responseText
 end
 
 def self.checkMandatoryParameters
@@ -381,7 +380,7 @@ def self.checkMandatoryParameters
   resultAll = @@bs.wiget(className.getCategoryName)
   #resultAll is a hash of bs class categories
   #we nedd to integrate all categories in one hash....
-  result = Hash.new
+  result = {}
   resultAll.each{|key,value|
     result.merge!(value)
   }
@@ -539,7 +538,7 @@ end
       key = (name+k.to_s).to_sym
       @@bs.wiset(key, d_value)
     end
-    return ret
+    ret
   end
 
   def self.getULorDL(name,no)
@@ -558,7 +557,7 @@ end
         addXMLElement(root, key, value.to_s)
       end
     end
-    return root
+    root
   end
 
 
@@ -574,7 +573,7 @@ end
         addXMLElementsFromHash(bsEl,@@bs.wigetAll())
       }
     begin
-      conf = Configuration.first_or_create({:name=>name}).update({:configuration=>replyXML.to_s})
+      conf = Configuration.first_or_create({:name => name}).update({:configuration => replyXML.to_s})
     rescue Exception => ex
       replyXML = buildXMLReply("Configuration", '', ex)
     end
@@ -605,7 +604,7 @@ end
   service 'bs/config/list' do |req, res|
     msgEmpty = "There is no saved configurations"
     result = Configuration.all()
-    listConfig = Array.new
+    listConfig = []
     result.each {|conf|
       listConfig << conf.name
     }

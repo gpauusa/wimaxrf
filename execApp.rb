@@ -35,7 +35,7 @@ require 'omf-common/mobject'
 class ExecApp < MObject
 
   # Holds the pids for all active apps
-  @@apps = Hash.new
+  @@apps = {}
 
   # True if this active app is being killed by a proper
   # call to ExecApp.killAll() or kill()
@@ -45,10 +45,10 @@ class ExecApp < MObject
 
   def ExecApp.[](id)
     app = @@apps[id]
-    if (app == nil)
+    if app.nil?
       info "Unknown application '#{id}/#{id.class}'"
     end
-    return app
+    app
   end
 
   def ExecApp.killAll(signal = 'KILL')
@@ -110,7 +110,7 @@ class ExecApp < MObject
       rescue => ex
         if cmd.kind_of?(Array)
           cmd = cmd.join(' ')
-	end
+        end
         STDERR.puts "exec failed for '#{cmd}'(#{$!}): #{ex}"
       end
       # Should never get here
@@ -123,7 +123,7 @@ class ExecApp < MObject
     monitorAppPipe('stdout', pr[0])
     monitorAppPipe(mapStderrToStdout ? 'stdout' : 'stderr', pe[0])
     # Create thread which waits for application to exit
-    Thread.new(id, @pid) {|id, pid|
+    Thread.new(id, @pid) do |id, pid|
       ret = Process.waitpid(pid)
       status = $?
       @@apps.delete(@id)
@@ -136,7 +136,7 @@ class ExecApp < MObject
         error "Application '#{id}' failed (code=#{status})"
       end
       @observer.onAppEvent("DONE.#{s}", @id, "status: #{status}")
-    }
+    end
     @stdin = pw[1]
   end
 
@@ -174,7 +174,7 @@ if $0 == __FILE__
 
   class TestMock
     def onAppEvent (name, id, msg = nil)
-      puts "onAppEvent: name=>'#{name}' id=>'#{id}' msg=>'#{msg}'"
+      puts "onAppEvent: name => '#{name}' id => '#{id}' msg => '#{msg}'"
     end
   end
 

@@ -5,11 +5,11 @@ require 'oml4r'
 class OML4R::MPBase
   @@cver = {}
 
-  def self.version( ver )
+  def self.version(ver)
     @@cver[self] = ver
   end
 
-  def self.get_ver()
+  def self.get_ver
     @@cver[self]
   end
 
@@ -19,7 +19,7 @@ class CLStat < OML4R::MPBase
   version '01'
   name  :client
   channel :clstat
-  
+
   param :ma
   param :mac
   param :ulrssi, :type => :double
@@ -67,14 +67,14 @@ class Measurements < MObject
       :create_default_channel => false,
       :nodeID => nID
     }
-      
+
     if !logconfig.nil? then
       @enabled = logconfig['enabled'] if (logconfig['enabled'])
       if !logconfig['localoml'].nil?
         @lurl = logconfig['localoml']['url'] if !logconfig['localoml']['url'].nil?
         @localinterval = logconfig['localoml']['interval'] if !logconfig['localoml']['interval'].nil?
       end
-  
+
       if !logconfig['globaloml'].nil?
         @gurl = logconfig['globaloml']['url'] if !logconfig['globaloml']['url'].nil?
         @globalinterval = logconfig['globaloml']['interval'] if !logconfig['globaloml']['interval'].nil?
@@ -83,13 +83,13 @@ class Measurements < MObject
 
     begin
       bss = OML4R::create_channel(:bsstat, @gurl)
-      mbs = OML4R::create_channel(:clstat, @lurl) 
+      mbs = OML4R::create_channel(:clstat, @lurl)
       OML4R::init(nil, opts)
     rescue Exception => ex
-      raise "OML Initialization error for [#{@lurl},#{@gurl}]:\n#{ex.message}\n" 
+      raise "OML Initialization error for [#{@lurl},#{@gurl}]:\n#{ex.message}\n"
     end
     Kernel.at_exit {
-      OML4R::close() if @enabled 
+      OML4R::close() if @enabled
     }
   end
 
@@ -97,9 +97,10 @@ class Measurements < MObject
     return if !@enabled
     BSStat.inject(*args)
   end
-  
+
   def clstats(*args)
     return if !@enabled
     CLStat.inject(*args)
   end
+
 end

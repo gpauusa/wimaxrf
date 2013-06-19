@@ -1,10 +1,11 @@
 class Client
   # we should really keep some history rather then just the latest values
-  attr_reader :mac,:snmp_mac           # Basic MAC addresses
-  attr_accessor :ul, :dl, :vlan, :ip, :dpname   # Tunnels, VLAN and IP address
+  attr_reader :mac, :snmp_mac                 # Basic MAC addresses
+  attr_accessor :ul, :dl, :vlan, :ip, :dpname # Tunnels, VLAN and IP address
+
   # Measurements
-  attr_accessor :basic_measurement,:extended_measurement
-  attr_reader :tppduul,:tppdudl, :pduul, :pdudl, :tpsduul, :tpsdudl, :sduul, :sdudl, :mcsulrate, :mcsulmod, :mcsdlrate, :mcsdlmod, :rssi
+  attr_accessor :basic_measurement, :extended_measurement
+  attr_reader :tppduul, :tppdudl, :pduul, :pdudl, :tpsduul, :tpsdudl, :sduul, :sdudl, :mcsulrate, :mcsulmod, :mcsdlrate, :mcsdlmod, :rssi
 
   def initialize(m, basic, debug=nil)
     @mac = m
@@ -14,14 +15,14 @@ class Client
     @dl = nil
     @vlan = nil
     @dpname = nil
-    @basic_measurement = Hash.new
-    @extended_measurement = Hash.new
+    @basic_measurement = {}
+    @extended_measurement = {}
     @tppdudl = @tppduul = @tpsdudl = @tpsduul = 0
     @lastts = nil
     @debug = debug
   end
 
-  def du_reading( pduul, pdudl, sduul, sdudl, ts=nil )
+  def du_reading(pduul, pdudl, sduul, sdudl, ts=nil)
     ts = Time.now.to_f if ts.nil?
     if !@lastts.nil?
       tdiff = ts - @lastts
@@ -37,38 +38,37 @@ class Client
     @lastts = ts
   end
 
-  def get_rate( mcs )
-    rate, mod = case
-    when mcs == 21
+  def get_rate(mcs)
+    case mcs
+    when 21
       [12100.0, "64QAM 5/6"]
-    when mcs == 20
+    when 20
       [10500.0, "64QAM 3/4"]
-    when mcs == 19
+    when 19
       [10000.0, "64QAM 2/3"]
-    when mcs == 18
+    when 18
       [8700.0, "64QAM 1/2"]
-    when mcs == 17
+    when 17
       [8700.0, "16QAM 3/4"]
-    when mcs == 16
+    when 16
       [6180.0, "16QAM 1/2"]
-    when mcs == 15
+    when 15
       [3390.0, "QPSK 3/4"]
-    when mcs == 14
+    when 14
       [3000.0, "QPSK 1/2"]
-    when mcs == 13
+    when 13
       [2000.0, "QPKS 1/2"]
     else
       [1000.0, "QPSK 1/2"]
     end
-    return rate, mod
   end
 
-  def mcs_reading( mcsul, mcsdl )
+  def mcs_reading(mcsul, mcsdl)
     @mcsulrate, @mcsulmod = get_rate(mcsul)
     @mcsdlrate, @mcsdlmod = get_rate(mcsdl)
   end
 
-  def rssi_reading( rssi )
+  def rssi_reading(rssi)
     @rssi = rssi
   end
 
@@ -82,7 +82,8 @@ class Client
     mac.unpack("CCCCCC").join(".")
   end
 
-  def to_snmp( mac )
-    mac.split(":").map{|s| s.to_i(16).to_s}.join(".")
+  def to_snmp(mac)
+    mac.split(":").map { |s| s.to_i(16).to_s }.join(".")
   end
+
 end

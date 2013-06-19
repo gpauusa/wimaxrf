@@ -3,23 +3,19 @@ require 'omf-aggmgr/ogs_wimaxrf/client'
 class DataPath
 
   def initialize
-    @mobiles = Hash.new
+    @mobiles = {}
   end
 
-#  def [](mac)
-#    return @mobiles[mac]
-#  end
-
   def get_mac_addresses
-    return @mobiles.keys
+    @mobiles.keys
   end
 
   def get_clients
-    return @mobiles.values
+    @mobiles.values
   end
 
   def length
-    return @mobiles.length
+    @mobiles.length
   end
 
   def add(mac, mob)
@@ -46,15 +42,15 @@ class DataPath
     end
   end
 
-  def stop()
+  def stop
     #p "Datapath stopped"
   end
 
-  def start()
+  def start
     #p "Datapath started"
   end
 
-  def restart()
+  def restart
     stop()
     start()
     #p "Datapath restarted"

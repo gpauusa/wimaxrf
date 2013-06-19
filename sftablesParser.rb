@@ -79,15 +79,15 @@ class SFTableParser
     entry = sequence(entryName,attributes,newline,qoSParameters,attributes,newline,classifyRule) {|a,b,c,d,e,f,g|
       Struct::Entry.new(a,b,d,e,g) }
     entries = entry.lexeme(entrydelim){|a|a}
-    sftables = sequence(serviceclasses,entries) do|a,b| x = Array.new
-      x<<a
-      c = Hash.new
-      b.each {|en| c[en.name.value] = en}
-      x<<c
+    sftables = sequence(serviceclasses,entries) do |a,b|
+      x = []
+      x << a
+      c = {}
+      b.each { |en| c[en.name.value] = en }
+      x << c
       x
     end
   end
-
 
   def self.toXML(sftables)
     root = REXML::Element.new("SFTABLES")
@@ -131,7 +131,7 @@ class SFTableParser
   end
 
   def self.sftableList
-    content=""
+    content = ""
     #content = `sftables -L`
     #content = system(cmd)
     #stdout,stderr,status = Open3.capture("/usr/bin/sftables -L")
@@ -140,21 +140,23 @@ class SFTableParser
     #content = stdout.read
     #end
     #IO.popen('/usr/bin/sftables -L') { |io| while (line = io.gets) do content = content+ line end }
-    firstLine=true
-    IO.popen('/usr/bin/sftables -L') { |io| while (line = io.gets) do
-      if firstLine
-        firstLine = false
-      else
-        content = content+ line
+    firstLine = true
+    IO.popen('/usr/bin/sftables -L') do |io|
+      while (line = io.gets) do
+        if firstLine
+          firstLine = false
+        else
+          content = content+ line
+        end
       end
-      end }
-      #IO.popen("date") { |f| puts f.gets }
+    end
+    #IO.popen("date") { |f| puts f.gets }
     #a = %x[/usr/bin/sftables -L]
     #content = a.chomp
     p "CONTENT #{content}"
     result = SFTableParser.new.parser.parse(content)
     p result
-    return SFTableParser.toXML(result)
+    SFTableParser.toXML(result)
   end
 
 end

@@ -8,7 +8,7 @@ class Netdev < MObject
   attr_reader :host, :port
 
   @sw = nil
- 
+
   def initialize(config = {})
     @host = config['ip']
     @port = config['snmp_port'] || 161
@@ -31,9 +31,9 @@ class Netdev < MObject
 
   def close
     @manager.close
-    @sw.close if !@sw.nil? 
+    @sw.close if !@sw.nil?
   end
- 
+
   def arr_to_hex_mac(mac)
     raise "Invalid MAC" unless mac.length == 6
     mac.unpack("H2H2H2H2H2H2").join(":")
@@ -46,8 +46,7 @@ class Netdev < MObject
 
   def telnet_get(command)
     #logs in and retrieves OF info from switch
-    val = @sw.cmd(command).split(/\n/)
-    return val
+    @sw.cmd(command).split(/\n/)
   end
 
   def add_snmp_module( modfile )
@@ -60,17 +59,17 @@ class Netdev < MObject
     #debug(@manager.config)
     @snmp_lock.synchronize {
       begin
-        return @manager.get_value(snmpobj) 
+        return @manager.get_value(snmpobj)
       rescue Exception => ex
         raise "Excepetion in snmp_get '#{ex}'"
-      end  
-    }  
+      end
+    }
   end
 
   def snmp_get_multi(row,&block)
     @snmp_lock.synchronize {
       begin
-        @manager.walk(row) do |result| 
+        @manager.walk(row) do |result|
           yield(result)
         end
       rescue Exception => ex
@@ -80,11 +79,11 @@ class Netdev < MObject
   end
 
   def get_oid(name)
-    @snmp_lock.synchronize {    
+    @snmp_lock.synchronize {
       @manager.mib.oid(name)
     }
   end
-	
+
   def snmp_set(oid, value)
     status=''
     @snmp_lock.synchronize {
@@ -93,7 +92,7 @@ class Netdev < MObject
       newoid = get_oid(oid)
       val = @manager.get_value(newoid)
       if val != value
-        if value.is_a?(Fixnum) 
+        if value.is_a?(Fixnum)
           print "INT #{newoid}=#{value.to_s}\n"
           vb = SNMP::VarBind.new(newoid, SNMP::Integer.new(value))
           status = "#{newoid} value changed to #{value}"
@@ -130,10 +129,9 @@ class Netdev < MObject
 
   def ssh(command)
     begin
-      tryAgain=true
-      Net::SSH.start(@host,@sshuser,:password => @sshpass, :paranoid=>false ) do |ssh|
-        result  = ssh.exec!(command)
-        return result
+      tryAgain = true
+      Net::SSH.start(@host, @sshuser, :password => @sshpass, :paranoid => false) do |ssh|
+        return ssh.exec!(command)
       end
       rescue Errno::ECONNRESET
         while tryAgain

@@ -13,7 +13,7 @@ class Click1Datapath < DataPath
   $asn_gre_conf = "/etc/asnctrl_gre.conf"
 
   def onAppEvent(name, id, msg = nil)
-    puts "ClickDatapath1: name=>'#{name}' id=>'#{id}' msg=>'#{msg}'"
+    puts "ClickDatapath1: name => '#{name}' id => '#{id}' msg => '#{msg}'"
   end
 
   def initialize(config = {})
@@ -76,7 +76,7 @@ ulgre_#{i} -> GetIPAddress(16) -> arq_#{i} -> [#{i}]switch;
     end
   end
 
-  def stop()
+  def stop
     return if @app.nil?
     begin
       @app.kill(@app_id)
@@ -86,16 +86,16 @@ ulgre_#{i} -> GetIPAddress(16) -> arq_#{i} -> [#{i}]switch;
     @app = nil
   end
 
-  def start()
-    return unless (@mobiles.length > 0)
-    File.delete(@click_conf+".bak") if File.exist?(@click_conf+".bak")
-    File.rename(@click_conf,@click_conf+".bak") if File.exist?(@click_conf)
-    open(@click_conf, 'w') { |f|
-      createclickconfiguration(f);
+  def start
+    return unless @mobiles.length > 0
+    File.delete(@click_conf + ".bak") if File.exist?(@click_conf + ".bak")
+    File.rename(@click_conf, @click_conf + ".bak") if File.exist?(@click_conf)
+    open(@click_conf, 'w') do |f|
+      createclickconfiguration(f)
       f.close
-    }
-    @app = ExecApp.new( @app_id, self, "#{@click_command} #{@click_conf}");
-    return(@app)
+    end
+    @app = ExecApp.new(@app_id, self, "#{@click_command} #{@click_conf}")
+    @app
   end
 
 end

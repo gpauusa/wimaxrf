@@ -22,7 +22,7 @@ class NecBs < Netdev
     "MaintenanceService","DriverBaseService","DLProfileService","ULProfileService","WirelessService",
     "MPCService","MimoService","DebugService","MobileService","SecurityService"]
 
-  def initialize(dp, auth, bsconfig, asnconfig )
+  def initialize(dp, auth, bsconfig, asnconfig)
     @dp = dp
     @asnHost = asnconfig['asnip'] || 'localhost'
     @rcvPort = asnconfig['asnrcvport'] || 54321
@@ -121,7 +121,7 @@ class NecBs < Netdev
 
   end
 
-  def addMobile( mac )
+  def addMobile(mac)
     aclient = @auth.get(mac)
     if (aclient==nil)
       UDPSocket.open.send("DENY", 0, @asnHost, @sndPort)
@@ -133,12 +133,12 @@ class NecBs < Netdev
     end
   end
 
-  def startMobile( mac )
+  def startMobile(mac)
     @mobs.start(mac)
     debug("Client ["+mac+"] started")
   end
 
-  def modifyMobile( mac )
+  def modifyMobile(mac)
     aclient = @auth.get(mac)
     if (aclient==nil) then
       debug "Unknown client to modify: #{mac}"
@@ -150,12 +150,12 @@ class NecBs < Netdev
     end
   end
 
-  def deleteMobile( mac )
+  def deleteMobile(mac)
     @mobs.delete(mac)
     debug("Client ["+mac+"] deleted");
   end
 
-  def check_existing()
+  def check_existing
     hGREs = {}
     # Lets check if there are tunnels already up
     ifc = IO.popen("/sbin/ifconfig -a | grep greAnc")
@@ -189,13 +189,13 @@ class NecBs < Netdev
     @shaper_history.to_a
   end
 
-  def get_mobile_stations()
+  def get_mobile_stations
     begin
       @nomobiles = snmp_get("necWimaxBsStatMsNo.1")
     rescue Exception => e
       @nomobiles = 0
     end
-    return unless (@nomobiles > 0)
+    return unless @nomobiles > 0
     begin
       snmp_get_multi(["necWimaxBsSsPmMacAddress"]) { |row|
         mac = row[0].value
@@ -214,7 +214,7 @@ class NecBs < Netdev
     end
   end
 
-  def get_bs_stats()
+  def get_bs_stats
     #   snmp_walk()
     #    'necWimaxBsPmThroughputTable'
   end
@@ -231,14 +231,14 @@ class NecBs < Netdev
     @power = snmp_get("necWimaxBsPwrctrlTxPower.1").to_f
   end
 
-  def get_bs_pdu_counters()
+  def get_bs_pdu_counters
     @tpsduul = 8.0 * snmp_get("necWimaxBsPmCurrentUlThroughputSdu.1").to_f
     @tppduul = 8.0 * snmp_get("necWimaxBsPmCurrentUlThroughputPdu.1").to_f
     @tpsdudl = 8.0 * snmp_get("necWimaxBsPmCurrentDlThroughputSdu.1").to_f
     @tppdudl = 8.0 * snmp_get("necWimaxBsPmCurrentDlThroughputPdu.1").to_f
   end
 
-  def get_mobile_stats()
+  def get_mobile_stats
     @mobs.each { |mac,m|
       begin
         sducount = snmp_get(@mSDUOID+".1.6."+m.snmp_mac).to_i
@@ -267,7 +267,7 @@ class NecBs < Netdev
     #     p @mobile_history.to_a
   end
 
-  def set_shaping( slice, coef )
+  def set_shaping(slice, coef)
     @scoef[slice] = coef
   end
 
@@ -287,7 +287,7 @@ class NecBs < Netdev
     end
   end
 
-  def restart()
+  def restart
     begin
       status = snmp_set("wmanDevCmnResetDevice.0",1);
       if (status.include? "changed")
@@ -300,31 +300,31 @@ class NecBs < Netdev
     end
   end
 
-  def wiset( param, value )
+  def wiset(param, value)
     debug("wiset #{param} #{value}")
     result = ssh("/usr/sbin/wimax/cmd_app 3 #{param} #{value}")
   end
 
-  def wigetAll()
+  def wigetAll
     wiget("all")
   end
 
   def wiget(param)
     #result = wiget("all")
     result = ssh("/usr/sbin/wimax/cmd_app 4 #{param}")
-    wigetResult = Hash.new
-    attr = Hash.new
+    wigetResult = {}
+    attr = {}
     attrsKey = String.new(param)
     result.each_line("\n") do |row|
       if row.match('^\w{2,}')
         # add to main hash
         if not attr.empty?
-          wigetResult[attrsKey]= attr
+          wigetResult[attrsKey] = attr
         end
       end
       if row.match(/^\w/)
         #new set of parameters
-        attr = Hash.new
+        attr = {}
         columns = row.split(":")
         if columns[1] != nil
           attrsKey = columns[1].strip
@@ -338,49 +338,50 @@ class NecBs < Netdev
       end
     end
     wigetResult[attrsKey] = attr
-    return wigetResult
+    wigetResult
   end
 
-  def get_info()
-    result = Hash.new
+  def get_info
+    result = {}
     result["sysDescr0"] = snmp_get("sysDescr.0").to_s
     result["swVersion"] = @serial
     result["serialNo"] = snmp_get("necWimaxBsDevSerialNumber.1").to_s
     result["hwType"] = snmp_get("necWimaxBsDevHwType.1").to_s
     result = result.merge(wigetAll())
-    return result
+    result
   end
 
-  def get_bs_pdu_stats()
+  def get_bs_pdu_stats
     get_bs_pdu_counters()
-    result = Hash.new
+    result = {}
     result["tp-sdu-ul"] = @tpsduul.to_s
     result["tp-pdu-ul"] = @tppduul.to_s
     result["tp-sdu-dl"] = @tpsdudl.to_s
     result["tp-pdu-dl"] = @tppdudl.to_s
-    return result
+    result
   end
 
-  def get_bs_mobiles()
-    result = Hash.new
+  def get_bs_mobiles
+    result = {}
     result["Mobiles"] = @nomobiles
-    return result
+    result
   end
 
-  def get_bs_interface_traffic()
-    result = Hash.new
-    snmp_get_multi(["ifIndex", "ifDescr", "ifInOctets", "ifOutOctets"]) { |row|
-      ifc = Hash.new
+  def get_bs_interface_traffic
+    result = {}
+    snmp_get_multi(["ifIndex", "ifDescr", "ifInOctets", "ifOutOctets"]) do |row|
+      ifc = {}
       ifc["ifDescription"] = "#{row[1].value}"
       ifc["ifInOctets"] = "#{row[2].value}"
       ifc["ifOutOctets"] = "#{row[3].value}"
       result["if#{row[0].value}"] = ifc
-    }
-    return result
+    end
+    result
   end
 
-  def to_s()
+  def to_s
     s = "NEC Basestation\n"
     s += "Serial number: #{@serial}\n"
   end
+
 end
