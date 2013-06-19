@@ -30,7 +30,7 @@ class Authenticator < MObject
 
   def getIP(mac)
     client = AuthClient.get(mac)
-    client.nil? ? nil : (client.ipaddress, client.vlan)
+    return client.nil? ? nil : client.ipaddress, client.vlan
   end
 
   def list_clients(interface, vlan=nil)
