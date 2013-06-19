@@ -1,5 +1,3 @@
-
-
 class CircularBuffer
 
   def initialize(length)
@@ -12,15 +10,14 @@ class CircularBuffer
   def push(item)
     @buf[@next] = item
     @next += 1
-    @next = 0 if (@next >= @length) 
-    @size += 1 if (@size < @length) 
-#    puts @buf.inspect
+    @next = 0 if (@next >= @length)
+    @size += 1 if (@size < @length)
   end
 
   def to_a
     if (@size < @length)
       a = @buf.slice(0, @size)
-    else 
+    else
       puts "next: #@next size: #@size"
       a = @buf.slice(@next, @size)
       if (@next > 0)
@@ -29,16 +26,15 @@ class CircularBuffer
     end
     a
   end
+
 end
+
 
 if $0 == __FILE__
   puts "HI"
-
   b = CircularBuffer.new(3)
-  (1..10).each do |i| 
-    b.push i 
+  (1..10).each do |i|
+    b.push i
     puts "to_a #{b.to_a().inspect}"
   end
 end
-
-    

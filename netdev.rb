@@ -7,8 +7,6 @@ require 'net/telnet'
 class Netdev < MObject
   attr_reader :host, :port
 
-  @sw = nil
-
   def initialize(config = {})
     @host = config['ip']
     @port = config['snmp_port'] || 161
@@ -23,6 +21,8 @@ class Netdev < MObject
     if @telnetuser
       @sw = Net::Telnet::new("Host" => @host, "Timeout" => 10, "Prompt" => @telnetuser)
       sw.login(@telnetuser)
+    else
+      @sw = nil
     end
     @sshuser = config[:sshuser] || "root"
     @sshpass = config[:sshpass] || ''
@@ -31,7 +31,7 @@ class Netdev < MObject
 
   def close
     @manager.close
-    @sw.close if !@sw.nil?
+    @sw.close unless @sw.nil?
   end
 
   def arr_to_hex_mac(mac)
@@ -49,24 +49,23 @@ class Netdev < MObject
     @sw.cmd(command).split(/\n/)
   end
 
-  def add_snmp_module( modfile )
+  def add_snmp_module(modfile)
     @snmp_lock.synchronize {
       @manager.load_module(modfile)
     }
   end
 
   def snmp_get(snmpobj)
-    #debug(@manager.config)
     @snmp_lock.synchronize {
       begin
         return @manager.get_value(snmpobj)
       rescue Exception => ex
-        raise "Excepetion in snmp_get '#{ex}'"
+        raise "Exception in snmp_get '#{ex}'"
       end
     }
   end
 
-  def snmp_get_multi(row,&block)
+  def snmp_get_multi(row, &block)
     @snmp_lock.synchronize {
       begin
         @manager.walk(row) do |result|
@@ -85,44 +84,44 @@ class Netdev < MObject
   end
 
   def snmp_set(oid, value)
-    status=''
+    status = ''
     @snmp_lock.synchronize {
-    begin
-      # uses snmp to set MIB values - needs to check previous state and be able to handle more OID's
-      newoid = get_oid(oid)
-      val = @manager.get_value(newoid)
-      if val != value
-        if value.is_a?(Fixnum)
-          print "INT #{newoid}=#{value.to_s}\n"
-          vb = SNMP::VarBind.new(newoid, SNMP::Integer.new(value))
-          status = "#{newoid} value changed to #{value}"
-        elsif value.is_a?(String)
-          print "STR #{newoid}=#{val}\n"
-          vb = SNMP::VarBind.new(newoid, SNMP::OctetString.new(value))
-          status = "#{newoid} value changed to #{value}"
-        end
-        resp = @manager.set(vb)
-        print "GET got error #{resp.error_status()}\n"
-        val = @manager.get_value(newoid)
-        print "#{newoid} value now set to #{value}\n"
-      else
-        status "#{newoid} value already set to #{value}"
-      end
-    rescue SNMP::RequestTimeout
       begin
-        tryAgain=true
-        print "Try to get new value"
+        # uses snmp to set MIB values - needs to check previous state and be able to handle more OID's
+        newoid = get_oid(oid)
         val = @manager.get_value(newoid)
-        status = "#{newoid} value changed to #{value}"
+        if val != value
+          if value.is_a?(Fixnum)
+            #print "INT #{newoid}=#{value.to_s}\n"
+            vb = SNMP::VarBind.new(newoid, SNMP::Integer.new(value))
+            status = "#{newoid} value changed to #{value}"
+          elsif value.is_a?(String)
+            #print "STR #{newoid}=#{val}\n"
+            vb = SNMP::VarBind.new(newoid, SNMP::OctetString.new(value))
+            status = "#{newoid} value changed to #{value}"
+          end
+          resp = @manager.set(vb)
+          #print "got error #{resp.error_status()}\n"
+          #val = @manager.get_value(newoid)
+          #print "#{newoid} value now set to #{val}\n"
+        else
+          status = "#{newoid} value already set to #{value}"
+        end
+      rescue SNMP::RequestTimeout
+        begin
+          tryAgain = true
+          #print "Try to get new value"
+          val = @manager.get_value(newoid)
+          status = "#{newoid} value changed to #{value}"
         rescue SNMP::RequestTimeout
           while tryAgain
             print "RETRY"
             retry
           end
+        end
+      rescue Exception => ex
+        raise "Exception in snmp_set '#{ex}'"
       end
-    rescue Exception => ex
-      raise "Exception in snmp_set '#{ex}'"
-    end
     }
     status
   end
