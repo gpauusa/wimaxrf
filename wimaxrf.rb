@@ -278,7 +278,7 @@ class WimaxrfService < LegacyGridService
   service 'bs/restart' do |req, res|
     msgEmpty = "Failed to restart basestation"
     responseText = @@bs.restart()
-    res.body = responseText
+    setResponsePlainText(res, responseText)
   end
 
 #  def self.checkAndSetParam( req, name, p )
@@ -401,13 +401,13 @@ class WimaxrfService < LegacyGridService
 
   def self.authorize(req, res)
     puts "Checking authorization"
-    WEBrick::HTTPAuth.basic_auth(req, res, 'orbit') do |user, pass|
+    WEBrick::HTTPAuth.basic_auth(req, res, 'orbit') {|user, pass|
       # this block returns true if
       # authentication token is valid
       isAuth = user == 'gnome' && pass == 'super'
       puts "user: #{user} pw: #{pass} isAuth: #{isAuth}"
       isAuth
-    end
+    }
     true
   end
 
@@ -684,7 +684,8 @@ class WimaxrfService < LegacyGridService
     end
     params.delete('vlan')
     params.delete('type')
-    res.body = addDataPath(type, vlan, interface, params)
+    result = addDataPath(type, vlan, interface, params)
+    setResponsePlainText(res, result)
   end
 
   def self.addDataPath(type,vlan,interface,params)
@@ -744,7 +745,8 @@ class WimaxrfService < LegacyGridService
     vlan = getParam(req, 'vlan')
     interface = getParam(req, 'interface')
     # delete from database
-    res.body = deleteDataPath(vlan,interface)
+    result = deleteDataPath(vlan, interface)
+    setResponsePlainText(res, result)
   end
 
   def self.deleteDataPath(vlan,interface)
@@ -847,7 +849,7 @@ class WimaxrfService < LegacyGridService
     dpaths.each do |dp|
       message = message+"\n" + deleteDataPath(dp.vlan,dp.interface)
     end
-    res.body = message
+    setResponsePlainText(res, message)
   end
 
   s_description "This service saves current datapath client configuration database."
@@ -885,7 +887,7 @@ class WimaxrfService < LegacyGridService
     rescue Exception => ex
       responseText = ex
     end
-    res.body = responseText
+    setResponsePlainText(res, responseText)
   end
 
   def self.loadDataPath(docNew)
@@ -963,7 +965,7 @@ class WimaxrfService < LegacyGridService
     else
       responseText = "There is no datapath configuration #{name} in database"
     end
-    res.body = responseText
+    setResponsePlainText(res, responseText)
   end
 
   s_description "Show named datapath client configuration from database."
@@ -974,12 +976,12 @@ class WimaxrfService < LegacyGridService
     if conf != nil
       xmlConfig = conf.status
       doc = REXML::Document.new(xmlConfig.to_s)
-      self.setResponse(res,doc)
+      self.setResponse(res, doc)
     else
       root = REXML::Element.new("DataPath")
       msg = "There is no #{name} datapath configuration saved"
       addXMLElement(root, "ERROR", "#{msg}")
-      self.setResponse(res,root)
+      self.setResponse(res, root)
     end
   end
 
@@ -996,13 +998,14 @@ class WimaxrfService < LegacyGridService
     begin
       if datapathExists?(interface, vlan)
         @auth.add_client(macaddr, interface, vlan, ipaddress)
-        res.body = "Client added"
+        msg = "Client added"
       else
-        res.body = "Can not add client, datapath with vlan=#{vlan} does not exist"
+        msg = "Can not add client, datapath with vlan=#{vlan} does not exist"
       end
     rescue Exception => e
-      res.body = e.message
+      msg = e.message
     end
+    setResponsePlainText(res, msg)
   end
 
   s_description "Delete client from datapath"
@@ -1011,10 +1014,11 @@ class WimaxrfService < LegacyGridService
     macaddr = getParam(req, 'macaddr')
     begin
       @auth.del_client(macaddr)
-      res.body = "Client #{macaddr} deleted"
+      msg = "Client #{macaddr} deleted"
     rescue Exception => e
-      res.body = e.message
+      msg = e.message
     end
+    setResponsePlainText(res, msg)
   end
 
   s_description "Change client's VLAN and/or IP address"
@@ -1025,7 +1029,7 @@ class WimaxrfService < LegacyGridService
   service 'datapath/clients/modify' do |req, res|
     macaddr = getParam(req, 'macaddr')
     message = "modifyClient: "
-    aclient=@auth.get(macaddr)
+    aclient = @auth.get(macaddr)
     begin
       if aclient
         if req.query.has_key?('vlan')
@@ -1041,16 +1045,16 @@ class WimaxrfService < LegacyGridService
         if(req.query.has_key?('ipaddress'))
           ipaddress = getParam(req, 'ipaddress')
         else
-          ipaddress =nil
+          ipaddress = nil
         end
-        message <<  modifyClient(macaddr,interface,vlan,ipaddress)
+        message << modifyClient(macaddr,interface,vlan,ipaddress)
       else
         message << "There is no client with mac = #{macaddr}!"
       end
-      res.body = message
     rescue Exception => e
-      res.body = e.message
+      message = e.message
     end
+    setResponsePlainText(res, message)
   end
 
   def self.modifyClient(macaddr,interface,vlan,ipaddress)
