@@ -735,7 +735,7 @@ class WimaxrfService < LegacyGridService
       when 'openflow'
         @dpath[dpc['name'].to_s] = OpenFlowDatapath.new(dpc)
       else
-        raise "Unknown type \"#{dpc['type']}\" for datapath #{dpc['name']}"
+        error("Unknown type \"#{dpc['type']}\" for datapath #{dpc['name']}")
     end
   end
 
@@ -811,20 +811,20 @@ class WimaxrfService < LegacyGridService
     root = REXML::Element.new("DataPath")
     dpath = Datapath.first(:vlan => vlan,:interface => interface)
     if dpath != nil
-      root.add_attribute("vlan",dpath.vlan )
+      root.add_attribute("vlan", dpath.vlan )
       root.add_attribute("type", dpath.type)
       root.add_attribute("interface", dpath.interface)
       root.add_attribute("name", dpath.name)
       dpath.dpattributes.each do |att|
-        addXMLElement(root,att.name,att.value)
+        addXMLElement(root, att.name, att.value)
       end
-      clients = @auth.list_clients(interface,vlan)
+      clients = @auth.list_clients(interface, vlan)
       cl = root.add_element("Clients")
       if clients != nil
         clients.each do |c|
           node = cl.add_element("client")
-          node.add_attribute("macaddr",c.macaddr )
-          node.add_attribute("ipaddress", c.ipaddress )
+          node.add_attribute("macaddr", c.macaddr)
+          node.add_attribute("ipaddress", c.ipaddress)
         end
       end
     end
