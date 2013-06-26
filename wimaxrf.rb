@@ -691,6 +691,7 @@ class WimaxrfService < LegacyGridService
   def self.addDataPath(type,vlan,interface,params)
     return "Datapath #{interface}-#{vlan} already exists" if datapathExists?(interface, vlan)
     return "Cannot create datapath: interface #{interface} doesn't exist" unless interfaceExists?(interface)
+
     if @manageInterface
       if type.start_with?('click') and vlan != '0'
         if interfaceExists?(interface, vlan)
@@ -744,48 +745,37 @@ class WimaxrfService < LegacyGridService
   service 'datapath/delete' do |req, res|
     vlan = getParam(req, 'vlan')
     interface = getParam(req, 'interface')
-    # delete from database
     result = deleteDataPath(vlan, interface)
     setResponsePlainText(res, result)
   end
 
   def self.deleteDataPath(vlan,interface)
-    message = ''
-    begin
-      if vlan != '0'
-        dp = Datapath.get(interface,vlan)
-        if dp != nil
-          # check is there any client with this vlan
-          nodes = @auth.list_clients(interface,vlan)
-          if nodes.empty?
-            if dp.type.start_with?('click') and @manageInterface
-              debug("Deleting VLAN #{interface}.#{vlan}")
-              cmd = "ip link delete #{interface}.#{vlan}"
-              if not system(cmd)
-                message = "Could not delete VLAN: command \"#{cmd}\" failed with status #{$?.exitstatus}"
-              end
-            end
-            dpname = dp.name
-            if dp.destroy
-              #remove from hash
-              @dpath.delete(dpname)
-              message = "Datapath #{interface}.#{vlan} deleted"
-            else
-              message = "Database error for datapath #{vlan}"
-            end
-          else
-            message = "Cannot delete datapath. There are still clients with vlan=#{vlan}."
-          end
-        else
-          message = "Unknown datapath #{interface}.#{vlan}"
+    dp = Datapath.get(interface, vlan)
+    return "Unknown datapath #{interface}-#{vlan}" unless dp
+
+    # check if there's any client in this vlan
+    nodes = @auth.list_clients(interface, vlan)
+    return "Cannot delete datapath: there are still #{nodes.length} clients using it" unless nodes.empty?
+
+    if @manageInterface
+      if dp.type.start_with?('click') and vlan != '0'
+        debug("Deleting VLAN #{interface}.#{vlan}")
+        cmd = "ip link delete #{interface}.#{vlan}"
+        if not system(cmd)
+          return "Could not delete VLAN: command \"#{cmd}\" failed with status #{$?.exitstatus}"
         end
-      else
-        raise("Cannot delete datapath 0")
       end
-    rescue Exception => e
-      message = e.message
     end
-    message
+
+    dpname = dp.name
+    # remove from database
+    if dp.destroy
+      # remove from hash
+      @dpath.delete(dpname)
+      "Datapath #{interface}-#{vlan} deleted"
+    else
+      "Database error while deleting datapath #{interface}-#{vlan}"
+    end
   end
 
   s_description "List all available datapaths"
@@ -843,13 +833,12 @@ class WimaxrfService < LegacyGridService
 
   s_description "Delete all datapaths"
   service 'datapath/clean' do |req, res|
-    message =''
     @auth.del_all_clients
-    dpaths = Datapath.all
-    dpaths.each do |dp|
-      message = message+"\n" + deleteDataPath(dp.vlan,dp.interface)
+    results = []
+    Datapath.all.each do |dp|
+      results << deleteDataPath(dp.vlan, dp.interface)
     end
-    setResponsePlainText(res, message)
+    setResponsePlainText(res, results.join("\n"))
   end
 
   s_description "This service saves current datapath client configuration database."
