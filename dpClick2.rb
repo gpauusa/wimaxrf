@@ -98,7 +98,7 @@ switch[1] #{bs_vlan_encap} -> bs_queue;"
   def stop
     return unless @app
     begin
-      @app.kill(nil)
+      @app.kill()
     rescue Exception => ex
       error("Exception in stop: '#{ex}'")
     end

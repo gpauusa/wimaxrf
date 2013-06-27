@@ -63,9 +63,9 @@ class ExecApp < MObject
     @stdin.flush
   end
 
-  def kill(id, signal = 'KILL')
+  def kill(signal = 'KILL')
     @cleanExit = true
-    puts "PID=#{@pid}"
+    debug "Sending #{signal} to application '#{@id}'"
     Process.kill(signal, @pid)
   end
 
