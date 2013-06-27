@@ -6,8 +6,6 @@ require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
 require 'omf-aggmgr/ogs_wimaxrf/execApp'
 
 class Click2Datapath < DataPath
-  attr_reader :click_command, :click_socket
-  attr_reader :app
   attr_reader :port_bs, :port_net, :vlan_bs, :vlan_net
 
   def initialize(config = {})

@@ -6,9 +6,8 @@ require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
 require 'omf-aggmgr/ogs_wimaxrf/execApp'
 
 class Click1Datapath < DataPath
-  attr_reader :click_command, :click_conf
   attr_reader :def_gw, :net_mask, :def_ip
-  attr_reader :slices,:auth, :port, :vlan
+  attr_reader :slices, :auth, :port, :vlan
 
   $asn_gre_conf = "/etc/asnctrl_gre.conf"
 
