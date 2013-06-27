@@ -34,7 +34,6 @@ class AirBs < Netdev
 
     debug("Creating trap handler")
     SNMP::TrapListener.new(:Host => "0.0.0.0") do |manager|
-      # Handle traps for client (de)registration
       # WMAN-IF2-BS-MIB::wmanif2BsSsRegisterTrap
       manager.on_trap("1.0.8802.16.2.1.1.2.0.5") do |trap|
         debug("Received wmanif2BsSsRegisterTrap: #{trap.inspect}")
@@ -58,6 +57,9 @@ class AirBs < Netdev
         else
           debug("Missing or invalid SsRegisterStatus in trap")
         end
+      end
+      manager.on_trap_default do |trap|
+        info("Received SNMP trap #{trap.inspect}")
       end
     end
 
@@ -163,4 +165,70 @@ class AirBs < Netdev
       debug "Client [#{mac}] is not registered"
     end
   end
+
+  def set_vlan(vlan)
+    # Vlan settings, hardcoded, usefull setting have comments for eventual modification
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsVlanProvRowStatus.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.12.' + vlan, 2)
+    # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvFwdingDbid.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.2.' + vlan, 1)
+    # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvSsToSsEnabled.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.3.' + vlan, 1)  # mac forced forwarding 0 = unchecked 1= checked
+    # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvFloodUnknownEnabled.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.4.' + vlan, 1)   # 1==enabled 0 disabled
+    # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvBroadcastMode.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.5.' + vlan, 0)  # 0==Multicast Group 1==Duplicate 2==drop
+    # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvUntaggedMcastSfid.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.6.' + vlan, 4294959122)
+    # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvTaggedMcastSfid.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.7.' + vlan, 4294959123)
+    # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvDhcpRelayAgentActive.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.8.' + vlan, 0)  # 0==off, 1==option 82 text, 2 option 82 binary
+    # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvMacForceForwardingEnabled.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.9.' + vlan, 0) # values 1/0 on/off
+    # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvIpAddressType.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.10.' + vlan, 1) # dunno probably something to do with edgerouteripaddress
+    # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvEdgeRouterIpAddress.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.11.' + vlan, 00000000) # undotted hex format
+    # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvBcastServiceClassIndex.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.16.' + vlan, 3)
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsVlanProvRowStatus.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.12.' + vlan, 1)
+  end
+
+  def set_station(mac, vlan)
+    # Settings for the SSs most of them are harcoded
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSSPortProvRowStatus.1.<MacAddr>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.7.1.' + mac, 2)
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSSPortProvRowStatus.1.<MacAddr>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.7.1.' + mac, 5)
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvAdMode.1.<MacAddr>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.2.1.' + mac, 1) # port mode == vlan
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvIngressFilterEnabled.1.<MacAddr>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.3.1.' + mac, 1) # ingress filtering enabled 0/1
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvPvid.1.<MacAddr>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.4.1.' + mac, vlan)
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvUserPriority.1.<MacAddr>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.5.1.' + mac, 1) # default priority (int)
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvAllowedFrameTypes.1.<MacAddr>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.6.1.' + mac, 3) # allowed Frame types 0==not set 1==tagged&untagged 2==tagged 3==untagged
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvQinqSupported.1.<MacAddr>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.7.1.' + mac, 0) # Q-in-Q supported 0 == no 1== yes
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvSTagVlan.1.<MacAddr>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.8.1.' + mac, 0)  # always 0 it's ok
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvUseCTagPriority.1.<MacAddr>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.9.1.' + mac, 1) # boolean
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvsTagPriority.1.<MacAddr>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.10.1.' + mac, 0) # int
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSSPortProvRowStatus.1.<MacAddr>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.11.1.' + mac, 1)
+    # Setting of the vlan for a station (tagged/untagged)
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSSPortVlanListRowStatus.1.<MacAddr>.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.2.1.4.1.' + mac + "." + vlan, 5)
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSSPortVlanListUntagged.1.<MacAddr>.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.2.1.3.1.' + mac + "." + vlan, 1) # tagged/untagged 0/1
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSSPortVlanListRowStatus.1.<MacAddr>.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.2.1.4.1.' + mac + "." + vlan, 1)
+  end
+
 end
