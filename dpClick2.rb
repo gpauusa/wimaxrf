@@ -6,17 +6,16 @@ require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
 require 'omf-aggmgr/ogs_wimaxrf/execApp'
 
 class Click2Datapath < DataPath
-  attr_reader :port_bs, :port_net, :vlan_bs, :vlan_net
+  attr_reader :port_bs, :port_net, :vlan_bs, :vlan_net # TODO FIXME
 
-  def initialize(config = {})
-    super()
+  def initialize(config)
+    super
     @app = nil
     @vlan_bs = config['vlan_bs'] || 0
     @vlan_net = config['vlan_net'] || 0
     @port_bs = config['bs_port'] || 'eth1'
     @port_net = config['network_port'] || 'eth2'
-    @dpname = "#{port_net}-#{vlan_net}" # TODO: move to parent class
-    @click_socket_path = "/var/run/click-#{@dpname}.sock"
+    @click_socket_path = "/var/run/click-#{name}.sock"
     @click_socket = nil
     @click_command = config['click_command'] || '/usr/local/bin/click'
     @click_command += " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
@@ -25,7 +24,7 @@ class Click2Datapath < DataPath
   # start a new click instance if not already running
   def start
     return unless @app.nil? && @mobiles.length > 0
-    @app = ExecApp.new("C2DP-#{@dpname}", self, @click_command)
+    @app = ExecApp.new("C2DP-#{name}", self, @click_command)
     @click_socket = UNIXSocket.new(@click_socket_path)
     update_click_config
   end
@@ -117,7 +116,7 @@ switch[1] #{bs_vlan_encap} -> bs_queue;"
     #       generate an empty config when there are no clients
     return unless @mobiles.length > 0
     new_config = generate_click_config
-    info("Loading new click configuration for datapath #{@dpname}")
+    info("Loading new click configuration for datapath #{name}")
     debug(new_config)
     @click_socket.send("write hotconfig #{new_config}\n", 0)
     # TODO: better error checking

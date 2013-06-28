@@ -1,9 +1,11 @@
 require 'omf-aggmgr/ogs_wimaxrf/client'
 
 class DataPath
+  attr_reader :name
 
-  def initialize
+  def initialize(config)
     @mobiles = {}
+    @name = config['name']
   end
 
   def get_mac_addresses
@@ -42,18 +44,15 @@ class DataPath
     end
   end
 
-  def stop
-    #p "Datapath stopped"
+  def start
   end
 
-  def start
-    #p "Datapath started"
+  def stop
   end
 
   def restart
-    stop()
-    start()
-    #p "Datapath restarted"
+    stop
+    start
   end
 
 end

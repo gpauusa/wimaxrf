@@ -11,12 +11,8 @@ class Click1Datapath < DataPath
 
   $asn_gre_conf = "/etc/asnctrl_gre.conf"
 
-  def onAppEvent(name, id, msg = nil)
-    puts "ClickDatapath1: name => '#{name}' id => '#{id}' msg => '#{msg}'"
-  end
-
-  def initialize(config = {})
-   super()
+  def initialize(config)
+   super
    @vlan = config['vlan'] || 0
    @port = config['eth_port'] || "eth0"
    @def_gw = config['def_gw'] || "10.41.0.1"
@@ -26,8 +22,10 @@ class Click1Datapath < DataPath
    @click_conf = config['click_conf'] || '/tmp/Wimax.click'
    @click_conf += "-#{@vlan}"
    @app = nil
-   @app_id = "CDP-#{@vlan}"
-   puts "Adding #{@app_id}"
+  end
+
+  def onAppEvent(name, id, msg = nil)
+    puts "Click1Datapath: name => '#{name}' id => '#{id}' msg => '#{msg}'"
   end
 
   def createclickconfiguration(file)
@@ -76,9 +74,9 @@ ulgre_#{i} -> GetIPAddress(16) -> arq_#{i} -> [#{i}]switch;
   end
 
   def stop
-    return if @app.nil?
+    return unless @app
     begin
-      @app.kill()
+      @app.kill
     rescue Exception => ex
       print "Exception in stop: '#{ex}'"
     end
@@ -93,8 +91,7 @@ ulgre_#{i} -> GetIPAddress(16) -> arq_#{i} -> [#{i}]switch;
       createclickconfiguration(f)
       f.close
     end
-    @app = ExecApp.new(@app_id, self, "#{@click_command} #{@click_conf}")
-    @app
+    @app = ExecApp.new("C1DP-#{name}", self, "#{@click_command} #{@click_conf}")
   end
 
 end
