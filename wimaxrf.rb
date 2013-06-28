@@ -64,18 +64,18 @@ class WimaxrfService < LegacyGridService
 
     dpconfig = findAllDataPaths()
     dpconfig.each do |dpc|
-      createDatapath(dpc)
+      @dpath[dpc['name']] = DataPath.create(dpc['type'], dpc['name'], dpc)
     end
     @datapathif = @@config['datapath']['default_interface']
     @manageInterface = @@config['datapath']['manage_interface'] || false
 
     if @@config['bs']['type'] == 'airspan'
       require 'omf-aggmgr/ogs_wimaxrf/airspanbs.rb'
-      @@bs = AirBs.new( @dpath, @auth, config['bs'], config['asngw'] )
+      @@bs = AirBs.new(@dpath, @auth, config['bs'], config['asngw'])
       debug("wimaxrf", "Airspan basestation loaded")
     else
       require 'omf-aggmgr/ogs_wimaxrf/necbs.rb'
-      @@bs = NecBs.new( @dpath, @auth, config['bs'], config['asngw'] )
+      @@bs = NecBs.new(@dpath, @auth, config['bs'], config['asngw'])
       debug("wimaxrf", "NEC basestation loaded")
     end
 
@@ -719,24 +719,8 @@ class WimaxrfService < LegacyGridService
     end
     newdp.save
 
-    createDatapath(dpc)
+    @dpath[newdp.name] = DataPath.create(type, newdp.name, dpc)
     "Datapath #{interface}-#{vlan} added"
-  end
-
-  def self.createDatapath(dpc)
-    debug("Creating datapath #{dpc['name']}")
-    case dpc['type']
-      when 'click1', 'click' # backward compatibility
-        @dpath[dpc['name'].to_s] = Click1Datapath.new(dpc)
-      when 'click2'
-        @dpath[dpc['name'].to_s] = Click2Datapath.new(dpc)
-      when 'mf'
-        @dpath[dpc['name'].to_s] = MFirstDatapath.new(dpc)
-      when 'openflow'
-        @dpath[dpc['name'].to_s] = OpenFlowDatapath.new(dpc)
-      else
-        error("Unknown type \"#{dpc['type']}\" for datapath #{dpc['name']}")
-    end
   end
 
   s_description "Delete datapath"
