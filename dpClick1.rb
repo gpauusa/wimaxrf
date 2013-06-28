@@ -13,8 +13,8 @@ class Click1Datapath < DataPath
 
   def initialize(config)
    super
+   @port = config['interface'] || "eth0"
    @vlan = config['vlan'] || 0
-   @port = config['eth_port'] || "eth0"
    @def_gw = config['def_gw'] || "10.41.0.1"
    @net_mask = config['net_mask'] || "255.255.0.0"
    @def_ip = config['def_ip'] || "10.41.0.254"

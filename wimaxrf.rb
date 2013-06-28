@@ -88,9 +88,9 @@ class WimaxrfService < LegacyGridService
     datapaths = []
     Datapath.all.each do |dtp|
       dpconf = {}
-      dpconf['vlan'] = dtp.vlan
-      dpconf['type'] = dtp.type
       dpconf['name'] = dtp.name
+      dpconf['type'] = dtp.type
+      dpconf['vlan'] = dtp.vlan
       dpconf['interface'] = dtp.interface
       if dtp.dpattributes
         dtp.dpattributes.each { |att| dpconf[att.name] = att.value }
@@ -704,9 +704,10 @@ class WimaxrfService < LegacyGridService
     # add to database
     newdp = Datapath.first_or_create({:vlan => vlan, :interface => interface}, :type => type)
     dpc = {}
-    dpc['vlan'] = vlan
-    dpc['type'] = type
     dpc['name'] = newdp.name
+    dpc['type'] = type
+    dpc['vlan'] = vlan
+    dpc['interface'] = interface
     params.each do |name, value|
       dpc[name] = value
       newdp.dpattributes.first_or_create(:name => name, :value => value, :vlan => vlan)
