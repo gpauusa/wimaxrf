@@ -24,7 +24,7 @@ class Click2Datapath < DataPath
   # start a new click instance if not already running
   def start
     return unless @app.nil? && @mobiles.length > 0
-    @app = ExecApp.new("C2DP-#{name}", self, @click_command)
+    @app = ExecApp.new("C2DP-#{name}", nil, @click_command)
     @click_socket = UNIXSocket.new(@click_socket_path)
     update_click_config
   end

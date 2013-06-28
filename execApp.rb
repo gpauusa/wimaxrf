@@ -72,7 +72,7 @@ class ExecApp < MObject
   #
   # Run an application 'cmd' in a separate thread and monitor
   # its stdout. Also send status reports to the 'observer' by
-  # calling its "onAppEvent(eventType, appId, message")"
+  # calling its "onAppEvent(eventType, appId, message)"
   #
   # @param id ID of application (used for reporting)
   # @param observer Observer of application's progress
@@ -89,7 +89,7 @@ class ExecApp < MObject
     pe = IO::pipe
 
     debug "Starting application '#{id}' - cmd: '#{cmd}'"
-    @observer.onAppEvent('STARTED', @id)
+    notify('STARTED', @id)
     @pid = fork {
       # child will remap pipes to std and exec cmd
       pw[1].close
@@ -135,7 +135,7 @@ class ExecApp < MObject
         s = "ERROR"
         error "Application '#{id}' failed (code=#{status})"
       end
-      @observer.onAppEvent("DONE.#{s}", @id, "status: #{status}")
+      notify("DONE.#{s}", @id, "status: #{status}")
     end
     @stdin = pw[1]
   end
@@ -154,7 +154,7 @@ class ExecApp < MObject
       begin
         while true do
           s = pipe.readline.chomp
-          @observer.onAppEvent(name, @id, s)
+          notify(name, @id, s)
         end
       rescue EOFError
         # do nothing
@@ -165,6 +165,16 @@ class ExecApp < MObject
       end
     }
   end
+
+  #
+  # Notifies application events to the observer
+  #
+  def notify(*args)
+    if @observer
+      @observer.onAppEvent(*args)
+    end
+  end
+
 end
 
 
