@@ -47,28 +47,6 @@ class Click2Datapath < DataPath
     update_click_config
   end
 
-  # update the click configuration with a new one generated on the fly
-  def update_click_config
-    return unless @click_socket
-    # TODO: the following return is wrong, we should instead
-    #       generate an empty config when there are no clients
-    return unless @mobiles.length > 0
-    new_config = generate_click_config
-    info("Loading new click configuration for datapath #{@dpname}")
-    debug(new_config)
-    @click_socket.send("write hotconfig #{new_config}\n", 0)
-    # TODO: better error checking
-    while line = @click_socket.gets
-      if line == "200 Write handler 'hotconfig' OK"
-        info("New config loaded successfully")
-        break
-      elsif line.match("^5[0-9]{2}*.")
-        error("Loaded a wrong config, old config still running")
-        break
-      end
-    end
-  end
-
   private
 
   # generate click configuration for this datapath
@@ -130,6 +108,28 @@ switch[1] #{bs_vlan_encap} -> bs_queue;"
 
     # put all the sections together and return the config
     config << network_filter << bs_filter << routing
+  end
+
+  # update the click configuration with a new one generated on the fly
+  def update_click_config
+    return unless @click_socket
+    # TODO: the following return is wrong, we should instead
+    #       generate an empty config when there are no clients
+    return unless @mobiles.length > 0
+    new_config = generate_click_config
+    info("Loading new click configuration for datapath #{@dpname}")
+    debug(new_config)
+    @click_socket.send("write hotconfig #{new_config}\n", 0)
+    # TODO: better error checking
+    while line = @click_socket.gets
+      if line == "200 Write handler 'hotconfig' OK"
+        info("New config loaded successfully")
+        break
+      elsif line.match("^5[0-9]{2}*.")
+        error("Loaded a wrong config, old config still running")
+        break
+      end
+    end
   end
 
 end
