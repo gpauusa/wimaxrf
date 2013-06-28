@@ -15,10 +15,11 @@ class Click2Datapath < DataPath
     @vlan_net = config['vlan_net'] || 0
     @port_bs = config['bs_port'] || 'eth1'
     @port_net = config['network_port'] || 'eth2'
-    @click_socket_path = "/var/run/click-#{name}.sock"
+    @click_socket_path = config['click_socket_dir'] || '/var/run'
+    @click_socket_path << "/click-#{name}.sock"
     @click_socket = nil
     @click_command = config['click_command'] || '/usr/local/bin/click'
-    @click_command += " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
+    @click_command << " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
   end
 
   # start a new click instance if not already running
