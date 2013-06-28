@@ -50,10 +50,9 @@ class WimaxrfService < LegacyGridService
   #
   def self.configure(config)
     @@config = config
-    ['bs', 'database', 'datapath'].each do |sect|
+    %w(bs database datapath).each do |sect|
       raise("Missing configuration section \"#{sect}\" in wimaxrf.yaml") unless @@config[sect]
     end
-    raise("Missing default_interface in wimaxrf.yaml") unless @@config['datapath']['default_interface']
 
     @auth = Authenticator.new
 
@@ -66,7 +65,6 @@ class WimaxrfService < LegacyGridService
     dpconfig.each do |dpc|
       @dpath[dpc['name']] = DataPath.create(dpc['type'], dpc['name'], dpc)
     end
-    @datapathif = @@config['datapath']['default_interface']
     @manageInterface = @@config['datapath']['manage_interface'] || false
 
     if @@config['bs']['type'] == 'airspan'
@@ -667,23 +665,19 @@ class WimaxrfService < LegacyGridService
   s_description "Add datapath"
   s_param :type, 'type', 'Type of datapath, can be: click1, click2, mf, openflow'
   s_param :vlan, 'vlan', 'VLAN ID'
-  s_param :interface, '[interface]', 'Name of the network interface that hosts the VLAN'
+  s_param :interface, 'interface', 'Name of the network interface that hosts the VLAN'
   service 'datapath/add' do |req, res|
-    vlan = getParam(req, 'vlan')
     type = getParam(req, 'type')
+    vlan = getParam(req, 'vlan')
+    interface = getParam(req, 'interface')
+    params = getAllParams(req)
+    params.delete('type')
+    params.delete('vlan')
+    params.delete('interface')
     # backward compatibility
     if type == 'click'
       type = 'click1'
     end
-    params = getAllParams(req)
-    if req.query.has_key?('interface')
-      interface = getParam(req, 'interface')
-      params.delete('interface')
-    else
-      interface = @datapathif
-    end
-    params.delete('vlan')
-    params.delete('type')
     result = addDataPath(type, vlan, interface, params)
     setResponsePlainText(res, result)
   end
