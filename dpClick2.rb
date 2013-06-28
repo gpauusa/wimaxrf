@@ -16,41 +16,49 @@ class Click2Datapath < DataPath
     @port_bs = config['bs_port'] || 'eth1'
     @port_net = config['network_port'] || 'eth2'
     @dpname = "#{port_net}-#{vlan_net}" # TODO: move to parent class
-    @click_socket = UNIXSocket.new("/var/run/click-#{@dpname}.sock")
+    @click_socket_path = "/var/run/click-#{@dpname}.sock"
+    @click_socket = nil
     @click_command = config['click_command'] || '/usr/local/bin/click'
-    @click_command += " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket.path}"
-    start()
+    @click_command += " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
   end
 
   # start a new click instance if not already running
   def start
-    return unless @mobiles.length > 0
-    return unless @app.nil?
+    return unless @app.nil? && @mobiles.length > 0
     @app = ExecApp.new("C2DP-#{@dpname}", self, @click_command)
-    update_click_config()
-    @app
+    @click_socket = UNIXSocket.new(@click_socket_path)
+    update_click_config
   end
 
   # stop the click instance, do nothing if it's not running
   def stop
     return unless @app
+    @click_socket.close
+    @click_socket = nil
     begin
-      @app.kill()
+      @app.kill
     rescue Exception => ex
-      error("Exception in stop: '#{ex}'")
+      error("Exception in stop:\n#{ex}")
     end
     @app = nil
   end
 
+  def restart
+    update_click_config
+  end
+
   # update the click configuration with a new one generated on the fly
   def update_click_config
+    return unless @click_socket
+    # TODO: the following return is wrong, we should instead
+    #       generate an empty config when there are no clients
     return unless @mobiles.length > 0
-    new_config = generate_click_config()
+    new_config = generate_click_config
     info("Loading new click configuration for datapath #{@dpname}")
     debug(new_config)
     @click_socket.send("write hotconfig #{new_config}\n", 0)
     # TODO: better error checking
-    while line = @click_socket.gets()
+    while line = @click_socket.gets
       if line == "200 Write handler 'hotconfig' OK"
         info("New config loaded successfully")
         break

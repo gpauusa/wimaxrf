@@ -80,7 +80,6 @@ class ExecApp < MObject
   # @param mapStderrToStdout If true report stderr as stdin [false]
   #
   def initialize(id, observer, cmd, mapStderrToStdout = false)
-
     @id = id
     @observer = observer
     @@apps[id] = self
@@ -111,7 +110,7 @@ class ExecApp < MObject
         if cmd.kind_of?(Array)
           cmd = cmd.join(' ')
         end
-        STDERR.puts "exec failed for '#{cmd}'(#{$!}): #{ex}"
+        STDERR.puts "exec failed for '#{cmd}' (#{$!}): #{ex}"
       end
       # Should never get here
       exit!
@@ -122,6 +121,7 @@ class ExecApp < MObject
     pe[1].close
     monitorAppPipe('stdout', pr[0])
     monitorAppPipe(mapStderrToStdout ? 'stdout' : 'stderr', pe[0])
+
     # Create thread which waits for application to exit
     Thread.new(id, @pid) do |id, pid|
       ret = Process.waitpid(pid)
@@ -161,7 +161,6 @@ class ExecApp < MObject
       rescue Exception => err
         error "monitorApp(#{@id}): #{err}"
       ensure
-#        debug "#{@id} IO close"
         pipe.close
       end
     }
