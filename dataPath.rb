@@ -1,6 +1,6 @@
 require 'omf-aggmgr/ogs_wimaxrf/client'
 
-class DataPath
+class DataPath < MObject
   attr_reader :name
 
   def self.create(type, name, *args)
@@ -21,6 +21,7 @@ class DataPath
   end
 
   def initialize(config)
+    super()
     @mobiles = {}
     @name = config['name']
   end
