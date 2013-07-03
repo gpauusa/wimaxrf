@@ -26,14 +26,15 @@
 # == Description
 #
 require 'omf-aggmgr/ogs/legacyGridService'
-require 'omf-aggmgr/ogs_wimaxrf/dpClick1.rb'
+require 'omf-aggmgr/ogs_wimaxrf/authenticator'
 require 'omf-aggmgr/ogs_wimaxrf/dpClick2.rb'
-require 'omf-aggmgr/ogs_wimaxrf/dpOpenflow.rb'
-require 'omf-aggmgr/ogs_wimaxrf/dpMFirst.rb'
 require 'omf-aggmgr/ogs_wimaxrf/dbClasses'
+require 'omf-aggmgr/ogs_wimaxrf/dpClick1'
+require 'omf-aggmgr/ogs_wimaxrf/dpClick2'
+require 'omf-aggmgr/ogs_wimaxrf/dpMFirst'
+require 'omf-aggmgr/ogs_wimaxrf/dpOpenflow'
 require 'omf-aggmgr/ogs_wimaxrf/sftablesParser'
 require 'omf-aggmgr/ogs_wimaxrf/util'
-require 'omf-aggmgr/ogs_wimaxrf/authenticator'
 
 WIMAXRF_DIR = File.expand_path(File.dirname(__FILE__))
 
@@ -64,7 +65,7 @@ class WimaxrfService < LegacyGridService
 
     dpconfig = findAllDataPaths()
     dpconfig.each do |dpc|
-      @dpath[dpc['name']] = DataPath.create(dpc['type'], dpc['name'], dpc)
+      @dpath[dpc['name']] = createDataPath(dpc['type'], dpc['name'], dpc)
     end
     @manageInterface = @@config['datapath']['manage_interface'] || false
 
@@ -715,8 +716,25 @@ class WimaxrfService < LegacyGridService
     end
     newdp.save
 
-    @dpath[newdp.name] = DataPath.create(type, newdp.name, dpc)
+    @dpath[newdp.name] = createDataPath(type, newdp.name, dpc)
     "Datapath #{interface}-#{vlan} added"
+  end
+
+  def self.createDataPath(type, name, *args)
+    info("Creating #{type} datapath #{name}")
+    case type
+      when 'click1', 'click' # backward compatibility
+        Click1Datapath.new(*args)
+      when 'click2'
+        Click2Datapath.new(*args)
+      when 'mf'
+        MFirstDatapath.new(*args)
+      when 'openflow'
+        OpenFlowDatapath.new(*args)
+      else
+        error("Unknown type '#{type}' for datapath #{name}")
+        nil
+    end
   end
 
   s_description "Delete datapath"
