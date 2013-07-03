@@ -6,15 +6,15 @@ require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
 require 'omf-aggmgr/ogs_wimaxrf/execApp'
 
 class Click2Datapath < DataPath
-  attr_reader :port_bs, :port_net, :vlan_bs, :vlan_net # TODO FIXME
+  attr_reader :interface_bs, :interface_net, :vlan_bs, :vlan # TODO FIXME
 
   def initialize(config)
     super
     @app = nil
     @vlan_bs = config['vlan_bs'] || 0
-    @vlan_net = config['vlan_net'] || 0
-    @port_bs = config['bs_port'] || 'eth1'
-    @port_net = config['network_port'] || 'eth2'
+    @vlan = config['vlan'] || 0
+    @interface_bs = config['bs_port'] || 'eth1'
+    @interface = config['interface'] || 'eth2'
     @click_socket_path = config['click_socket_dir'] || '/var/run'
     @click_socket_path << "/click-#{name}.sock"
     @click_socket = nil
@@ -24,7 +24,7 @@ class Click2Datapath < DataPath
 
   # start a new click instance if not already running
   def start
-    return unless @app.nil? && @mobiles.length > 0
+    return unless @app.nil?
     @app = ExecApp.new("C2DP-#{name}", nil, @click_command)
     @click_socket = UNIXSocket.new(@click_socket_path)
     update_click_config
@@ -54,22 +54,22 @@ class Click2Datapath < DataPath
     # first we build the parameters and the static
     # elements that depend on the presence of VLANs
     if @vlan_bs != 0
-      interface_bs = "#{@port_bs}.#{@vlan_bs}"
+      interface_bs = "#{@interface_bs}.#{@vlan_bs}"
       bs_vlan_encap = "-> vlan_to_bs_encap :: VLANEncap(#{@vlan_bs})"
-      bs_vlan_decap = "-> bs_decap :: VLANDecap"
+      bs_vlan_decap = '-> bs_decap :: VLANDecap'
     else
-      interface_bs = @port_bs
-      bs_vlan_decap = ""
-      bs_vlan_encap = ""
+      interface_bs = @interface_bs
+      bs_vlan_decap = ''
+      bs_vlan_encap = ''
     end
-    if @vlan_net != 0
-      interface_net = "#{@port_net}.#{@vlan_net}"
-      net_vlan_encap = "-> vlan_to_net_encap :: VLANEncap(#{@vlan_net})"
-      net_vlan_decap = "-> net_decap :: VLANDecap"
+    if @vlan != 0
+      interface_net = "#{@interface}.#{@vlan}"
+      net_vlan_encap = "-> vlan_to_net_encap :: VLANEncap(#{@vlan})"
+      net_vlan_decap = '-> net_decap :: VLANDecap'
     else
-      interface_net = @port_net
-      net_vlan_decap = ""
-      net_vlan_encap = ""
+      interface_net = @interface
+      net_vlan_decap = ''
+      net_vlan_encap = ''
     end
     config = "switch :: EtherSwitch; \
 from_bs :: FromDevice(#{interface_bs}, PROMISC true); \
@@ -81,8 +81,8 @@ to_net :: ToDevice(#{interface_net});"
     # coming from the bs and from the outside network
     filter_first_output = []
     filter_second_output = []
-    network_filter = "filter_from_network :: {"
-    bs_filter = "filter_from_bs :: {"
+    network_filter = 'filter_from_network :: {'
+    bs_filter = 'filter_from_bs :: {'
     counter = 1
     mobiles.each_key do |mac|
       network_filter << "filter_#{counter} :: HostEtherFilter(#{mac}, DROP_OWN false, DROP_OTHER true);"
@@ -91,12 +91,12 @@ to_net :: ToDevice(#{interface_net});"
       filter_second_output << "filter_#{counter}[1]"
       counter += 1
     end
-    network_filter << "input -> filter_1;"
-    network_filter << filter_first_output.join(", ") << " -> output;"
-    network_filter << filter_second_output.join(" -> ") << " -> sink :: Discard; }"
-    bs_filter << "input -> filter_1;"
-    bs_filter << filter_second_output.join(", ") << " -> output;"
-    bs_filter << filter_first_output.join(" -> ") + " -> sink :: Discard; }"
+    network_filter << 'input -> filter_1;'
+    network_filter << filter_first_output.join(', ') << ' -> output;'
+    network_filter << filter_second_output.join(' -> ') << ' -> sink :: Discard; }'
+    bs_filter << 'input -> filter_1;'
+    bs_filter << filter_second_output.join(', ') << ' -> output;'
+    bs_filter << filter_first_output.join(' -> ') + ' -> sink :: Discard; }'
 
     # and at the end we generate package routing
     routing = "bs_queue :: Queue -> to_bs; \
@@ -113,20 +113,21 @@ switch[1] #{bs_vlan_encap} -> bs_queue;"
   # update the click configuration with a new one generated on the fly
   def update_click_config
     return unless @click_socket
-    # TODO: the following return is wrong, we should instead
-    #       generate an empty config when there are no clients
-    return unless @mobiles.length > 0
-    new_config = generate_click_config
+    if @mobiles.length > 0
+      new_config = generate_click_config
+    else
+      new_config = ''
+    end
     info("Loading new click configuration for datapath #{name}")
     debug(new_config)
     @click_socket.send("write hotconfig #{new_config}\n", 0)
     # TODO: better error checking
     while line = @click_socket.gets
       if line == "200 Write handler 'hotconfig' OK"
-        info("New config loaded successfully")
+        info('New config loaded successfully')
         break
-      elsif line.match("^5[0-9]{2}*.")
-        error("Loaded a wrong config, old config still running")
+      elsif line.match('^5[0-9]{2}*.')
+        error('Loaded a wrong config, old config still running')
         break
       end
     end

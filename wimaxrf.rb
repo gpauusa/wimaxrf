@@ -1,7 +1,7 @@
 #
-# Copyright (c) 2006-20011 National ICT Australia (NICTA), Australia
+# Copyright (c) 2006-2011 National ICT Australia (NICTA), Australia
 #
-# Copyright (c) 2004-20011 - WINLAB, Rutgers University, USA
+# Copyright (c) 2004-2011 - WINLAB, Rutgers University, USA
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@
 #
 require 'omf-aggmgr/ogs/legacyGridService'
 require 'omf-aggmgr/ogs_wimaxrf/dpClick1.rb'
+require 'omf-aggmgr/ogs_wimaxrf/dpClick2.rb'
 require 'omf-aggmgr/ogs_wimaxrf/dpOpenflow.rb'
 require 'omf-aggmgr/ogs_wimaxrf/dpMFirst.rb'
 require 'omf-aggmgr/ogs_wimaxrf/dbClasses'
@@ -155,14 +156,14 @@ class WimaxrfService < LegacyGridService
       if val.is_a?(Hash)
           el = parent.add_element(name)
           addXMLElementsFromHash(el,val, false)
-        else
+      else
           if val.is_a?(Array)
             addXMLElementFromArray(parent,name,val)
           else
             el = parent.add_element(name)
             el.add_text(val)
           end
-        end
+      end
     }
   end
 
@@ -735,7 +736,6 @@ class WimaxrfService < LegacyGridService
     # check if there's any client in this vlan
     nodes = @auth.list_clients(interface, vlan)
     return "Cannot delete datapath: there are still #{nodes.length} clients using it" unless nodes.empty?
-
     if @manageInterface
       if dp.type.start_with?('click') and vlan != '0'
         debug("Deleting VLAN #{interface}.#{vlan}")
@@ -745,7 +745,7 @@ class WimaxrfService < LegacyGridService
         end
       end
     end
-
+    dp.stop
     dpname = dp.name
     # remove from database
     if dp.destroy
@@ -966,6 +966,8 @@ class WimaxrfService < LegacyGridService
     begin
       if datapathExists?(interface, vlan)
         @auth.add_client(macaddr, interface, vlan, ipaddress)
+        dp = Datapath.get(interface, vlan)
+        dp.restart
         msg = "Client added"
       else
         msg = "Can not add client, datapath with vlan=#{vlan} does not exist"
@@ -982,6 +984,8 @@ class WimaxrfService < LegacyGridService
     macaddr = getParam(req, 'macaddr')
     begin
       @auth.del_client(macaddr)
+      dp = Datapath.get(interface, vlan)
+      dp.restart
       msg = "Client #{macaddr} deleted"
     rescue Exception => e
       msg = e.message
@@ -1032,9 +1036,13 @@ class WimaxrfService < LegacyGridService
     message = " "
     if datapathExists?(interface, vlan)
       if aclient.vlan != vlan or aclient.interface != interface
+        dp_old = Datapath.get(aclient.interface, aclient.vlan)
+        dp = Datapath.get(interface, vlan)
         updateHash[:vlan]=vlan
         updateHash[:interface]=interface
         updateMobile=true
+        dp.restart
+        dp_old.restart
         message << "Vlan for #{macaddr} updated"
       end
     else
@@ -1058,12 +1066,12 @@ class WimaxrfService < LegacyGridService
   s_param :interface, '[interface]', 'Name of the network interface that hosts the VLAN'
   service 'datapath/clients/list' do |req, res|
   if req.query.has_key?('vlan')
-      vlan = getParam(req,'vlan')
-      interface = getParam(req, 'interface')
-    else
-      vlan = nil
-      interface=nil
-    end
+    vlan = getParam(req,'vlan')
+    interface = getParam(req, 'interface')
+   else
+    vlan = nil
+    interface=nil
+  end
     nodes = @auth.list_clients(interface,vlan)
     root = REXML::Element.new("Status")
     if nodes != nil

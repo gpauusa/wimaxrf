@@ -1,13 +1,13 @@
 class BSPBase
   @name = nil #name of service
-  @info = nil 
+  @info = nil
   @categoryName = nil #name of parameter to retrieve
   @params = {}
- 
-  def self.each(&block)    
+
+  def self.each(&block)
     @params.each &block
   end
- 
+
   def self.name(n)
     @name = n
   end
@@ -23,7 +23,7 @@ class BSPBase
   def self.getInfo
     @info
   end
-  
+
   def self.categoryName(n)
     @categoryName = n
   end
