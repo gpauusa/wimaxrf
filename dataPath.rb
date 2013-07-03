@@ -1,24 +1,7 @@
-require 'omf-aggmgr/ogs_wimaxrf/client'
+require 'omf-common/mobject'
 
 class DataPath < MObject
   attr_reader :name
-
-  def self.create(type, name, *args)
-    info("Creating datapath #{name}")
-    case type
-      when 'click1', 'click' # backward compatibility
-        Click1Datapath.new(*args)
-      when 'click2'
-        Click2Datapath.new(*args)
-      when 'mf'
-        MFirstDatapath.new(*args)
-      when 'openflow'
-        OpenFlowDatapath.new(*args)
-      else
-        error("Unknown type '#{type}' for datapath #{name}")
-        nil
-    end
-  end
 
   def initialize(config)
     super()
