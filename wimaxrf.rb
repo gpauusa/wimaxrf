@@ -27,7 +27,6 @@
 #
 require 'omf-aggmgr/ogs/legacyGridService'
 require 'omf-aggmgr/ogs_wimaxrf/authenticator'
-require 'omf-aggmgr/ogs_wimaxrf/dpClick2.rb'
 require 'omf-aggmgr/ogs_wimaxrf/dbClasses'
 require 'omf-aggmgr/ogs_wimaxrf/dpClick1'
 require 'omf-aggmgr/ogs_wimaxrf/dpClick2'
@@ -749,11 +748,15 @@ class WimaxrfService < LegacyGridService
 
   def self.deleteDataPath(vlan,interface)
     dp = Datapath.get(interface, vlan)
+
     return "Unknown datapath #{interface}-#{vlan}" unless dp
 
     # check if there's any client in this vlan
     nodes = @auth.list_clients(interface, vlan)
     return "Cannot delete datapath: there are still #{nodes.length} clients using it" unless nodes.empty?
+    dpname = dp.name
+    #stopping datapath
+    @dpath[dpname].stop
     if @manageInterface
       if dp.type.start_with?('click') and vlan != '0'
         debug("Deleting VLAN #{interface}.#{vlan}")
@@ -763,8 +766,6 @@ class WimaxrfService < LegacyGridService
         end
       end
     end
-    dp.stop
-    dpname = dp.name
     # remove from database
     if dp.destroy
       # remove from hash
@@ -985,7 +986,7 @@ class WimaxrfService < LegacyGridService
       if datapathExists?(interface, vlan)
         @auth.add_client(macaddr, interface, vlan, ipaddress)
         dp = Datapath.get(interface, vlan)
-        dp.restart
+        @dpath.restart(dp.name)
         msg = "Client added"
       else
         msg = "Can not add client, datapath with vlan=#{vlan} does not exist"
@@ -1003,7 +1004,7 @@ class WimaxrfService < LegacyGridService
     begin
       @auth.del_client(macaddr)
       dp = Datapath.get(interface, vlan)
-      dp.restart
+      @dpath[dp.nane].restart
       msg = "Client #{macaddr} deleted"
     rescue Exception => e
       msg = e.message
@@ -1059,8 +1060,8 @@ class WimaxrfService < LegacyGridService
         updateHash[:vlan]=vlan
         updateHash[:interface]=interface
         updateMobile=true
-        dp.restart
-        dp_old.restart
+        @dpath[dp.name].restart
+        @dpath[dp_old.name].restart
         message << "Vlan for #{macaddr} updated"
       end
     else
@@ -1083,13 +1084,13 @@ class WimaxrfService < LegacyGridService
   s_param :vlan, '[vlan]', 'VLAN ID'
   s_param :interface, '[interface]', 'Name of the network interface that hosts the VLAN'
   service 'datapath/clients/list' do |req, res|
-  if req.query.has_key?('vlan')
-    vlan = getParam(req,'vlan')
-    interface = getParam(req, 'interface')
-   else
-    vlan = nil
-    interface=nil
-  end
+    if req.query.has_key?('vlan')
+      vlan = getParam(req,'vlan')
+      interface = getParam(req, 'interface')
+    else
+      vlan = nil
+      interface=nil
+    end
     nodes = @auth.list_clients(interface,vlan)
     root = REXML::Element.new("Status")
     if nodes != nil

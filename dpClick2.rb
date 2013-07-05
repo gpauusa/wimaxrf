@@ -44,7 +44,11 @@ class Click2Datapath < DataPath
   end
 
   def restart
-    update_click_config
+    if @app == nil
+     start
+    else
+      update_click_config
+    end
   end
 
   private
