@@ -755,8 +755,6 @@ class WimaxrfService < LegacyGridService
     nodes = @auth.list_clients(interface, vlan)
     return "Cannot delete datapath: there are still #{nodes.length} clients using it" unless nodes.empty?
     dpname = dp.name
-    #stopping datapath
-    @dpath[dpname].stop
     if @manageInterface
       if dp.type.start_with?('click') and vlan != '0'
         debug("Deleting VLAN #{interface}.#{vlan}")
@@ -985,8 +983,6 @@ class WimaxrfService < LegacyGridService
     begin
       if datapathExists?(interface, vlan)
         @auth.add_client(macaddr, interface, vlan, ipaddress)
-        dp = Datapath.get(interface, vlan)
-        @dpath.restart(dp.name)
         msg = "Client added"
       else
         msg = "Can not add client, datapath with vlan=#{vlan} does not exist"
@@ -1003,8 +999,6 @@ class WimaxrfService < LegacyGridService
     macaddr = getParam(req, 'macaddr')
     begin
       @auth.del_client(macaddr)
-      dp = Datapath.get(interface, vlan)
-      @dpath[dp.nane].restart
       msg = "Client #{macaddr} deleted"
     rescue Exception => e
       msg = e.message
@@ -1055,13 +1049,9 @@ class WimaxrfService < LegacyGridService
     message = " "
     if datapathExists?(interface, vlan)
       if aclient.vlan != vlan or aclient.interface != interface
-        dp_old = Datapath.get(aclient.interface, aclient.vlan)
-        dp = Datapath.get(interface, vlan)
         updateHash[:vlan]=vlan
         updateHash[:interface]=interface
         updateMobile=true
-        @dpath[dp.name].restart
-        @dpath[dp_old.name].restart
         message << "Vlan for #{macaddr} updated"
       end
     else
