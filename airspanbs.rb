@@ -63,12 +63,13 @@ class AirBs < Netdev
       end
     end
 
-    # TODO: handle already registered clients on startup
-    #root = "1.3.6.1.4.1.989.1.16.2.9.6.1.1.1"
-    #snmp_get_multi(root) do |row|
-    #  mac = row.name.index(root).map { |a| "%02x" % a }.join(":")
-    #  create_ms_datapath(mac)
-    #end
+    # TODO: use of MacAddress for converting instead of map
+    # handle already registered clients on startup
+    root = "1.3.6.1.4.1.989.1.16.2.9.6.1.1.1"
+    snmp_get_multi(root) do |row|
+      mac = row.name.index(root).map { |a| "%02x" % a }.join(":")
+      create_ms_datapath(mac)
+    end
 
     scheduler = Rufus::Scheduler.start_new
     # Local stats gathering
@@ -154,12 +155,14 @@ class AirBs < Netdev
     else
       @mobs.add(mac, client.dpname, client.ipaddress)
       debug "Client [#{mac}] added to datapath #{client.dpname}"
+      @mobs.start(mac)
     end
   end
 
   def delete_ms_datapath(mac)
     if @mobs.has_mac?(mac) then
       @mobs.delete(mac)
+      @mobs.start(mac)
       debug "Client [#{mac}] deleted"
     else
       debug "Client [#{mac}] is not registered"

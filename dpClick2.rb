@@ -20,14 +20,26 @@ class Click2Datapath < DataPath
     @click_socket = nil
     @click_command = config['click_command'] || '/usr/local/bin/click'
     @click_command << " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
+    debug("Click2 datapath for #{name} initialized")
   end
 
   # start a new click instance if not already running
   def start
     return unless @app.nil?
+    if File::exist?(@click_socket_path)
+      File::delete(@click_socket_path)
+    end
+    if @vlan.to_i != 0
+      cmd = "ip link set #{@interface}.#{@vlan} up"
+      if not system(cmd)
+        error("Could not put up #{@interface}.#{@vlan}: command \"#{cmd}\" failed with status #{$?.exitstatus}")
+      end
+    end
     @app = ExecApp.new("C2DP-#{name}", nil, @click_command)
+    sleep(0.5)
     @click_socket = UNIXSocket.new(@click_socket_path)
     update_click_config
+    debug("Started the click instance for #{name}")
   end
 
   # stop the click instance, do nothing if it's not running
@@ -57,7 +69,7 @@ class Click2Datapath < DataPath
   def generate_click_config
     # first we build the parameters and the static
     # elements that depend on the presence of VLANs
-    if @vlan_bs != 0
+    if @vlan_bs.to_i != 0
       interface_bs = "#{@interface_bs}.#{@vlan_bs}"
       bs_vlan_encap = "-> vlan_to_bs_encap :: VLANEncap(#{@vlan_bs})"
       bs_vlan_decap = '-> bs_decap :: VLANDecap'
@@ -66,7 +78,7 @@ class Click2Datapath < DataPath
       bs_vlan_decap = ''
       bs_vlan_encap = ''
     end
-    if @vlan != 0
+    if @vlan.to_i != 0
       interface_net = "#{@interface}.#{@vlan}"
       net_vlan_encap = "-> vlan_to_net_encap :: VLANEncap(#{@vlan})"
       net_vlan_decap = '-> net_decap :: VLANDecap'
@@ -88,7 +100,7 @@ to_net :: ToDevice(#{interface_net});"
     network_filter = 'filter_from_network :: {'
     bs_filter = 'filter_from_bs :: {'
     counter = 1
-    mobiles.each_key do |mac|
+    @mobiles.each_key do |mac|
       network_filter << "filter_#{counter} :: HostEtherFilter(#{mac}, DROP_OWN false, DROP_OTHER true);"
       bs_filter << "filter_#{counter} :: HostEtherFilter(#{mac}, DROP_OWN true, DROP_OTHER false);"
       filter_first_output << "filter_#{counter}[0]"
@@ -122,16 +134,17 @@ switch[1] #{bs_vlan_encap} -> bs_queue;"
     else
       new_config = ''
     end
-    info("Loading new click configuration for datapath #{name}")
+    debug("Loading new click configuration for datapath #{name}")
     debug(new_config)
     @click_socket.send("write hotconfig #{new_config}\n", 0)
     # TODO: better error checking
     while line = @click_socket.gets
-      if line == "200 Write handler 'hotconfig' OK"
-        info('New config loaded successfully')
+      debug("Click2 status: #{line}") #this will print just the first two lines for now FIXME
+      if line.match('200|220')
+        debug("New config for #{name} loaded successfully")
         break
       elsif line.match('^5[0-9]{2}*.')
-        error('Loaded a wrong config, old config still running')
+        error("Loaded a wrong config, old config still running: #{line}")
         break
       end
     end
