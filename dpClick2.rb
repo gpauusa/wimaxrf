@@ -11,8 +11,8 @@ class Click2Datapath < DataPath
   def initialize(config)
     super
     @app = nil
-    @vlan_bs = config['vlan_bs'] || 0
-    @vlan = config['vlan'] || 0
+    @vlan_bs = config['vlan_bs'].to_i || 0
+    @vlan = config['vlan'].to_i || 0
     @interface_bs = config['bs_port'] || 'eth1'
     @interface = config['interface'] || 'eth2'
     @click_socket_path = config['click_socket_dir'] || '/var/run'
@@ -20,7 +20,6 @@ class Click2Datapath < DataPath
     @click_socket = nil
     @click_command = config['click_command'] || '/usr/local/bin/click'
     @click_command << " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
-    debug("Click2 datapath for #{name} initialized")
   end
 
   # start a new click instance if not already running
@@ -29,7 +28,7 @@ class Click2Datapath < DataPath
     if File::exist?(@click_socket_path)
       File::delete(@click_socket_path)
     end
-    if @vlan.to_i != 0
+    if @vlan != 0
       cmd = "ip link set #{@interface}.#{@vlan} up"
       if not system(cmd)
         error("Could not put up #{@interface}.#{@vlan}: command \"#{cmd}\" failed with status #{$?.exitstatus}")
@@ -39,7 +38,6 @@ class Click2Datapath < DataPath
     sleep(0.5)
     @click_socket = UNIXSocket.new(@click_socket_path)
     update_click_config
-    debug("Started the click instance for #{name}")
   end
 
   # stop the click instance, do nothing if it's not running
@@ -56,10 +54,10 @@ class Click2Datapath < DataPath
   end
 
   def restart
-    if @app == nil
-     start
-    else
+    if @app
       update_click_config
+    else
+      start
     end
   end
 
@@ -69,7 +67,7 @@ class Click2Datapath < DataPath
   def generate_click_config
     # first we build the parameters and the static
     # elements that depend on the presence of VLANs
-    if @vlan_bs.to_i != 0
+    if @vlan_bs != 0
       interface_bs = "#{@interface_bs}.#{@vlan_bs}"
       bs_vlan_encap = "-> vlan_to_bs_encap :: VLANEncap(#{@vlan_bs})"
       bs_vlan_decap = '-> bs_decap :: VLANDecap'
@@ -78,7 +76,7 @@ class Click2Datapath < DataPath
       bs_vlan_decap = ''
       bs_vlan_encap = ''
     end
-    if @vlan.to_i != 0
+    if @vlan != 0
       interface_net = "#{@interface}.#{@vlan}"
       net_vlan_encap = "-> vlan_to_net_encap :: VLANEncap(#{@vlan})"
       net_vlan_decap = '-> net_decap :: VLANDecap'
@@ -141,10 +139,10 @@ switch[1] #{bs_vlan_encap} -> bs_queue;"
     while line = @click_socket.gets
       debug("Click2 status: #{line}") #this will print just the first two lines for now FIXME
       if line.match('200|220')
-        debug("New config for #{name} loaded successfully")
+        debug("New config loaded successfully")
         break
       elsif line.match('^5[0-9]{2}*.')
-        error("Loaded a wrong config, old config still running: #{line}")
+        error("Could not load new config, old config still running: #{line}")
         break
       end
     end
