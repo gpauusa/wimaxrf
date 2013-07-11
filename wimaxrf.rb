@@ -752,24 +752,29 @@ class WimaxrfService < LegacyGridService
 
   def self.deleteDataPath(vlan,interface)
     dp = Datapath.get(interface, vlan)
-
     return "Unknown datapath #{interface}-#{vlan}" unless dp
-
     # check if there's any client in this vlan
     nodes = @auth.list_clients(interface, vlan)
     return "Cannot delete datapath: there are still #{nodes.length} clients using it" unless nodes.empty?
+
     dpname = dp.name
-    #stop datapath before removing it
+    # stop datapath before removing it
     @dpath[dpname].stop
+
     if @manageInterface
       if dp.type.start_with?('click') and vlan != '0'
         debug("Deleting VLAN #{interface}.#{vlan}")
+        cmd = "ip link set #{interface}.#{vlan} down"
+        if not system(cmd)
+          return "Could not bring interface down: command '#{cmd}' failed with status #{$?.exitstatus}"
+        end
         cmd = "ip link delete #{interface}.#{vlan}"
         if not system(cmd)
-          return "Could not delete VLAN: command \"#{cmd}\" failed with status #{$?.exitstatus}"
+          return "Could not delete VLAN: command '#{cmd}' failed with status #{$?.exitstatus}"
         end
       end
     end
+
     # remove from database
     if dp.destroy
       # remove from hash
