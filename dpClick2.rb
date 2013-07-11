@@ -28,12 +28,6 @@ class Click2Datapath < DataPath
     if File::exist?(@click_socket_path)
       File::delete(@click_socket_path)
     end
-    if @vlan != 0
-      cmd = "ip link set #{@interface}.#{@vlan} up"
-      if not system(cmd)
-        error("Could not put up #{@interface}.#{@vlan}: command \"#{cmd}\" failed with status #{$?.exitstatus}")
-      end
-    end
     @app = ExecApp.new("C2DP-#{name}", nil, @click_command)
     sleep(0.5)
     @click_socket = UNIXSocket.new(@click_socket_path)

@@ -695,7 +695,11 @@ class WimaxrfService < LegacyGridService
         debug("Creating VLAN #{interface}.#{vlan}")
         cmd = "ip link add link #{interface} name #{interface}.#{vlan} type vlan id #{vlan}"
         if not system(cmd)
-          return "Could not create VLAN: command \"#{cmd}\" failed with status #{$?.exitstatus}"
+          return "Could not create VLAN: command '#{cmd}' failed with status #{$?.exitstatus}"
+        end
+        cmd = "ip link set #{interface}.#{vlan} up"
+        if not system(cmd)
+          return "Could not bring interface up: command '#{cmd}' failed with status #{$?.exitstatus}"
         end
       end
     elsif vlan != '0' and not interfaceExists?(interface, vlan)
