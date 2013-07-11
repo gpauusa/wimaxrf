@@ -755,6 +755,8 @@ class WimaxrfService < LegacyGridService
     nodes = @auth.list_clients(interface, vlan)
     return "Cannot delete datapath: there are still #{nodes.length} clients using it" unless nodes.empty?
     dpname = dp.name
+    #stop datapath before removing it
+    @dpath[dpname].stop
     if @manageInterface
       if dp.type.start_with?('click') and vlan != '0'
         debug("Deleting VLAN #{interface}.#{vlan}")
