@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2006-2011 National ICT Australia (NICTA), Australia
-#
-# Copyright (c) 2004-2011 - WINLAB, Rutgers University, USA
+# Copyright (c) 2004-2013 WINLAB, Rutgers University, USA
+# Copyright (c) 2012-2013 University of California, Los Angeles, USA
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
