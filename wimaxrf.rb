@@ -41,8 +41,7 @@ class WimaxrfService < LegacyGridService
   # used to register/mount the service, the service's url will be based on it
   name 'wimaxrf'
   info 'Service to configure and control WiMAX (Basestation) RF Section'
-  @@config = nil
-  @dpath = {}
+  @@config = nil # TODO: convert to class instance variable
 
   #
   # Configure the service through a hash of options
@@ -50,12 +49,13 @@ class WimaxrfService < LegacyGridService
   # - config = the Hash holding the config parameters for this service
   #
   def self.configure(config)
-    @@config = config
     %w(bs database datapath).each do |sect|
-      raise("Missing configuration section \"#{sect}\" in wimaxrf.yaml") unless @@config[sect]
+      raise("Missing configuration section '#{sect}' in wimaxrf.yaml") unless config[sect]
     end
 
+    @@config = config
     @auth = Authenticator.new
+    @dpath = {}
 
     dbFile = "#{WIMAXRF_DIR}/#{@@config['database']['dbFile']}"
     debug("Loading database file #{dbFile}")
@@ -810,15 +810,15 @@ class WimaxrfService < LegacyGridService
   service 'datapath/status' do |req, res|
     vlan = getParam(req, 'vlan')
     interface = getParam(req, 'interface')
-    root = getDatapathStatus(interface,vlan)
+    root = getDatapathStatus(interface, vlan)
     setResponse(res, root)
   end
 
   def self.getDatapathStatus(interface,vlan)
     root = REXML::Element.new("DataPath")
-    dpath = Datapath.first(:vlan => vlan,:interface => interface)
+    dpath = Datapath.first(:vlan => vlan, :interface => interface)
     if dpath != nil
-      root.add_attribute("vlan", dpath.vlan )
+      root.add_attribute("vlan", dpath.vlan)
       root.add_attribute("type", dpath.type)
       root.add_attribute("interface", dpath.interface)
       root.add_attribute("name", dpath.name)
@@ -870,10 +870,9 @@ class WimaxrfService < LegacyGridService
   service 'datapath/config/load' do |req, res|
     name = getParam(req, :name.to_s)
     conf = DataPathConfig.first(:fields => [:status], :name => name)
-    #if config end
     begin
-      if conf != nil
-    xmlConfig = conf.status
+      if conf
+        xmlConfig = conf.status
         docNew = REXML::Document.new(xmlConfig.to_s)
         #@auth.del_all_clients
         responseText = loadDataPath(docNew)
@@ -892,29 +891,23 @@ class WimaxrfService < LegacyGridService
     vlan = dp.attributes["vlan"]
     type = dp.attributes["type"]
     interface = dp.attributes["interface"]
-    debug("#{vlan} #{type} #{interface} ")
     params = {}
     dp.elements.each do |att|
-      debug("#{att.name}")
       if (att.name <=> "Clients") != 0 #element Clients define clients not datapath attribute
-        params[att.name]=att.text
+        params[att.name] = att.text
       end
     end
-    debug("#{params}")
     addDataPath(type,vlan,interface,params)
     clientsXml = dp.elements["Clients"]
-    message = "Complete"
-    message = loadClients(interface,vlan,clientsXml)
-    debug("#{message}")
-    message
+    loadClients(interface,vlan,clientsXml)
   end
 
   def self.loadClients(interface,vlan,docNew)
     message = " "
     begin
       clients = docNew.root.elements["Clients"].elements
-      if clients==nil
-        message << "NOT a valid datapath clients configuration"
+      if clients.nil?
+        message << "Not a valid datapath clients configuration"
       else
         message << "Load complete"
         clients.each do |c|
@@ -982,21 +975,21 @@ class WimaxrfService < LegacyGridService
   end
 
   s_description "Add client to datapath"
-  s_param :vlan, 'vlan', 'VLAN ID'
   s_param :macaddr, 'macaddr', 'Client MAC address'
   s_param :ipaddress, 'ipaddress', 'Client IP address'
   s_param :interface, 'interface', 'Datapath interface'
+  s_param :vlan, 'vlan', 'VLAN ID'
   service 'datapath/clients/add' do |req, res|
     macaddr = getParam(req, 'macaddr')
-    vlan = getParam(req, 'vlan')
     ipaddress = getParam(req, 'ipaddress')
     interface = getParam(req, 'interface')
+    vlan = getParam(req, 'vlan')
     begin
       if datapathExists?(interface, vlan)
         @auth.add_client(macaddr, interface, vlan, ipaddress)
         msg = "Client added"
       else
-        msg = "Can not add client, datapath with vlan=#{vlan} does not exist"
+        msg = "Cannot add client, datapath with vlan=#{vlan} does not exist"
       end
     rescue Exception => e
       msg = e.message
@@ -1019,9 +1012,9 @@ class WimaxrfService < LegacyGridService
 
   s_description "Change client's VLAN and/or IP address"
   s_param :macaddr, 'macaddr', 'Client MAC address'
-  s_param :vlan, '[vlan]', 'New VLAN ID'
-  s_param :interface, '[interface]', 'New interface'
   s_param :ipaddress, '[ipaddress]', 'New IP address'
+  s_param :interface, '[interface]', 'New interface'
+  s_param :vlan, '[vlan]', 'New VLAN ID'
   service 'datapath/clients/modify' do |req, res|
     macaddr = getParam(req, 'macaddr')
     message = "modifyClient: "
@@ -1054,28 +1047,28 @@ class WimaxrfService < LegacyGridService
   end
 
   def self.modifyClient(macaddr,interface,vlan,ipaddress)
-    aclient=@auth.get(macaddr)
+    aclient = @auth.get(macaddr)
     updateHash = {}
-    updateMobile=false
+    updateMobile = false
     message = " "
     if datapathExists?(interface, vlan)
-      if aclient.vlan != vlan or aclient.interface != interface
-        updateHash[:vlan]=vlan
-        updateHash[:interface]=interface
-        updateMobile=true
+      if aclient.vlan != vlan || aclient.interface != interface
+        updateHash[:vlan] = vlan
+        updateHash[:interface] = interface
+        updateMobile = true
         message << "Vlan for #{macaddr} updated"
       end
     else
       message << "Can not modify client's vlan, datapath with interface=#{interface} and vlan=#{vlan} does not exist"
     end
-    if ipaddress!=nil and ipaddress != aclient.ipaddress
-      updateHash[:ipaddress]=ipaddress
-      updateMobile=true
+    if ipaddress != nil && ipaddress != aclient.ipaddress
+      updateHash[:ipaddress] = ipaddress
+      updateMobile = true
       message << "\nIP address for #{macaddr} updated"
     end
     if updateMobile
       @auth.update_client(macaddr,updateHash)
-      # We should really check if anything changed before we do this!!!!!!
+      # We should really check if anything changed before we do this
       @@bs.modifyMobile(macaddr)
     end
     message
@@ -1086,11 +1079,11 @@ class WimaxrfService < LegacyGridService
   s_param :interface, '[interface]', 'Name of the network interface that hosts the VLAN'
   service 'datapath/clients/list' do |req, res|
     if req.query.has_key?('vlan')
-      vlan = getParam(req,'vlan')
+      vlan = getParam(req, 'vlan')
       interface = getParam(req, 'interface')
     else
       vlan = nil
-      interface=nil
+      interface = nil
     end
     nodes = @auth.list_clients(interface,vlan)
     root = REXML::Element.new("Status")
