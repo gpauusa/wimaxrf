@@ -12,7 +12,6 @@ class OML4R::MPBase
   def self.get_ver
     @@cver[self]
   end
-
 end
 
 class CLStat < OML4R::MPBase
@@ -68,14 +67,15 @@ class Measurements < MObject
       :nodeID => nID
     }
 
-    if !logconfig.nil? then
-      @enabled = logconfig['enabled'] if (logconfig['enabled'])
-      if !logconfig['localoml'].nil?
+    if logconfig then
+      @enabled = logconfig['enabled'] if logconfig['enabled']
+
+      if logconfig['localoml']
         @lurl = logconfig['localoml']['url'] if !logconfig['localoml']['url'].nil?
         @localinterval = logconfig['localoml']['interval'] if !logconfig['localoml']['interval'].nil?
       end
 
-      if !logconfig['globaloml'].nil?
+      if logconfig['globaloml']
         @gurl = logconfig['globaloml']['url'] if !logconfig['globaloml']['url'].nil?
         @globalinterval = logconfig['globaloml']['interval'] if !logconfig['globaloml']['interval'].nil?
       end
@@ -86,20 +86,21 @@ class Measurements < MObject
       mbs = OML4R::create_channel(:clstat, @lurl)
       OML4R::init(nil, opts)
     rescue Exception => ex
-      raise "OML Initialization error for [#{@lurl},#{@gurl}]:\n#{ex.message}\n"
+      raise "OML Initialization error for [#{@lurl},#{@gurl}]:\n#{ex.message}"
     end
+
     Kernel.at_exit {
       OML4R::close() if @enabled
     }
   end
 
   def bsstats(*args)
-    return if !@enabled
+    return unless @enabled
     BSStat.inject(*args)
   end
 
   def clstats(*args)
-    return if !@enabled
+    return unless @enabled
     CLStat.inject(*args)
   end
 
