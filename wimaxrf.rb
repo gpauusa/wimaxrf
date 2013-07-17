@@ -41,7 +41,6 @@ class WimaxrfService < LegacyGridService
   # used to register/mount the service, the service's url will be based on it
   name 'wimaxrf'
   info 'Service to configure and control WiMAX (Basestation) RF Section'
-  @@config = nil # TODO: convert to class instance variable
 
   #
   # Configure the service through a hash of options
@@ -49,32 +48,36 @@ class WimaxrfService < LegacyGridService
   # - config = the Hash holding the config parameters for this service
   #
   def self.configure(config)
-    %w(bs database datapath).each do |sect|
-      raise("Missing configuration section '#{sect}' in wimaxrf.yaml") unless config[sect]
-    end
-
-    @@config = config
-    @auth = Authenticator.new
+    @config = config
     @dpath = {}
 
-    dbFile = "#{WIMAXRF_DIR}/#{@@config['database']['dbFile']}"
+    %w(bs database datapath).each do |sect|
+      raise("Missing configuration section '#{sect}' in wimaxrf.yaml") unless @config[sect]
+    end
+
+    @auth = Authenticator.new
+    @manageInterface = @config['datapath']['manage_interface'] || false
+
+    # load database
+    dbFile = "#{WIMAXRF_DIR}/#{@config['database']['dbFile']}"
     debug("Loading database file #{dbFile}")
     DataMapper.setup(:default, "sqlite://#{dbFile}")
     DataMapper.auto_upgrade!
 
+    # create datapaths
     dpconfig = findAllDataPaths()
     dpconfig.each do |dpc|
       @dpath[dpc['name']] = createDataPath(dpc['type'], dpc['name'], dpc)
     end
-    @manageInterface = @@config['datapath']['manage_interface'] || false
 
-    if @@config['bs']['type'] == 'airspan'
+    # load BS management module
+    if @config['bs']['type'] == 'airspan'
       require 'omf-aggmgr/ogs_wimaxrf/airspanbs.rb'
-      @@bs = AirBs.new(@dpath, @auth, @@config['bs'], @@config['asngw'])
+      @bs = AirBs.new(@dpath, @auth, @config['bs'], @config['asngw'])
       debug("wimaxrf", "Airspan basestation loaded")
     else
       require 'omf-aggmgr/ogs_wimaxrf/necbs.rb'
-      @@bs = NecBs.new(@dpath, @auth, @@config['bs'], @@config['asngw'])
+      @bs = NecBs.new(@dpath, @auth, @config['bs'], @config['asngw'])
       debug("wimaxrf", "NEC basestation loaded")
     end
 
@@ -93,8 +96,8 @@ class WimaxrfService < LegacyGridService
       dpconf['type'] = dtp.type
       dpconf['vlan'] = dtp.vlan
       dpconf['interface'] = dtp.interface
-      dpconf['data_vlan'] = @@config['bs']['data_vlan']
-      dpconf['data_interface'] = @@config['bs']['data_interface']
+      dpconf['data_vlan'] = @config['bs']['data_vlan']
+      dpconf['data_interface'] = @config['bs']['data_interface']
       if dtp.dpattributes
         dtp.dpattributes.each { |att| dpconf[att.name] = att.value }
       end
@@ -209,7 +212,7 @@ class WimaxrfService < LegacyGridService
     msgEmpty = "Failed to get basestation info"
     replyXML = buildXMLReply("STATUS", msgEmpty, msgEmpty) { |root, dummy|
       bsEl = root.add_element("BaseStation")
-      addXMLElementsFromHash(bsEl,@@bs.get_info())
+      addXMLElementsFromHash(bsEl,@bs.get_info())
     }
     self.setResponse(res, replyXML)
   end
@@ -220,9 +223,9 @@ class WimaxrfService < LegacyGridService
     replyXML = buildXMLReply("STATUS", msgEmpty, msgEmpty) { |root, dummy|
       bsEl = root.add_element("BaseStation")
       ifs = bsEl.add_element("Interfaces")
-      addXMLElementsFromHash(ifs,@@bs.get_bs_interface_traffic())
+      addXMLElementsFromHash(ifs,@bs.get_bs_interface_traffic())
       pdu = bsEl.add_element("Throughput")
-      addXMLElementsFromHash(pdu,@@bs.get_bs_pdu_stats())
+      addXMLElementsFromHash(pdu,@bs.get_bs_pdu_stats())
       mbEl = bsEl.add_element("Clients")
       #add_attribute_hash(mbEl)
     }
@@ -236,19 +239,19 @@ class WimaxrfService < LegacyGridService
 #    mcs = getParam(req, 'mcs')
 #    value = mcs.to_i
 #    ret = ""
-#    ret = ret + @@bs.wiset(:dl_profile1, value)
+#    ret = ret + @bs.wiset(:dl_profile1, value)
 #    value = 255
-#    ret = ret + @@bs.wiset(:dl_profile2, value)
-#    ret = ret + @@bs.wiset(:dl_profile3, value)
-#    ret = ret + @@bs.wiset(:dl_profile4, value)
-#    ret = ret + @@bs.wiset(:dl_profile5, value)
-#    ret = ret + @@bs.wiset(:dl_profile6, value)
-#    ret = ret + @@bs.wiset(:dl_profile7, value)
-#    ret = ret + @@bs.wiset(:dl_profile8, value)
-#    ret = ret + @@bs.wiset(:dl_profile9, value)
-#    ret = ret + @@bs.wiset(:dl_profile10, value)
-#    ret = ret + @@bs.wiset(:dl_profile11, value)
-#    ret = ret + @@bs.wiset(:dl_profile12, value)
+#    ret = ret + @bs.wiset(:dl_profile2, value)
+#    ret = ret + @bs.wiset(:dl_profile3, value)
+#    ret = ret + @bs.wiset(:dl_profile4, value)
+#    ret = ret + @bs.wiset(:dl_profile5, value)
+#    ret = ret + @bs.wiset(:dl_profile6, value)
+#    ret = ret + @bs.wiset(:dl_profile7, value)
+#    ret = ret + @bs.wiset(:dl_profile8, value)
+#    ret = ret + @bs.wiset(:dl_profile9, value)
+#    ret = ret + @bs.wiset(:dl_profile10, value)
+#    ret = ret + @bs.wiset(:dl_profile11, value)
+#    ret = ret + @bs.wiset(:dl_profile12, value)
 #    responseText = ret
 #    res.body = responseText
 #  end
@@ -260,17 +263,17 @@ class WimaxrfService < LegacyGridService
 #    mcs = getParam(req, 'mcs')
 #    value = mcs.to_i
 #    ret = ""
-#    ret = ret + @@bs.wiset(:ul_profile1, value)
+#    ret = ret + @bs.wiset(:ul_profile1, value)
 #    value = 255
-#    ret = ret + @@bs.wiset(:ul_profile2, value)
-#    ret = ret + @@bs.wiset(:ul_profile3, value)
-#    ret = ret + @@bs.wiset(:ul_profile4, value)
-#    ret = ret + @@bs.wiset(:ul_profile5, value)
-#    ret = ret + @@bs.wiset(:ul_profile6, value)
-#    ret = ret + @@bs.wiset(:ul_profile7, value)
-#    ret = ret + @@bs.wiset(:ul_profile8, value)
-#    ret = ret + @@bs.wiset(:ul_profile9, value)
-#    ret = ret + @@bs.wiset(:ul_profile10, value)
+#    ret = ret + @bs.wiset(:ul_profile2, value)
+#    ret = ret + @bs.wiset(:ul_profile3, value)
+#    ret = ret + @bs.wiset(:ul_profile4, value)
+#    ret = ret + @bs.wiset(:ul_profile5, value)
+#    ret = ret + @bs.wiset(:ul_profile6, value)
+#    ret = ret + @bs.wiset(:ul_profile7, value)
+#    ret = ret + @bs.wiset(:ul_profile8, value)
+#    ret = ret + @bs.wiset(:ul_profile9, value)
+#    ret = ret + @bs.wiset(:ul_profile10, value)
 #    responseText = ret
 #    res.body = responseText
 #  end
@@ -278,7 +281,7 @@ class WimaxrfService < LegacyGridService
   s_description "Restart the Base Station"
   service 'bs/restart' do |req, res|
     msgEmpty = "Failed to restart basestation"
-    responseText = @@bs.restart()
+    responseText = @bs.restart()
     setResponsePlainText(res, responseText)
   end
 
@@ -294,7 +297,7 @@ class WimaxrfService < LegacyGridService
 #        value = (value == "true") ? "1" : "0"
 #      end
 #      debug("Setting BS parameter #{p[:bsname]} to [#{value}]")
-#      ret = @@bs.wiset(p[:bsname],value)
+#      ret = @bs.wiset(p[:bsname],value)
 #      if ret =~ /Err/
 #        error "Error setting #{name}"
 #        raise "Error setting #{name}"
@@ -314,9 +317,9 @@ class WimaxrfService < LegacyGridService
 
 #  def self.processServiceStatusOLD( servDef, req )
 #    bsst = {}
-#    a = @@bs.wiget(servDef.getCategoryName)
+#    a = @bs.wiget(servDef.getCategoryName)
 #    a.each { |key, value| bsst = bsst.merge(value) }
-#    #bsst = @@bs.wiget(servDef.getCategoryName)[servDef.getCategoryName]
+#    #bsst = @bs.wiget(servDef.getCategoryName)[servDef.getCategoryName]
 #
 #    p bsst
 #    sst = {}
@@ -337,9 +340,9 @@ class WimaxrfService < LegacyGridService
 #  def self.processServiceStatus( servDef, req )
 #    bsst = {}
 #    query = getAllParams(req)
-#    a = @@bs.wiget(servDef.getCategoryName)
+#    a = @bs.wiget(servDef.getCategoryName)
 #    a.each { |key, value| bsst = bsst.merge(value) }
-#    #bsst = @@bs.wiget(servDef.getCategoryName)[servDef.getCategoryName]
+#    #bsst = @bs.wiget(servDef.getCategoryName)[servDef.getCategoryName]
 #
 #    p bsst
 #    p query,query.empty?
@@ -379,7 +382,7 @@ class WimaxrfService < LegacyGridService
 #      #take first parameter
 #      replyXML = buildXMLReply("STATUS", msgEmpty, msgEmpty) { |root, dummy|
 #        bsEl = root.add_element("BaseStation")
-#        query.each { |key,value| addXMLElementsFromHash(bsEl,@@bs.wiget(key)) }
+#        query.each { |key,value| addXMLElementsFromHash(bsEl,@bs.wiget(key)) }
 #      }
 #      self.setResponse(res, replyXML)
 #    else
@@ -393,7 +396,7 @@ class WimaxrfService < LegacyGridService
 #    query = getAllParams(req)
 #    responseText=''
 #    if not query.empty?
-#      query.each { |key,value| responseText = responseText+"\n"+@@bs.wiset(key,value) }
+#      query.each { |key,value| responseText = responseText+"\n"+@bs.wiset(key,value) }
 #      res.body = responseText
 #    else
 #      raise HTTPStatus::BadRequest, "Missing parameter"
@@ -428,7 +431,7 @@ class WimaxrfService < LegacyGridService
 
 #def self.setFromXml(docNew)
 #  responseText=""
-#  hash_conf = @@bs.wigetAll()
+#  hash_conf = @bs.wigetAll()
 #  #to take BaseStation element
 #  bsEl = docNew.root.elements["BaseStation"]
 #  changed = false
@@ -455,20 +458,20 @@ class WimaxrfService < LegacyGridService
 #            attdef=findAttributeDef(c.name)
 #            debug("#{attdef}")
 #            if attdef == nil
-#              @@bs.wiset(c.name,c.text)
+#              @bs.wiset(c.name,c.text)
 #            else
 #              if attdef[:type] == 'integer'
 #                if c.text == c.text.to_i.to_s
-#                  @@bs.wiset(c.name,c.text)
+#                  @bs.wiset(c.name,c.text)
 #                else
 #                  if attdef[:conversion] !=nil
 #                    cf = eval attdef[:conversion]
 #                    newvalue = cf.call(c.text)
-#                    @@bs.wiset(c.name,newvalue)
+#                    @bs.wiset(c.name,newvalue)
 #                  end
 #                end
 #              else
-#                @@bs.wiset(c.name,c.text)
+#                @bs.wiset(c.name,c.text)
 #              end
 #            end
 #          end
@@ -490,81 +493,81 @@ class WimaxrfService < LegacyGridService
 #  responseText = ""
 #  className = eval 'WirelessService'
 #  p = className.getParam(:freq)
-#  resultAll = @@bs.wiget(className.getCategoryName)
+#  resultAll = @bs.wiget(className.getCategoryName)
 #  result = resultAll[className.getCategoryName]
-#  if result[p[:bsname]].to_i != @@config['bs']['frequency'].to_i
-#    @@bs.wiset(p[:bsname],@@config['bs']['frequency'])
-#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@@config['bs']['frequency']} [OK]"
+#  if result[p[:bsname]].to_i != @config['bs']['frequency'].to_i
+#    @bs.wiset(p[:bsname],@config['bs']['frequency'])
+#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@config['bs']['frequency']} [OK]"
 #    changed = true
 #  end
 #  className = eval 'UnexposedParams'
-#  resultAll = @@bs.wiget(className.getCategoryName)
+#  resultAll = @bs.wiget(className.getCategoryName)
 #  #resultAll is a hash of bs class categories
 #  #we nedd to integrate all categories in one hash....
 #  result = {}
 #  resultAll.each { |key,value| result.merge!(value) }
-#  bsid = mac2Hex(@@config['bs']['bsid'])
-#  asngwip = ip2Hex(@@config['asngw']['ip'])
-#  asngwid = id2Hex(@@config['asngw']['id'])
-#  asngwport = Integer((@@config['asngw']['port']).to_s)
+#  bsid = mac2Hex(@config['bs']['bsid'])
+#  asngwip = ip2Hex(@config['asngw']['ip'])
+#  asngwid = id2Hex(@config['asngw']['id'])
+#  asngwport = Integer((@config['asngw']['port']).to_s)
 #  p = className.getParam(:bsid)
 #  if result[p[:bsname]].casecmp(bsid) != 0
-#    @@bs.wiset(p[:bsname],bsid)
-#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@@config['bs']['bsid']} [OK]"
+#    @bs.wiset(p[:bsname],bsid)
+#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@config['bs']['bsid']} [OK]"
 #    changed = true
 #  end
 #  p = className.getParam(:gwepip)
 #  if result[p[:bsname]].casecmp(asngwip) != 0
-#    @@bs.wiset(p[:bsname],asngwip)
-#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@@config['asngw']['ip']} [OK]"
+#    @bs.wiset(p[:bsname],asngwip)
+#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@config['asngw']['ip']} [OK]"
 #    changed = true
 #  end
 #  p = className.getParam(:gwepport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    @@bs.wiset(p[:bsname],asngwport)
-#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@@config['asngw']['port']} [OK]"
+#    @bs.wiset(p[:bsname],asngwport)
+#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@config['asngw']['port']} [OK]"
 #    changed = true
 #  end
 #  p = className.getParam(:gwdpip)
 #  if result[p[:bsname]].casecmp(asngwip) != 0
-#    @@bs.wiset(p[:bsname],asngwip)
-#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@@config['asngw']['ip']} [OK]"
+#    @bs.wiset(p[:bsname],asngwip)
+#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@config['asngw']['ip']} [OK]"
 #    changed = true
 #  end
 #  p = className.getParam(:gwdpport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    @@bs.wiset(p[:bsname],asngwport)
-#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@@config['asngw']['port']} [OK]"
+#    @bs.wiset(p[:bsname],asngwport)
+#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@config['asngw']['port']} [OK]"
 #    changed = true
 #  end
 #  p = className.getParam(:authid)
 #  if result[p[:bsname]].casecmp(asngwid) != 0
-#    @@bs.wiset(p[:bsname],asngwid)
-#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@@config['asngw']['id']} [OK]"
+#    @bs.wiset(p[:bsname],asngwid)
+#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@config['asngw']['id']} [OK]"
 #    changed = true
 #  end
 #  p = className.getParam(:authip)
 #  if result[p[:bsname]].casecmp(asngwip) != 0
-#    @@bs.wiset(p[:bsname],asngwip)
-#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@@config['asngw']['ip']} [OK]"
+#    @bs.wiset(p[:bsname],asngwip)
+#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@config['asngw']['ip']} [OK]"
 #    changed = true
 #  end
 #  p = className.getParam(:authport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    @@bs.wiset(p[:bsname],asngwport)
-#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@@config['asngw']['port']} [OK]"
+#    @bs.wiset(p[:bsname],asngwport)
+#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@config['asngw']['port']} [OK]"
 #    changed = true
 #  end
 #  p = className.getParam(:gwid)
 #  if result[p[:bsname]].casecmp(asngwid) != 0
-#    @@bs.wiset(p[:bsname],asngwid)
-#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@@config['asngw']['id']} [OK]"
+#    @bs.wiset(p[:bsname],asngwid)
+#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@config['asngw']['id']} [OK]"
 #    changed = true
 #  end
 #  p = className.getParam(:bsrxport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    @@bs.wiset(p[:bsname],asngwport)
-#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@@config['asngw']['port']} [OK]"
+#    @bs.wiset(p[:bsname],asngwport)
+#    responseText = responseText +"\n"+"Change #{p[:bsname]} -> #{@config['asngw']['port']} [OK]"
 #    changed = true
 #  end
 #  if changed
@@ -578,70 +581,70 @@ class WimaxrfService < LegacyGridService
 #  correct = true
 #  className = eval 'WirelessService'
 #  p = className.getParam(:freq)
-#  resultAll = @@bs.wiget(className.getCategoryName)
+#  resultAll = @bs.wiget(className.getCategoryName)
 #  result = resultAll[className.getCategoryName]
-#  if result[p[:bsname]].to_i != @@config['bs']['frequency'].to_i
+#  if result[p[:bsname]].to_i != @config['bs']['frequency'].to_i
 #    debug("#{result[p[:bsname]].to_i} FOR #{p[:bsname]} IS INCORRECT ")
 #    correct = false
 #  end
 #  className = eval 'UnexposedParams'
-#  resultAll = @@bs.wiget(className.getCategoryName)
+#  resultAll = @bs.wiget(className.getCategoryName)
 #  #resultAll is a hash of bs class categories
 #  #we nedd to integrate all categories in one hash....
 #  result = {}
 #  resultAll.each { |key,value| result.merge!(value) }
-#  bsid = mac2Hex(@@config['bs']['bsid'])
-#  asngwip = ip2Hex(@@config['asngw']['ip'])
-#  asngwid = id2Hex(@@config['asngw']['id'])
-#  asngwport = Integer((@@config['asngw']['port']).to_s)
+#  bsid = mac2Hex(@config['bs']['bsid'])
+#  asngwip = ip2Hex(@config['asngw']['ip'])
+#  asngwid = id2Hex(@config['asngw']['id'])
+#  asngwport = Integer((@config['asngw']['port']).to_s)
 #  p = className.getParam(:bsid)
 #  if result[p[:bsname]].casecmp(bsid) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@@config['bs']['bsid']}")
+#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['bs']['bsid']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwepip)
 #  if result[p[:bsname]].casecmp(asngwip) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@@config['asngw']['ip']}")
+#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwepport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@@config['asngw']['port']}")
+#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwdpip)
 #  if result[p[:bsname]].casecmp(asngwip) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@@config['asngw']['ip']}")
+#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwdpport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@@config['asngw']['port']}")
+#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
 #    correct = false
 #  end
 #  p = className.getParam(:authid)
 #  if result[p[:bsname]].casecmp(asngwid) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@@config['asngw']['id']}")
+#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['id']}")
 #    correct = false
 #  end
 #  p = className.getParam(:authip)
 #  if result[p[:bsname]].casecmp(asngwip) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@@config['asngw']['ip']}")
+#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
 #    correct = false
 #  end
 #  p = className.getParam(:authport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@@config['asngw']['port']}")
+#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwid)
 #  if result[p[:bsname]].casecmp(asngwid) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@@config['asngw']['id']}")
+#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['id']}")
 #    correct = false
 #  end
 #  p = className.getParam(:bsrxport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@@config['asngw']['port']}")
+#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
 #    correct = false
 #  end
 #  correct
@@ -651,7 +654,7 @@ class WimaxrfService < LegacyGridService
 #  s_description "Restore Base Station parameters from default configuration"
 #  service 'bs/default' do |req, res|
 #    responseText=''
-#    aFileName = "#{WIMAXRF_DIR}/#{@@config['reset']['file']}"
+#    aFileName = "#{WIMAXRF_DIR}/#{@config['reset']['file']}"
 #    if File.file?(aFileName)
 #      file = File.open(aFileName, "r")
 #      input = file.read
@@ -715,8 +718,8 @@ class WimaxrfService < LegacyGridService
     dpc['type'] = type
     dpc['vlan'] = vlan
     dpc['interface'] = interface
-    dpc['data_vlan'] = @@config['bs']['data_vlan']
-    dpc['data_interface'] = @@config['bs']['data_interface']
+    dpc['data_vlan'] = @config['bs']['data_vlan']
+    dpc['data_interface'] = @config['bs']['data_interface']
     params.each do |name, value|
       dpc[name] = value
       newdp.dpattributes.first_or_create(:name => name, :value => value, :vlan => vlan)
@@ -991,8 +994,8 @@ class WimaxrfService < LegacyGridService
     begin
       if datapathExists?(interface, vlan)
         @auth.add_client(macaddr, interface, vlan, ipaddress)
-        if @@config['bs']['data_vlan'] != 0 && @@config['bs']['type'] == 'airspan' # FIXME: find a way to put this directly on airspan
-          @@bs.add_new_station_bs(MacAddress.hex2dec(macaddr))
+        if @config['bs']['data_vlan'] != 0 && @config['bs']['type'] == 'airspan' # FIXME: find a way to put this directly on airspan
+          @bs.add_new_station_bs(MacAddress.hex2dec(macaddr))
         end
         msg = "Client added"
       else
@@ -1010,8 +1013,8 @@ class WimaxrfService < LegacyGridService
     macaddr = getParam(req, 'macaddr')
     begin
       @auth.del_client(macaddr)
-      if @@config['bs']['type'] == 'airspan'    # FIXME: find a way to put this directly on airspan
-        @@bs.delete_station_bs(MacAddress.hex2dec(macaddr))
+      if @config['bs']['type'] == 'airspan'    # FIXME: find a way to put this directly on airspan
+        @bs.delete_station_bs(MacAddress.hex2dec(macaddr))
       end
       msg = "Client #{macaddr} deleted"
     rescue Exception => e
@@ -1079,7 +1082,7 @@ class WimaxrfService < LegacyGridService
     if updateMobile
       @auth.update_client(macaddr,updateHash)
       # We should really check if anything changed before we do this
-      @@bs.modifyMobile(macaddr)
+      @bs.modifyMobile(macaddr)
     end
     message
   end
@@ -1183,12 +1186,12 @@ class WimaxrfService < LegacyGridService
 #    ret = ""
 #    profileValues.each { |value|
 #      key = (name+i.to_s).to_sym
-#      ret = ret + @@bs.wiset(key, value)
+#      ret = ret + @bs.wiset(key, value)
 #      i+=1
 #    }
 #    for k in i..no
 #      key = (name+k.to_s).to_sym
-#      @@bs.wiset(key, d_value)
+#      @bs.wiset(key, d_value)
 #    end
 #    ret
 #  end
@@ -1199,7 +1202,7 @@ class WimaxrfService < LegacyGridService
 #    root = REXML::Element.new("#{name}")
 #    for k in 1..no
 #      key = (name+k.to_s)
-#      result = @@bs.wiget(key)
+#      result = @bs.wiget(key)
 #      category = result[key]
 #      element = category[key]
 #      index1 = element.rindex("(")+1
@@ -1222,7 +1225,7 @@ class WimaxrfService < LegacyGridService
 #    msgEmpty = "Failed to get basestation status"
 #    replyXML = buildXMLReply("STATUS", msgEmpty, msgEmpty) { |root, dummy|
 #        bsEl = root.add_element("BaseStation")
-#        addXMLElementsFromHash(bsEl,@@bs.wigetAll())
+#        addXMLElementsFromHash(bsEl,@bs.wigetAll())
 #      }
 #    begin
 #      conf = Configuration.first_or_create({:name => name}).update({:configuration => replyXML.to_s})
