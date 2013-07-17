@@ -11,9 +11,9 @@ class Click2Datapath < DataPath
   def initialize(config)
     super
     @app = nil
-    @vlan_bs = config['vlan_bs'].to_i || 0
+    @vlan_bs = config['data_vlan'].to_i || 0
     @vlan = config['vlan'].to_i || 0
-    @interface_bs = config['bs_port'] || 'eth1'
+    @interface_bs = config['data_interface'] || 'eth1'
     @interface = config['interface'] || 'eth2'
     @click_socket_path = config['click_socket_dir'] || '/var/run'
     @click_socket_path << "/click-#{name}.sock"
@@ -63,21 +63,13 @@ class Click2Datapath < DataPath
     # elements that depend on the presence of VLANs
     if @vlan_bs != 0
       interface_bs = "#{@interface_bs}.#{@vlan_bs}"
-      bs_vlan_encap = "-> vlan_to_bs_encap :: VLANEncap(#{@vlan_bs})"
-      bs_vlan_decap = '-> bs_decap :: VLANDecap'
     else
       interface_bs = @interface_bs
-      bs_vlan_decap = ''
-      bs_vlan_encap = ''
     end
     if @vlan != 0
       interface_net = "#{@interface}.#{@vlan}"
-      net_vlan_encap = "-> vlan_to_net_encap :: VLANEncap(#{@vlan})"
-      net_vlan_decap = '-> net_decap :: VLANDecap'
     else
       interface_net = @interface
-      net_vlan_decap = ''
-      net_vlan_encap = ''
     end
     config = "switch :: EtherSwitch; \
 from_bs :: FromDevice(#{interface_bs}, PROMISC true); \
@@ -109,10 +101,10 @@ to_net :: ToDevice(#{interface_net});"
     # and at the end we generate package routing
     routing = "bs_queue :: Queue -> to_bs; \
 net_queue :: Queue -> to_net; \
-from_net -> filter_from_network #{net_vlan_decap} -> [0]switch; \
-switch[0] #{net_vlan_encap} -> net_queue; \
-from_bs -> filter_from_bs #{bs_vlan_decap} -> [1]switch; \
-switch[1] #{bs_vlan_encap} -> bs_queue;"
+from_net -> filter_from_network -> [0]switch; \
+switch[0] -> net_queue; \
+from_bs -> filter_from_bs -> [1]switch; \
+switch[1] -> bs_queue;"
 
     # put all the sections together and return the config
     config << network_filter << bs_filter << routing
@@ -131,9 +123,10 @@ switch[1] #{bs_vlan_encap} -> bs_queue;"
     @click_socket.send("write hotconfig #{new_config}\n", 0)
     # TODO: better error checking
     while line = @click_socket.gets
-      debug("Click2 status: #{line}") #this will print just the first two lines for now FIXME
+      # this will print just the first two lines for now FIXME
+      debug("Click2 status: #{line}")
       if line.match('200|220')
-        debug("New config loaded successfully")
+        debug('New config loaded successfully')
         break
       elsif line.match('^5[0-9]{2}*.')
         error("Could not load new config, old config still running: #{line}")

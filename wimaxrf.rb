@@ -70,11 +70,11 @@ class WimaxrfService < LegacyGridService
 
     if @@config['bs']['type'] == 'airspan'
       require 'omf-aggmgr/ogs_wimaxrf/airspanbs.rb'
-      @@bs = AirBs.new(@dpath, @auth, config['bs'], config['asngw'])
+      @@bs = AirBs.new(@dpath, @auth, @@config['bs'], @@config['asngw'])
       debug("wimaxrf", "Airspan basestation loaded")
     else
       require 'omf-aggmgr/ogs_wimaxrf/necbs.rb'
-      @@bs = NecBs.new(@dpath, @auth, config['bs'], config['asngw'])
+      @@bs = NecBs.new(@dpath, @auth, @@config['bs'], @@config['asngw'])
       debug("wimaxrf", "NEC basestation loaded")
     end
 
@@ -93,6 +93,8 @@ class WimaxrfService < LegacyGridService
       dpconf['type'] = dtp.type
       dpconf['vlan'] = dtp.vlan
       dpconf['interface'] = dtp.interface
+      dpconf['data_vlan'] = @@config['bs']['data_vlan']
+      dpconf['data_interface'] = @@config['bs']['data_interface']
       if dtp.dpattributes
         dtp.dpattributes.each { |att| dpconf[att.name] = att.value }
       end
@@ -713,6 +715,8 @@ class WimaxrfService < LegacyGridService
     dpc['type'] = type
     dpc['vlan'] = vlan
     dpc['interface'] = interface
+    dpc['data_vlan'] = @@config['bs']['data_vlan']
+    dpc['data_interface'] = @@config['bs']['data_interface']
     params.each do |name, value|
       dpc[name] = value
       newdp.dpattributes.first_or_create(:name => name, :value => value, :vlan => vlan)
@@ -987,6 +991,9 @@ class WimaxrfService < LegacyGridService
     begin
       if datapathExists?(interface, vlan)
         @auth.add_client(macaddr, interface, vlan, ipaddress)
+        if @@config['bs']['data_vlan'] != 0 && @@config['bs']['type'] == 'airspan' # FIXME: find a way to put this directly on airspan
+          @@bs.add_new_station_bs(MacAddress.hex2dec(macaddr))
+        end
         msg = "Client added"
       else
         msg = "Cannot add client, datapath with vlan=#{vlan} does not exist"
@@ -1003,6 +1010,9 @@ class WimaxrfService < LegacyGridService
     macaddr = getParam(req, 'macaddr')
     begin
       @auth.del_client(macaddr)
+      if @@config['bs']['type'] == 'airspan'    # FIXME: find a way to put this directly on airspan
+        @@bs.delete_station_bs(MacAddress.hex2dec(macaddr))
+      end
       msg = "Client #{macaddr} deleted"
     rescue Exception => e
       msg = e.message
