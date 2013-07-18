@@ -201,25 +201,25 @@ class AirBs < Netdev
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvBroadcastMode.<Vlan>
     # How to handle broadcast and multicast traffic in this vlan.
-    # 0 -> send over a pair of multicast groups (tagged and untagged traffic)
-    # 1 -> duplicate over unicast flows to every SS in the vlan
-    # 2 -> drop
+    #   0 -> send over a pair of multicast groups (tagged and untagged traffic)
+    #   1 -> duplicate over unicast flows to every SS in the vlan
+    #   2 -> drop
     snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.5.' + vlan.to_s, 1)
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvUntaggedMcastSfid.<Vlan>
     # SFID of the multicast service flow provisioned for untagged broadcast/multicast traffic.
-    # Probably irrelevant since we set asDot1adVlanProvBroadcastMode to 1.
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.6.' + vlan.to_s, 4294959122)
+    # Unused since we set asDot1adVlanProvBroadcastMode to 1.
+    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.6.' + vlan.to_s, sfid)
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvTaggedMcastSfid.<Vlan>
     # SFID of the multicast service flow provisioned for tagged broadcast/multicast traffic.
-    # Probably irrelevant since we set asDot1adVlanProvBroadcastMode to 1.
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.7.' + vlan.to_s, 4294959123)
+    # Unused since we set asDot1adVlanProvBroadcastMode to 1.
+    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.7.' + vlan.to_s, sfid)
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvDhcpRelayAgentActive.<Vlan>
-    # 0 -> off
-    # 1 -> option 82 text
-    # 2 -> option 82 binary
+    #   0 -> off
+    #   1 -> option 82 text
+    #   2 -> option 82 binary
     snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.8.' + vlan.to_s, 0)
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvMacForceForwardingEnabled.<Vlan>
@@ -228,15 +228,15 @@ class AirBs < Netdev
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvIpAddressType.<Vlan>
     # Specifies the type of IP address for all addresses configured for this vlan.
-    # 0 -> unknown
-    # 1 -> IPv4
-    # 2 -> IPv6
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.10.' + vlan.to_s, 1)
+    #   0 -> unknown
+    #   1 -> IPv4
+    #   2 -> IPv6
+    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.10.' + vlan.to_s, 1)
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvEdgeRouterIpAddress.<Vlan>
     # IP address of the edge router used by the BS. Only relevant when Mac Force
     # Forwarding is enabled or when operating in IP Convergence Sublayer mode.
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.11.' + vlan.to_s, 00000000) # undotted hex format
+    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.11.' + vlan.to_s, '')
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvArpSourceIpAddress.<Vlan>
     #snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.13.' + vlan.to_s, '')
@@ -249,7 +249,7 @@ class AirBs < Netdev
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvBcastServiceClassIndex.<Vlan>
     # Defines Service Class to use for Broadcast Service Flows.
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.16.' + vlan.to_s, 3)
+    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.16.' + vlan.to_s, 3)
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvRowStatus.<Vlan>
     snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.12.' + vlan.to_s, 1) # active
@@ -272,7 +272,7 @@ class AirBs < Netdev
     # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvRowStatus.1.<MacAddr>
     # Valid values are: active(1), notInService(2), notReady(3),
     # createAndGo(4), createAndWait(5), destroy(6)
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.7.1.' + mac, 4) # createAndGo
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.7.1.' + mac, 5) # createAndWait
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvAdMode.1.<MacAddr>
     # Only relevant in "provider" (802.1ad) mode.
@@ -289,14 +289,14 @@ class AirBs < Netdev
     snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.4.1.' + mac, @data_vlan)
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvUserPriority.1.<MacAddr>
-    # The user priority of vlan-tagged traffic.
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.5.1.' + mac, 0) # default
+    # The user priority of vlan-tagged traffic. We leave the default value.
+    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.5.1.' + mac, 0)
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvAllowedFrameTypes.1.<MacAddr>
     # The frame types permitted on incoming traffic to this port.
-    # 1 -> admit all
-    # 2 -> admit only vlan-tagged
-    # 3 -> admit only untagged
+    #   1 -> admit all
+    #   2 -> admit only vlan-tagged
+    #   3 -> admit only untagged
     snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.6.1.' + mac, 1)
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvQinqSupported.1.<MacAddr>
@@ -304,13 +304,13 @@ class AirBs < Netdev
     snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.8.1.' + mac, 0) # false
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvSTagVlan.1.<MacAddr>
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.9.1.' + mac, 1)
+    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.9.1.' + mac, 0)
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvUseCTagPriority.1.<MacAddr>
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.10.1.' + mac, 1) # true
+    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.10.1.' + mac, 1) # true
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvsTagPriority.1.<MacAddr>
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.11.1.' + mac, 0)
+    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.11.1.' + mac, 0)
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvRowStatus.1.<MacAddr>
     snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.7.1.' + mac, 1) # active
