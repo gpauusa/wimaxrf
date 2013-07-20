@@ -10,8 +10,8 @@ class Netdev < MObject
   def initialize(config = {})
     @host = config['ip']
     @port = config['snmp_port'] || 161
-    @readcommunity = config['read_community'] || "private"
-    @writecommunity = config['write_community'] || "private"
+    @readcommunity = config['read_community'] || 'public'
+    @writecommunity = config['write_community'] || 'private'
     @manager = SNMP::Manager.new(:Host => @host, :Community => @readcommunity,
                                  :Port => @port, :WriteCommunity => @writecommunity)
     @snmp_lock = Monitor.new
@@ -20,11 +20,11 @@ class Netdev < MObject
     @telnetprompt = config[:telnetprompt] || "[$%#>] \z/n"
     if @telnetuser
       @sw = Net::Telnet::new("Host" => @host, "Timeout" => 10, "Prompt" => @telnetuser)
-      sw.login(@telnetuser)
+      @sw.login(@telnetuser)
     else
       @sw = nil
     end
-    @sshuser = config[:sshuser] || "root"
+    @sshuser = config[:sshuser] || 'root'
     @sshpass = config[:sshpass] || ''
     debug("Initialized networking device at #{@host}")
   end
