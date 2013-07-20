@@ -22,7 +22,7 @@ class Click2Datapath < DataPath
     @click_command << " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
   end
 
-  # start a new click instance if not already running
+  # Starts a new click instance if it's not already running.
   def start
     return unless @app.nil?
     if File::exist?(@click_socket_path)
@@ -34,7 +34,7 @@ class Click2Datapath < DataPath
     update_click_config
   end
 
-  # stop the click instance, do nothing if it's not running
+  # Stops the click instance, does nothing if it's not running.
   def stop
     return unless @app
     @click_socket.close
@@ -47,6 +47,7 @@ class Click2Datapath < DataPath
     @app = nil
   end
 
+  # Reconfigures the running click instance without stopping it.
   def restart
     if @app
       update_click_config
@@ -57,7 +58,7 @@ class Click2Datapath < DataPath
 
   private
 
-  # generate click configuration for this datapath
+  # Generates and returns click configuration for this datapath.
   def generate_click_config
     # first we build the parameters and the static
     # elements that depend on the presence of VLANs
@@ -110,7 +111,7 @@ switch[1] -> bs_queue;"
     config << network_filter << bs_filter << routing
   end
 
-  # update the click configuration with a new one generated on the fly
+  # Replaces the current configuration with a new one generated on the fly.
   def update_click_config
     return unless @click_socket
     if @mobiles.length > 0
