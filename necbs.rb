@@ -123,7 +123,7 @@ class NecBs < Netdev
   end
 
   def addMobile(mac)
-    aclient = @auth.get(mac)
+    aclient = @auth.get_client(mac)
     if (aclient==nil)
       UDPSocket.open.send("DENY", 0, @asnHost, @sndPort)
       debug "Denied unknown client: #{mac}"
@@ -140,7 +140,7 @@ class NecBs < Netdev
   end
 
   def modifyMobile(mac)
-    aclient = @auth.get(mac)
+    aclient = @auth.get_client(mac)
     if (aclient==nil) then
       debug "Unknown client to modify: #{mac}"
     else

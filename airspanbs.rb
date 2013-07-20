@@ -15,6 +15,7 @@ class AirBs < Netdev
 
     @dp = dp
     @auth = auth
+    @auth.bs = self
     @meas = Measurements.new(bsconfig['bsid'], bsconfig['stats'])
     @mobs = MobileClients.new(@dp)
     @data_vlan = bsconfig['data_vlan']
@@ -105,83 +106,12 @@ class AirBs < Netdev
     end
   end
 
-  # Send a group of set requests to add a new station to the BS
-  def add_new_station_bs(mac)
-    debug("Adding station #{mac} to the BS")
-    # The following settings are contained in the SNMP table
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvTable (1.3.6.1.4.1.989.1.16.5.4.2.1)
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvRowStatus.1.<MacAddr>
-    # Valid values are: active(1), notInService(2), notReady(3),
-    # createAndGo(4), createAndWait(5), destroy(6)
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.7.1.' + mac, 5) # createAndWait
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvAdMode.1.<MacAddr>
-    # Only relevant in "provider" (802.1ad) mode.
-    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.2.1.' + mac, 0)
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvIngressFilterEnabled.1.<MacAddr>
-    # When enabled, discards all incoming frames for vlans
-    # that are not included in this port's egress vlan list.
-    # TODO: we should make this work and enable it
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.3.1.' + mac, 0) # false
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvPvid.1.<MacAddr>
-    # The PVID (Primary Vlan ID) of this port.
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.4.1.' + mac, @data_vlan)
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvUserPriority.1.<MacAddr>
-    # The user priority of vlan-tagged traffic. We leave the default value.
-    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.5.1.' + mac, 0)
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvAllowedFrameTypes.1.<MacAddr>
-    # The frame types permitted on incoming traffic to this port.
-    #   1 -> admit all
-    #   2 -> admit only vlan-tagged
-    #   3 -> admit only untagged
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.6.1.' + mac, 1)
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvQinqSupported.1.<MacAddr>
-    # Is Q-in-Q supported for this SS? (boolean)
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.8.1.' + mac, 0) # false
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvSTagVlan.1.<MacAddr>
-    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.9.1.' + mac, 0)
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvUseCTagPriority.1.<MacAddr>
-    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.10.1.' + mac, 1) # true
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvsTagPriority.1.<MacAddr>
-    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.11.1.' + mac, 0)
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvRowStatus.1.<MacAddr>
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.7.1.' + mac, 1) # active
-
-    # The following settings are contained in the SNMP table
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortVlanListTable (1.3.6.1.4.1.989.1.16.5.4.2.2)
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortVlanListRowStatus.1.<MacAddr>.<Vlan>
-    # Valid values are: active(1), notInService(2), notReady(3),
-    # createAndGo(4), createAndWait(5), destroy(6)
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.2.1.4.1.' + mac + '.' + @data_vlan.to_s, 5) # createAndWait
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortVlanListUntagged.1.<MacAddr>.<Vlan>
-    # Determines whether frames are untagged on egress. (boolean)
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.2.1.3.1.' + mac + '.' + @data_vlan.to_s, 0) # false
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortVlanListRowStatus.1.<MacAddr>.<Vlan>
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.2.1.4.1.' + mac + '.' + @data_vlan.to_s, 1) # active
+  def on_client_added(client)
+    add_station(client.macaddr) unless @data_vlan == 0
   end
 
-  # Delete a station from the BS
-  def delete_station_bs(mac)
-    debug("Removing station #{mac} from the BS bridge")
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortVlanListRowStatus.1.<MacAddr>.<Vlan>
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.2.1.4.1.' + mac + '.' + @data_vlan.to_s, 6) # destroy
-
-    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvRowStatus.1.<MacAddr>
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.7.1.' + mac, 6) # destroy
+  def on_client_deleted(client)
+    delete_station(client.macaddr) unless @data_vlan == 0
   end
 
   private
@@ -327,8 +257,82 @@ class AirBs < Netdev
     snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.12.' + vlan.to_s, 6) # destroy
   end
 
+  def add_station(mac)
+    # The following settings are contained in the SNMP table
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvTable (1.3.6.1.4.1.989.1.16.5.4.2.1)
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvRowStatus.1.<MacAddr>
+    # Valid values are: active(1), notInService(2), notReady(3),
+    # createAndGo(4), createAndWait(5), destroy(6)
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.7.1.' + mac, 5) # createAndWait
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvAdMode.1.<MacAddr>
+    # Only relevant in "provider" (802.1ad) mode.
+    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.2.1.' + mac, 0)
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvIngressFilterEnabled.1.<MacAddr>
+    # When enabled, discards all incoming frames for vlans
+    # that are not included in this port's egress vlan list.
+    # TODO: we should make this work and enable it
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.3.1.' + mac, 0) # false
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvPvid.1.<MacAddr>
+    # The PVID (Primary Vlan ID) of this port.
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.4.1.' + mac, @data_vlan)
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvUserPriority.1.<MacAddr>
+    # The user priority of vlan-tagged traffic. We leave the default value.
+    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.5.1.' + mac, 0)
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvAllowedFrameTypes.1.<MacAddr>
+    # The frame types permitted on incoming traffic to this port.
+    #   1 -> admit all
+    #   2 -> admit only vlan-tagged
+    #   3 -> admit only untagged
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.6.1.' + mac, 1)
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvQinqSupported.1.<MacAddr>
+    # Is Q-in-Q supported for this SS? (boolean)
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.8.1.' + mac, 0) # false
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvSTagVlan.1.<MacAddr>
+    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.9.1.' + mac, 0)
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvUseCTagPriority.1.<MacAddr>
+    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.10.1.' + mac, 1) # true
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvsTagPriority.1.<MacAddr>
+    #snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.11.1.' + mac, 0)
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvRowStatus.1.<MacAddr>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.7.1.' + mac, 1) # active
+
+    # The following settings are contained in the SNMP table
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortVlanListTable (1.3.6.1.4.1.989.1.16.5.4.2.2)
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortVlanListRowStatus.1.<MacAddr>.<Vlan>
+    # Valid values are: active(1), notInService(2), notReady(3),
+    # createAndGo(4), createAndWait(5), destroy(6)
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.2.1.4.1.' + mac + '.' + @data_vlan.to_s, 5) # createAndWait
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortVlanListUntagged.1.<MacAddr>.<Vlan>
+    # Determines whether frames are untagged on egress. (boolean)
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.2.1.3.1.' + mac + '.' + @data_vlan.to_s, 0) # false
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortVlanListRowStatus.1.<MacAddr>.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.2.1.4.1.' + mac + '.' + @data_vlan.to_s, 1) # active
+  end
+
+  def delete_station(mac)
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortVlanListRowStatus.1.<MacAddr>.<Vlan>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.2.1.4.1.' + mac + '.' + @data_vlan.to_s, 6) # destroy
+
+    # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvRowStatus.1.<MacAddr>
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.7.1.' + mac, 6) # destroy
+  end
+
   def create_ms_datapath(mac)
-    client = @auth.get(mac)
+    client = @auth.get_client(mac)
     if client.nil? then
       debug "Denied unknown client [#{mac}]"
     else

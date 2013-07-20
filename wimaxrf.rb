@@ -921,13 +921,13 @@ class WimaxrfService < LegacyGridService
           if c.attributes["macaddr"]
             macaddr = c.attributes["macaddr"]
             ipaddress = c.attributes["ipaddress"]
-            client = @auth.get(macaddr)
-            if not client
-              @auth.add_client(macaddr,interface,vlan,ipaddress)
-              message << "\nCLIENT "+ c.attributes["macaddr"] + ' ADDED'
+            client = @auth.get_client(macaddr)
+            if client.nil?
+              @auth.add_client(macaddr, interface, vlan, ipaddress)
+              message << "\nClient #{macaddr} added"
             else
-              modifyClient(macaddr,interface,vlan,ipaddress)
-              message << "\nCLIENT "+ c.attributes["macaddr"] + ' MODIFIED'
+              modifyClient(client, interface, vlan, ipaddress)
+              message << "\nClient #{macaddr} updated"
             end
           end
         end
@@ -981,7 +981,7 @@ class WimaxrfService < LegacyGridService
     end
   end
 
-  s_description "Add client to datapath"
+  s_description "Add a client to a datapath"
   s_param :macaddr, 'macaddr', 'Client MAC address'
   s_param :ipaddress, 'ipaddress', 'Client IP address'
   s_param :interface, 'interface', 'Datapath interface'
@@ -994,12 +994,9 @@ class WimaxrfService < LegacyGridService
     begin
       if datapathExists?(interface, vlan)
         @auth.add_client(macaddr, interface, vlan, ipaddress)
-        if @config['bs']['data_vlan'] != 0 && @config['bs']['type'] == 'airspan' # FIXME: find a way to put this directly on airspan
-          @bs.add_new_station_bs(MacAddress.hex2dec(macaddr))
-        end
         msg = "Client added"
       else
-        msg = "Cannot add client, datapath with vlan=#{vlan} does not exist"
+        msg = "Cannot add client, datapath does not exist"
       end
     rescue Exception => e
       msg = e.message
@@ -1007,82 +1004,81 @@ class WimaxrfService < LegacyGridService
     setResponsePlainText(res, msg)
   end
 
-  s_description "Delete client from datapath"
+  s_description "Delete a client from its datapath"
   s_param :macaddr, 'macaddr', 'Client MAC address'
   service 'datapath/clients/delete' do |req, res|
     macaddr = getParam(req, 'macaddr')
     begin
-      @auth.del_client(macaddr)
-      if @config['bs']['type'] == 'airspan'    # FIXME: find a way to put this directly on airspan
-        @bs.delete_station_bs(MacAddress.hex2dec(macaddr))
+      if @auth.del_client(macaddr)
+        msg = "Client deleted"
+      else
+        msg = "Client not found"
       end
-      msg = "Client #{macaddr} deleted"
     rescue Exception => e
       msg = e.message
     end
     setResponsePlainText(res, msg)
   end
 
-  s_description "Change client's VLAN and/or IP address"
+  s_description "Change a client's datapath and/or IP address"
   s_param :macaddr, 'macaddr', 'Client MAC address'
   s_param :ipaddress, '[ipaddress]', 'New IP address'
   s_param :interface, '[interface]', 'New interface'
   s_param :vlan, '[vlan]', 'New VLAN ID'
   service 'datapath/clients/modify' do |req, res|
     macaddr = getParam(req, 'macaddr')
-    message = "modifyClient: "
-    aclient = @auth.get(macaddr)
+    client = @auth.get_client(macaddr)
     begin
-      if aclient
+      if client
         if req.query.has_key?('vlan')
           vlan = getParam(req, 'vlan')
         else
-          vlan = aclient.vlan
+          vlan = client.vlan
         end
         if req.query.has_key?('interface')
           interface = getParam(req, 'interface')
         else
-          interface = aclient.interface
+          interface = client.interface
         end
-        if(req.query.has_key?('ipaddress'))
+        if req.query.has_key?('ipaddress')
           ipaddress = getParam(req, 'ipaddress')
         else
           ipaddress = nil
         end
-        message << modifyClient(macaddr,interface,vlan,ipaddress)
+        msg = modifyClient(client, interface, vlan, ipaddress)
       else
-        message << "There is no client with mac = #{macaddr}!"
+        msg = "Client not found"
       end
     rescue Exception => e
-      message = e.message
+      msg = e.message
     end
-    setResponsePlainText(res, message)
+    setResponsePlainText(res, msg)
   end
 
-  def self.modifyClient(macaddr,interface,vlan,ipaddress)
-    aclient = @auth.get(macaddr)
-    updateHash = {}
-    updateMobile = false
-    message = " "
+  def self.modifyClient(client,interface,vlan,ipaddress)
+    updates = {}
+    message = ''
+
+    # prepare datapath change
     if datapathExists?(interface, vlan)
-      if aclient.vlan != vlan || aclient.interface != interface
-        updateHash[:vlan] = vlan
-        updateHash[:interface] = interface
-        updateMobile = true
-        message << "Vlan for #{macaddr} updated"
+      if client.vlan != vlan || client.interface != interface
+        updates[:vlan] = vlan
+        updates[:interface] = interface
+        message << "Datapath for #{macaddr} updated"
       end
     else
-      message << "Can not modify client's vlan, datapath with interface=#{interface} and vlan=#{vlan} does not exist"
+      message << "Cannot modify vlan/interface, datapath #{interface}-#{vlan} does not exist"
     end
-    if ipaddress != nil && ipaddress != aclient.ipaddress
-      updateHash[:ipaddress] = ipaddress
-      updateMobile = true
+
+    # prepare ip address change
+    if ipaddress != nil && ipaddress != client.ipaddress
+      updates[:ipaddress] = ipaddress
       message << "\nIP address for #{macaddr} updated"
     end
-    if updateMobile
-      @auth.update_client(macaddr,updateHash)
-      # We should really check if anything changed before we do this
-      @bs.modifyMobile(macaddr)
+
+    if !updates.empty?
+      # apply changes
+      @auth.update_client(macaddr, updates)
     end
     message
   end
