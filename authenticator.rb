@@ -62,7 +62,7 @@ class Authenticator < MObject
 
   def notify(event, *args)
     if @bs && @bs.respond_to? event
-      @bs.call(event, *args)
+      @bs.send(event, *args)
     end
   end
 
