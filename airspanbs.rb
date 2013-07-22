@@ -62,19 +62,9 @@ class AirBs < Netdev
     # TODO: setup of ingress filter
     snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.3.1.2.4', 0)
 
-    # TODO: check if wimaxrf should put up this interface
-    # setting data vlan on the BS
+    # FIXME: this should not be done here
     if @data_vlan && @data_vlan != 0
       create_vlan(@data_vlan)
-      debug("Creating VLAN #{bsconfig['data_interface']}.#{@data_vlan}")
-      cmd = "ip link add link #{bsconfig['data_interface']} name #{bsconfig['data_interface']}.#{@data_vlan} type vlan id #{@data_vlan}"
-      if not system(cmd)
-        debug("Could not create VLAN: command '#{cmd}' failed with status #{$?.exitstatus}")
-      end
-      cmd = "ip link set #{bsconfig['data_interface']}.#{@data_vlan} up"
-      if not system(cmd)
-        return "Could not bring interface up: command '#{cmd}' failed with status #{$?.exitstatus}"
-      end
     end
 
     # TODO: use of MacAddress for converting the address
