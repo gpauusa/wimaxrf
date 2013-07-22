@@ -1,19 +1,21 @@
 class Authenticator < MObject
   attr_accessor :bs
 
-  # Adds a client to the auth db.
+  # Adds a new client to the auth db.
+  # Returns true on success, false if the given mac already exists.
   def add_client(mac, interface, vlan, ip=nil)
-    client = AuthClient.first_or_create(:macaddr   => mac,
-                                        :interface => interface,
-                                        :vlan      => vlan,
-                                        :ipaddress => ip)
-    client.save
+    client = AuthClient.create(:macaddr   => mac,
+                               :interface => interface,
+                               :vlan      => vlan,
+                               :ipaddress => ip)
+    return false unless client.saved?
     notify(:on_client_added, client)
+    true
   end
 
   # Modifies a client in the auth db.
   # Returns true on success, false if the client does not exist.
-  def update_client(mac, changes={})
+  def update_client(mac, changes)
     client = AuthClient.get(mac)
     return false if client.nil?
     notify(:on_client_deleted, client)
@@ -34,7 +36,11 @@ class Authenticator < MObject
 
   # Deletes all clients from the auth db.
   def del_all_clients
-    AuthClient.destroy
+    AuthClient.all.each do |client|
+      notify(:on_client_deleted, client)
+      client.destroy
+    end
+    true
   end
 
   # Returns an AuthClient instance for the given mac address,
