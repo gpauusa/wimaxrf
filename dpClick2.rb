@@ -20,7 +20,7 @@ class Click2Datapath < DataPath
     @click_socket_path = config['click_socket_dir'] || '/var/run'
     @click_socket_path << "/click-#{name}.sock"
     @click_socket = nil
-    @click_command = config['click_command'] || '/usr/local/bin/click'
+    @click_command = config['click_command'] || '/usr/bin/click'
     @click_command << " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
   end
 
