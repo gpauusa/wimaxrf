@@ -6,15 +6,17 @@ require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
 require 'omf-aggmgr/ogs_wimaxrf/execApp'
 
 class Click2Datapath < DataPath
-  attr_reader :interface_bs, :interface_net, :vlan_bs, :vlan # TODO FIXME
+  attr_reader :port, :vlan
 
   def initialize(config)
     super
     @app = nil
-    @vlan_bs = config['data_vlan'].to_i || 0
-    @vlan = config['vlan'].to_i || 0
-    @interface_bs = config['data_interface'] || 'eth1'
-    @interface = config['interface'] || 'eth2'
+    @port = config['interface']
+    @vlan = config['vlan'].to_i
+    @bsif = config['data_interface']
+    @bsif << ".#{config['data_vlan']}" if config['data_vlan'].to_i != 0
+    @netif = @port
+    @netif << ".#{@vlan}" if @vlan != 0
     @click_socket_path = config['click_socket_dir'] || '/var/run'
     @click_socket_path << "/click-#{name}.sock"
     @click_socket = nil
@@ -60,26 +62,16 @@ class Click2Datapath < DataPath
 
   # Generates and returns click configuration for this datapath.
   def generate_click_config
-    # first we build the parameters and the static
-    # elements that depend on the presence of VLANs
-    if @vlan_bs != 0
-      interface_bs = "#{@interface_bs}.#{@vlan_bs}"
-    else
-      interface_bs = @interface_bs
-    end
-    if @vlan != 0
-      interface_net = "#{@interface}.#{@vlan}"
-    else
-      interface_net = @interface
-    end
+    # first of all we declare the main switch element
+    # and all the sources/sinks that we're going to use
     config = "switch :: EtherSwitch; \
-from_bs :: FromDevice(#{interface_bs}, PROMISC true); \
-to_bs :: ToDevice(#{interface_bs}); \
-from_net :: FromDevice(#{interface_net}, PROMISC true); \
-to_net :: ToDevice(#{interface_net});"
+from_bs :: FromDevice(#{@bsif}, PROMISC true); \
+to_bs :: ToDevice(#{@bsif}); \
+from_net :: FromDevice(#{@netif}, PROMISC true); \
+to_net :: ToDevice(#{@netif});"
 
-    # then the two filter compounds that filter packets
-    # coming from the bs and from the outside network
+    # then the two filter compounds for whitelisting
+    # clients based on their mac address
     filter_first_output = []
     filter_second_output = []
     network_filter = 'filter_from_network :: {'
@@ -99,7 +91,7 @@ to_net :: ToDevice(#{interface_net});"
     bs_filter << filter_second_output.join(', ') << ' -> output;'
     bs_filter << filter_first_output.join(' -> ') + ' -> sink :: Discard; }'
 
-    # and at the end we generate package routing
+    # finally we plug everything into the switch
     routing = "bs_queue :: Queue -> to_bs; \
 net_queue :: Queue -> to_net; \
 from_net -> filter_from_network -> [0]switch; \

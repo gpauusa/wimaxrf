@@ -164,8 +164,8 @@ class NecBs < Netdev
       hGREs[gre.scan(/greAnc_\d+/)[0]] = 1
     }
     # now let's find mobiles that are assigned to these
-    if !(hGREs.empty?)
-      File.open($asn_gre_conf).each { | line|
+    if !hGREs.empty?
+      File.open(ASN_GRE_CONF).each { |line|
         begin
           mac,dir,tunnel,des = line.split(" ")
           next if !(hGREs.has_key?(tunnel))
