@@ -99,11 +99,11 @@ class AirBs < Netdev
   private
 
   def on_client_added(client)
-    add_station(client.macaddr) unless @data_vlan == 0
+    add_station(MacAddress.hex2dec(client.macaddr)) unless @data_vlan == 0
   end
 
   def on_client_deleted(client)
-    delete_station(client.macaddr) unless @data_vlan == 0
+    delete_station(MacAddress.hex2dec(client.macaddr)) unless @data_vlan == 0
   end
 
   def get_bs_main_params
