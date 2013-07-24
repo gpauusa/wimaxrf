@@ -22,7 +22,7 @@ class AirBs < Netdev
 
     # Set frequency
     #snmp_set("wmanIf2BsCmnPhyDownlinkCenterFreq.1", bsconfig['frequency'])
-    get_bs_main_params()
+    get_bs_main_params
     info("Airspan BS (Serial# #{@serial}) at #{@frequency} MHz and #{@power} dBm")
 
     debug("Creating trap handler")
@@ -78,8 +78,8 @@ class AirBs < Netdev
     scheduler = Rufus::Scheduler.start_new
     # Local stats gathering
     scheduler.every "#{@meas.localinterval}s" do
-      get_bs_stats()
-      get_mobile_stations()
+      get_bs_stats
+      get_mobile_stations
       debug("Found #{@nomobiles} mobiles")
       debug("Checking mobile stats...")
       @mobs.each do |mac, ms|
@@ -90,11 +90,13 @@ class AirBs < Netdev
     # Global stats gathering
     scheduler.every "#{@meas.globalinterval}s" do
       debug("BS Data collection")
-      get_bs_main_params()
-      get_bs_stats()
+      get_bs_main_params
+      get_bs_stats
       @meas.bsstats(@frequency, @power, @nomobiles, @tpsduul, @tppduul, @tpsdudl, @tppdudl)
     end
   end
+
+  private
 
   def on_client_added(client)
     add_station(client.macaddr) unless @data_vlan == 0
@@ -103,8 +105,6 @@ class AirBs < Netdev
   def on_client_deleted(client)
     delete_station(client.macaddr) unless @data_vlan == 0
   end
-
-  private
 
   def get_bs_main_params
     # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmInventorySerialNumber.1
@@ -121,8 +121,8 @@ class AirBs < Netdev
   end
 
   def get_bs_stats
-    get_bs_temperature_stats()
-    get_bs_voltage_stats()
+    get_bs_temperature_stats
+    get_bs_voltage_stats
   end
 
   def get_bs_temperature_stats
