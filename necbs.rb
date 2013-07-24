@@ -1,10 +1,7 @@
 require 'socket'
-require 'omf-aggmgr/ogs_wimaxrf/measurements.rb'
-require 'omf-aggmgr/ogs_wimaxrf/client'
-require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
-require 'omf-aggmgr/ogs_wimaxrf/netdev'
 require 'omf-aggmgr/ogs_wimaxrf/circularBuffer'
-require 'omf-aggmgr/ogs_wimaxrf/authenticator'
+require 'omf-aggmgr/ogs_wimaxrf/measurements'
+require 'omf-aggmgr/ogs_wimaxrf/netdev'
 require 'omf-aggmgr/ogs_wimaxrf/necbsparams'
 require 'omf-aggmgr/ogs_wimaxrf/util'
 require 'rufus/scheduler'
@@ -16,32 +13,31 @@ ASN_GRE_CONF = '/etc/asnctrl_gre.conf'
 
 class NecBs < Netdev
   attr_reader :nomobiles, :serial, :tpsduul, :tppduul, :tpsdudl, :tppdud
-  attr_accessor :dp,:auth
-  attr_reader :asnHost,:sndPort,:rcvPort
+  attr_reader :asnHost, :sndPort, :rcvPort
 
   PARAMS_CLASSES = ["ArqService","HarqService","AsngwService","MonitorService",
     "MaintenanceService","DriverBaseService","DLProfileService","ULProfileService","WirelessService",
     "MPCService","MimoService","DebugService","MobileService","SecurityService"]
 
-  def initialize(dp, auth, bsconfig, asnconfig)
-    @dp = dp
+  def initialize(mobs, auth, bsconfig, asnconfig)
+    super(bsconfig)
+
+    @mobs = mobs
+    @auth = auth
     @asnHost = asnconfig['asnip'] || 'localhost'
     @rcvPort = asnconfig['asnrcvport'] || 54321
     @sndPort = asnconfig['asnsndport'] || 54322
-    @auth = auth
-
-    super(bsconfig)
-
     @meas = Measurements.new(bsconfig['bsid'], bsconfig['stats'])
 
     EXTRA_NEC_MODULES.each { |mod|
-      add_snmp_module( mod )
+      add_snmp_module(mod)
     }
 
     debug(snmp_get("necWimaxBsStatMsNo.1").to_s)
     @serial = snmp_get("necWimaxBsSwCurrentVer.1").to_s
     get_bs_main_params()
     info("NEC BS (Serial# #{@serial}) at #{@frequency} MHz with #{@power} dBm")
+
     # Prepare constants
     @mSDUOID = get_oid("necWimaxBsSsPmDlThroughputSduCounter").to_s
     @mPDUOID = get_oid("necWimaxBsSsPmDlThroughputSduCounter").to_s
@@ -52,13 +48,9 @@ class NecBs < Netdev
     @mULRSSI = get_oid("necWimaxBsAirStatUlRssi").to_s
     @mDLRSSI = get_oid("necWimaxBsAirStatDlRssi").to_s
     @mobile_history = CircularBuffer.new(40)
-    @mobs = MobileClients.new(@dp)
+
     check_existing()
     debug("Found #{@mobs.length} mobiles already registered")
-    @dp.each{ |name,path|
-      info "Starting #{name} datapath with #{path.length} clients"
-      path.start()
-    }
 
     @traphandler = Thread.new {
       debug("Creating trap handler")
@@ -112,7 +104,8 @@ class NecBs < Netdev
             debug "Adding GRE: MAC=["+mac+"],DIR=["+args[2]+"],TUNNEL=["+args[3]+"]"
             @mobs.add_tunnel(mac,args[2],args[3])
             if args[2] == "2" then startMobile(mac) end
-          else error "Unknown command: "+line
+          else
+            error "Unknown command: "+line
           end
         rescue Exception => ex
           debug("Exception in control loop: '#{ex}'\n(at #{ex.backtrace})")
@@ -139,28 +132,16 @@ class NecBs < Netdev
     debug("Client ["+mac+"] started")
   end
 
-  def modifyMobile(mac)
-    aclient = @auth.get_client(mac)
-    if (aclient==nil) then
-      debug "Unknown client to modify: #{mac}"
-    else
-      if (@mobs.has_mac?(mac)) then
-        @mobs.modify(mac,aclient.dpname,aclient.ipaddress)
-        debug("Client ["+mac+"] modified to datapath/ip: "+aclient.dpname+"/"+aclient.ipaddress)
-      end
-    end
-  end
-
   def deleteMobile(mac)
     @mobs.delete(mac)
-    debug("Client ["+mac+"] deleted");
+    debug("Client ["+mac+"] deleted")
   end
 
   def check_existing
     hGREs = {}
     # Lets check if there are tunnels already up
     ifc = IO.popen("/sbin/ifconfig -a | grep greAnc")
-    ifc.each {  |gre|
+    ifc.each { |gre|
       hGREs[gre.scan(/greAnc_\d+/)[0]] = 1
     }
     # now let's find mobiles that are assigned to these

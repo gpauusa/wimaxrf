@@ -32,6 +32,7 @@ require 'omf-aggmgr/ogs_wimaxrf/dpClick1'
 require 'omf-aggmgr/ogs_wimaxrf/dpClick2'
 require 'omf-aggmgr/ogs_wimaxrf/dpMFirst'
 require 'omf-aggmgr/ogs_wimaxrf/dpOpenflow'
+require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
 require 'omf-aggmgr/ogs_wimaxrf/sftablesParser'
 require 'omf-aggmgr/ogs_wimaxrf/util'
 
@@ -49,14 +50,10 @@ class WimaxrfService < LegacyGridService
   #
   def self.configure(config)
     @config = config
-    @dpath = {}
-
     %w(bs database datapath).each do |sect|
       raise("Missing configuration section '#{sect}' in wimaxrf.yaml") unless @config[sect]
     end
-
-    @auth = Authenticator.new
-    @manageInterface = @config['datapath']['manage_interface'] || false
+    @manageInterface = @config['datapath']['manage_interface']
 
     # load database
     dbFile = "#{WIMAXRF_DIR}/#{@config['database']['dbFile']}"
@@ -70,16 +67,21 @@ class WimaxrfService < LegacyGridService
       @dpath[dpc['name']] = createDataPath(dpc['type'], dpc['name'], dpc)
     end
 
+    @auth = Authenticator.new
+    @dpath = {}
+    @mobs = MobileClients.new(@auth, @dpath)
+
     # load BS management module
     if @config['bs']['type'] == 'airspan'
       require 'omf-aggmgr/ogs_wimaxrf/airspanbs.rb'
-      @bs = AirBs.new(@dpath, @auth, @config['bs'])
+      @bs = AirBs.new(@mobs, @config['bs'])
       debug("wimaxrf", "Airspan basestation loaded")
     else
       require 'omf-aggmgr/ogs_wimaxrf/necbs.rb'
-      @bs = NecBs.new(@dpath, @auth, @config['bs'], @config['asngw'])
+      @bs = NecBs.new(@mobs, @auth, @config['bs'], @config['asngw'])
       debug("wimaxrf", "NEC basestation loaded")
     end
+    @auth.bs = @bs
 
 #    if not checkMandatoryParameters
 #      #setMandatoryParameters

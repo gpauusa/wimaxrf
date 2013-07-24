@@ -1,23 +1,16 @@
-require 'omf-aggmgr/ogs_wimaxrf/client'
-require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
-require 'omf-aggmgr/ogs_wimaxrf/netdev'
-require 'omf-aggmgr/ogs_wimaxrf/authenticator'
 require 'omf-aggmgr/ogs_wimaxrf/measurements'
+require 'omf-aggmgr/ogs_wimaxrf/netdev'
 require 'omf-aggmgr/ogs_wimaxrf/util'
 require 'rufus/scheduler'
 
 class AirBs < Netdev
   attr_reader :nomobiles, :serial, :tpsduul, :tppduul, :tpsdudl, :tppdud
-  attr_accessor :dp, :auth
 
-  def initialize(dp, auth, bsconfig)
+  def initialize(mobs, bsconfig)
     super(bsconfig)
 
-    @dp = dp
-    @auth = auth
-    @auth.bs = self
+    @mobs = mobs
     @meas = Measurements.new(bsconfig['bsid'], bsconfig['stats'])
-    @mobs = MobileClients.new(@dp)
     @data_vlan = bsconfig['data_vlan']
 
     # Set frequency
@@ -44,9 +37,9 @@ class AirBs < Netdev
         if macaddr.nil?
           debug("Missing SsNotificationMacAddr in trap")
         elsif status == 1 # registration
-          create_ms_datapath(macaddr)
+          @mobs.client_registered(macaddr)
         elsif status == 2 # deregistration
-          delete_ms_datapath(macaddr)
+          @mobs.client_deregistered(macaddr)
         else
           debug("Missing or invalid SsRegisterStatus in trap")
         end
@@ -72,7 +65,7 @@ class AirBs < Netdev
     root = "1.3.6.1.4.1.989.1.16.2.9.6.1.1.1"
     snmp_get_multi(root) do |row|
       mac = row.name.index(root).map { |a| "%02x" % a }.join(":")
-      create_ms_datapath(mac)
+      @mobs.client_registered(mac)
     end
 
     scheduler = Rufus::Scheduler.start_new
@@ -319,27 +312,6 @@ class AirBs < Netdev
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adSsPortProvRowStatus.1.<MacAddr>
     snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.1.1.7.1.' + mac, 6) # destroy
-  end
-
-  def create_ms_datapath(mac)
-    client = @auth.get_client(mac)
-    if client.nil? then
-      debug "Denied unknown client [#{mac}]"
-    else
-      @mobs.add(mac, client.dpname, client.ipaddress)
-      debug "Client [#{mac}] added to datapath #{client.dpname}"
-      @mobs.start(mac)
-    end
-  end
-
-  def delete_ms_datapath(mac)
-    if @mobs.has_mac?(mac) then
-      @mobs.delete(mac)
-      @mobs.start(mac)
-      debug "Client [#{mac}] deleted"
-    else
-      debug "Client [#{mac}] is not registered"
-    end
   end
 
 end

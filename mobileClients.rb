@@ -1,10 +1,31 @@
 require 'omf-aggmgr/ogs_wimaxrf/client'
 
-class MobileClients
+class MobileClients < MObject
 
-  def initialize(dp, debug=nil)
+  def initialize(auth, dp)
+    @auth = auth
     @dp = dp
     @mobiles = {}
+  end
+
+  def client_registered(mac)
+    if client = @auth.get_client(mac)
+      add(mac, client.dpname, client.ipaddress)
+      debug "Client [#{mac}] added to datapath #{client.dpname}"
+      start(mac)
+    else
+      debug "Denied unknown client [#{mac}]"
+    end
+  end
+
+  def client_deregistered(mac)
+    if has_mac?(mac) then
+      delete(mac)
+      start(mac)
+      debug "Client [#{mac}] deleted"
+    else
+      debug "Client [#{mac}] is not registered"
+    end
   end
 
   def add(mac, dpname, ip = nil, oid = nil)
@@ -74,7 +95,6 @@ class MobileClients
   end
 
   def has_mac?(mac)
-    print "Checking for #{mac} = " + @mobiles.has_key?(mac).to_s
     @mobiles.has_key?(mac)
   end
 
