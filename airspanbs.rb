@@ -10,7 +10,7 @@ class AirBs < Netdev
   attr_reader :nomobiles, :serial, :tpsduul, :tppduul, :tpsdudl, :tppdud
   attr_accessor :dp, :auth
 
-  def initialize(dp, auth, bsconfig, asnconfig)
+  def initialize(dp, auth, bsconfig)
     super(bsconfig)
 
     @dp = dp
