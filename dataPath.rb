@@ -26,10 +26,12 @@ class DataPath < MObject
 
   # Starts the datapath. Must be implemented by subclasses.
   def start
+    raise NotImplementedError("You must implement DataPath#start in your subclass.")
   end
 
   # Stops the datapath. Must be implemented by subclasses.
   def stop
+    raise NotImplementedError("You must implement DataPath#stop in your subclass.")
   end
 
   # Stops and restarts the datapath. Can be overridden by subclasses
