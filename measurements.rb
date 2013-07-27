@@ -85,8 +85,8 @@ class Measurements < MObject
       bss = OML4R::create_channel(:bsstat, @gurl)
       mbs = OML4R::create_channel(:clstat, @lurl)
       OML4R::init(nil, opts)
-    rescue Exception => ex
-      raise "OML Initialization error for [#{@lurl},#{@gurl}]:\n#{ex.message}"
+    rescue => ex
+      raise "OML Initialization error for [#{@lurl},#{@gurl}]: #{ex.message}"
     end
 
     Kernel.at_exit {

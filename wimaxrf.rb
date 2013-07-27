@@ -867,7 +867,7 @@ class WimaxrfService < LegacyGridService
     replyXML = getDatapathStatus(interface,vlan)
     begin
       conf = DataPathConfig.first_or_create({:name => name}).update({:status => replyXML.to_s, :vlan => vlan})
-    rescue Exception => ex
+    rescue => ex
       replyXML = buildXMLReply("Clients", '', ex)
     end
     self.setResponse(res,replyXML)
@@ -887,7 +887,7 @@ class WimaxrfService < LegacyGridService
       else
         responseText = "There is no #{name} datapath configuration saved"
       end
-    rescue Exception => ex
+    rescue => ex
       responseText = ex
     end
     setResponsePlainText(res, responseText)
@@ -933,9 +933,9 @@ class WimaxrfService < LegacyGridService
           end
         end
       end
-    rescue Exception => ex
-      MObject.debug("#{ex}\n(at #{ex.backtrace})")
-      message = ex
+    rescue => e
+      debug("#{e.message}\n(at #{e.backtrace})")
+      message = e.message
     end
     message
   end
@@ -999,7 +999,7 @@ class WimaxrfService < LegacyGridService
       else
         msg = "Cannot add client, datapath does not exist"
       end
-    rescue Exception => e
+    rescue => e
       msg = e.message
     end
     setResponsePlainText(res, msg)
@@ -1015,7 +1015,7 @@ class WimaxrfService < LegacyGridService
       else
         msg = "Client not found"
       end
-    rescue Exception => e
+    rescue => e
       msg = e.message
     end
     setResponsePlainText(res, msg)
@@ -1050,7 +1050,7 @@ class WimaxrfService < LegacyGridService
       else
         msg = "Client not found"
       end
-    rescue Exception => e
+    rescue => e
       msg = e.message
     end
     setResponsePlainText(res, msg)
@@ -1130,7 +1130,7 @@ class WimaxrfService < LegacyGridService
 #        else
 #          res.body = "OK"
 #        end
-#      rescue Exception => e
+#      rescue => e
 #        res.body = e.message
 #      end
 #    else
@@ -1226,7 +1226,7 @@ class WimaxrfService < LegacyGridService
 #      }
 #    begin
 #      conf = Configuration.first_or_create({:name => name}).update({:configuration => replyXML.to_s})
-#    rescue Exception => ex
+#    rescue => ex
 #      replyXML = buildXMLReply("Configuration", '', ex)
 #    end
 #    self.setResponse(res,replyXML)
@@ -1246,8 +1246,8 @@ class WimaxrfService < LegacyGridService
 #      else
 #        responseText = "There is no #{name} configuration"
 #      end
-#    rescue Exception => ex
-#      responseText = ex
+#    rescue => ex
+#      responseText = ex.message
 #    end
 #    res.body = responseText
 # end

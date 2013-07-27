@@ -50,7 +50,7 @@ class Netdev < MObject
       begin
         return @manager.get_value(snmpobj)
       rescue Exception => ex
-        raise "Exception in snmp_get '#{ex}'"
+        raise "Exception in snmp_get: '#{ex}'"
       end
     }
   end
@@ -62,7 +62,7 @@ class Netdev < MObject
           yield(result)
         end
       rescue Exception => ex
-        raise "Exception in snmp_get_multi '#{ex}'"
+        raise "Exception in snmp_get_multi: '#{ex}'"
       end
     }
   end
@@ -110,7 +110,7 @@ class Netdev < MObject
           end
         end
       rescue Exception => ex
-        raise "Exception in snmp_set '#{ex}'"
+        raise "Exception in snmp_set: '#{ex}'"
       end
     }
     status
@@ -124,21 +124,21 @@ class Netdev < MObject
       end
       rescue Errno::ECONNRESET
         while tryAgain
-            print "RETRY SSH - Errno::ECONNRESET"
-            retry
-          end
+          print "RETRY SSH - Errno::ECONNRESET"
+          retry
+        end
       rescue Errno::ECONNREFUSED
         while tryAgain
-            print "RETRY SSH - Errno::ECONNREFUSED"
-            retry
-          end
+          print "RETRY SSH - Errno::ECONNREFUSED"
+          retry
+        end
       rescue Errno::EHOSTUNREACH
         while tryAgain
-            print "RETRY SSH - Errno::EHOSTUNREACH"
-            retry
-          end
-      rescue Exception => ex
-        raise "Exception in ssh command '#{ex}'"
+          print "RETRY SSH - Errno::EHOSTUNREACH"
+          retry
+        end
+      rescue => e
+        error("Exception in ssh command: #{e.message}\n#{e.backtrace.join("\n\t")}")
     end
   end
 end

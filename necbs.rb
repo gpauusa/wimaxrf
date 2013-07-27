@@ -84,8 +84,8 @@ class NecBs < Netdev
       begin
         r = UDPSocket.open
         r.bind(0, @rcvPort)
-      rescue Exception => ex
-        debug("Failed to create receiver control port: '#{ex}'")
+      rescue => e
+        error("Failed to create receiver control port: #{e}")
       end
       loop {
         begin
@@ -112,8 +112,8 @@ class NecBs < Netdev
           else
             error("Unknown command: #{line}")
           end
-        rescue Exception => ex
-          error("Exception in control loop: '#{ex}'\n(at #{ex.backtrace})")
+        rescue => e
+          error("Exception in control loop: #{e.message}\n#{e.backtrace.join("\n\t")}")
         end
       }
     }
@@ -139,14 +139,10 @@ class NecBs < Netdev
 
     # now let's find mobiles that are assigned to them
     File.open(ASN_GRE_CONF).each do |line|
-      begin
-        mac, dir, tunnel, des = line.split(' ')
-        next unless hGREs.has_key?(tunnel)
-        authorize_station(mac)
-        @mobs.add_tunnel(mac, dir, tunnel)
-      rescue Exception => ex
-        debug("Exception in check_existing: '#{ex}'")
-      end
+      mac, dir, tunnel, des = line.split(' ')
+      next unless hGREs.has_key?(tunnel)
+      authorize_station(mac)
+      @mobs.add_tunnel(mac, dir, tunnel)
     end
     @mobs.start_all
   end
@@ -166,17 +162,13 @@ class NecBs < Netdev
   def get_mobile_stations
     begin
       @nomobiles = snmp_get("necWimaxBsStatMsNo.1")
-    rescue Exception => e
+    rescue
       @nomobiles = 0
     end
     # return unless @nomobiles > 0
-    # begin
-    #   snmp_get_multi(["necWimaxBsSsPmMacAddress"]) { |row|
-    #     mac = row[0].value
-    #   }
-    # rescue Exception => ex
-    #   debug("Exception in get_mobile_stations(): '#{ex}'")
-    # end
+    # snmp_get_multi(["necWimaxBsSsPmMacAddress"]) { |row|
+    #   mac = row[0].value
+    # }
   end
 
   def get_bs_stats
@@ -203,7 +195,7 @@ class NecBs < Netdev
   end
 
   def get_mobile_stats
-    @mobs.each { |mac,m|
+    @mobs.each { |mac, m|
       begin
         sducount = snmp_get(@mSDUOID+".1.6."+m.snmp_mac).to_i
         debug("sducount #{sducount}")
@@ -221,10 +213,8 @@ class NecBs < Netdev
         ulrssi = snmp_get(@mULRSSI+".1.6."+m.snmp_mac).to_f / 4.0
         ma = Time.now.inspect
         @meas.clstats(ma, mac, ulrssi, ulcinr, dlrssi, dlcinr, m.mcsulmod, m.mcsdlmod)
-      rescue Exception => ex
-        debug("Exception in get_mobile_stats() for [#{mac}]: '#{ex}' at #{ex.backtrace[0]}")
-        # Delete the MAC address
-        #       @mobs.delete(mac)
+      rescue => e
+        error("Exception in get_mobile_stats for [#{mac}]: #{e.message}\n#{e.backtrace.join("\n\t")}")
       end
     }
     #     @mobile_history.push(ma)
@@ -253,13 +243,13 @@ class NecBs < Netdev
 
   def restart
     begin
-      status = snmp_set("wmanDevCmnResetDevice.0",1);
-      if (status.include? "changed")
+      status = snmp_set("wmanDevCmnResetDevice.0", 1)
+      if status.include?("changed")
         result = "OK"
       else
         result = "Failed: '#{status}'"
       end
-    rescue Exception => ex
+    rescue => ex
       result = "Failed: '#{ex}'"
     end
   end

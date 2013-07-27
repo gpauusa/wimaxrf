@@ -73,11 +73,7 @@ ulgre_#{i} -> GetIPAddress(16) -> arq_#{i} -> [#{i}]switch;
 
   def stop
     return unless @app
-    begin
-      @app.kill
-    rescue Exception => ex
-      print "Exception in stop: '#{ex}'"
-    end
+    @app.kill
     @app = nil
   end
 

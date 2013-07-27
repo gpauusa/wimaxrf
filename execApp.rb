@@ -158,8 +158,8 @@ class ExecApp < MObject
         end
       rescue EOFError
         # do nothing
-      rescue Exception => err
-        error "monitorApp(#{@id}): #{err}"
+      rescue => e
+        error "Exception in monitorAppPipe(#{@id}): #{e}"
       ensure
         pipe.close
       end

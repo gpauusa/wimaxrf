@@ -41,11 +41,7 @@ class Click2Datapath < DataPath
     return unless @app
     @click_socket.close
     @click_socket = nil
-    begin
-      @app.kill
-    rescue Exception => ex
-      error("Exception in stop:\n#{ex}")
-    end
+    @app.kill
     @app = nil
   end
 

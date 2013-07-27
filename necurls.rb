@@ -478,7 +478,7 @@ end
         else
           res.body = "OK"
         end
-      rescue Exception => e
+      rescue => e
         res.body = e.message
       end
     else
@@ -574,7 +574,7 @@ end
       }
     begin
       conf = Configuration.first_or_create({:name => name}).update({:configuration => replyXML.to_s})
-    rescue Exception => ex
+    rescue => ex
       replyXML = buildXMLReply("Configuration", '', ex)
     end
     self.setResponse(res,replyXML)
@@ -594,7 +594,7 @@ end
       else
         responseText = "There is no #{name} configuration"
       end
-    rescue Exception => ex
+    rescue => ex
       responseText = ex
     end
     res.body = responseText

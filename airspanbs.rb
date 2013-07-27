@@ -138,7 +138,7 @@ class AirBs < Netdev
     begin
       # ASMAX-ESTATS-MIB::asxEstatsRegisteredMs.1
       @nomobiles = snmp_get("1.3.6.1.4.1.989.1.16.2.9.5.1.1.1").to_i
-    rescue Exception => e
+    rescue
       @nomobiles = 0
     end
   end
