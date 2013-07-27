@@ -78,7 +78,7 @@ class WimaxrfService < LegacyGridService
       debug("wimaxrf", "Airspan basestation loaded")
     else
       require 'omf-aggmgr/ogs_wimaxrf/necbs.rb'
-      @bs = NecBs.new(@mobs, @auth, @config['bs'], @config['asngw'])
+      @bs = NecBs.new(@mobs, @config['bs'], @config['asngw'])
       debug("wimaxrf", "NEC basestation loaded")
     end
     @auth.bs = @bs

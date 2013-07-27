@@ -19,11 +19,10 @@ class NecBs < Netdev
     "MaintenanceService","DriverBaseService","DLProfileService","ULProfileService","WirelessService",
     "MPCService","MimoService","DebugService","MobileService","SecurityService"]
 
-  def initialize(mobs, auth, bsconfig, asnconfig)
+  def initialize(mobs, bsconfig, asnconfig)
     super(bsconfig)
 
     @mobs = mobs
-    @auth = auth
     @asnHost = asnconfig['asnip'] || 'localhost'
     @rcvPort = asnconfig['asnrcvport'] || 54321
     @sndPort = asnconfig['asnsndport'] || 54322
@@ -61,6 +60,7 @@ class NecBs < Netdev
       end
       m.join
     }
+
     scheduler = Rufus::Scheduler.start_new
     # Local stats gathering
     scheduler.every "#{@meas.localinterval}s" do
@@ -129,24 +129,26 @@ class NecBs < Netdev
 
   def check_existing
     hGREs = {}
-    # Lets check if there are tunnels already up
+
+    # check if there are tunnels already up
     ifc = IO.popen("/sbin/ifconfig -a | grep greAnc")
-    ifc.each { |gre|
+    ifc.each do |gre|
       hGREs[gre.scan(/greAnc_\d+/)[0]] = 1
-    }
-    # now let's find mobiles that are assigned to these
-    if !hGREs.empty?
-      File.open(ASN_GRE_CONF).each { |line|
-        begin
-          mac,dir,tunnel,des = line.split(" ")
-          next unless hGREs.has_key?(tunnel)
-          authorize_station(mac)
-          @mobs.add_tunnel(mac, dir, tunnel)
-        rescue Exception => ex
-          debug("Exception in check_existing: '#{ex}'")
-        end
-      }
     end
+    return if hGREs.empty?
+
+    # now let's find mobiles that are assigned to them
+    File.open(ASN_GRE_CONF).each do |line|
+      begin
+        mac, dir, tunnel, des = line.split(' ')
+        next unless hGREs.has_key?(tunnel)
+        authorize_station(mac)
+        @mobs.add_tunnel(mac, dir, tunnel)
+      rescue Exception => ex
+        debug("Exception in check_existing: '#{ex}'")
+      end
+    end
+    @mobs.start_all
   end
 
   def set_time(time)
@@ -167,22 +169,14 @@ class NecBs < Netdev
     rescue Exception => e
       @nomobiles = 0
     end
-    return unless @nomobiles > 0
-    begin
-      snmp_get_multi(["necWimaxBsSsPmMacAddress"]) { |row|
-        mac = row[0].value
-        # Need to unpac this ...
-        #       aip = @auth.getIP(mac)
-        #         if aip.nil?
-        #           debug "Denied unknown client: "+mac
-        #         else
-        #           @mobs.add(mac,aip[1],aip[0])
-        #           debug "Client ["+mac+"] added to vlan "+aip[1]
-        #         end
-      }
-    rescue Exception => ex
-      debug("Exception in get_mobile_stations(): '#{ex}'")
-    end
+    # return unless @nomobiles > 0
+    # begin
+    #   snmp_get_multi(["necWimaxBsSsPmMacAddress"]) { |row|
+    #     mac = row[0].value
+    #   }
+    # rescue Exception => ex
+    #   debug("Exception in get_mobile_stations(): '#{ex}'")
+    # end
   end
 
   def get_bs_stats
