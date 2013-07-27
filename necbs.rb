@@ -100,7 +100,7 @@ class NecBs < Netdev
             debug "Deleting GRE: MAC=["+mac+"],DIR=["+args[2]+"],TUNNEL=["+args[3]+"]"
             @mobs.del_tunnel(mac, args[2], args[3])
             if args[2] == "2"
-              @mobs.client_deregistered(mac)
+              @mobs.on_client_deregistered(mac)
             end
           when /^MS_GRE/
             mac = args[1]
@@ -120,7 +120,7 @@ class NecBs < Netdev
   end
 
   def authorize_station(mac)
-    if @mobs.client_registered(mac)
+    if @mobs.on_client_registered(mac)
       UDPSocket.open.send("ALLOW", 0, @asnHost, @sndPort)
     else
       UDPSocket.open.send("DENY", 0, @asnHost, @sndPort)

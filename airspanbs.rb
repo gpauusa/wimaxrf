@@ -37,10 +37,10 @@ class AirBs < Netdev
         if macaddr.nil?
           debug("Missing SsNotificationMacAddr in trap")
         elsif status == 1 # registration
-          @mobs.client_registered(macaddr)
+          @mobs.on_client_registered(macaddr)
           @mobs.start(macaddr)
         elsif status == 2 # deregistration
-          @mobs.client_deregistered(macaddr)
+          @mobs.on_client_deregistered(macaddr)
         else
           debug("Missing or invalid SsRegisterStatus in trap")
         end
@@ -66,7 +66,7 @@ class AirBs < Netdev
     root = "1.3.6.1.4.1.989.1.16.2.9.6.1.1.1"
     snmp_get_multi(root) do |row|
       mac = row.name.index(root).map { |a| "%02x" % a }.join(":")
-      @mobs.client_registered(mac)
+      @mobs.on_client_registered(mac)
     end
     @mobs.start_all
 

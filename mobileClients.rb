@@ -5,42 +5,37 @@ class MobileClients < MObject
   def initialize(auth, dp)
     @auth = auth
     @dp = dp
-    @mobiles = {}
+    @clients = {}
   end
 
-  def client_registered(mac)
-    if client = @auth.get_client(mac)
-      add(mac, client.dpname, client.ipaddress)
-      debug "Client [#{mac}] registered for datapath #{client.dpname}"
-      true
-    else
-      debug "Denied unknown client [#{mac}]"
-      false
-    end
+  def [](mac)
+    @clients[mac]
   end
 
-  def client_deregistered(mac)
-    if delete(mac)
-      debug "Client [#{mac}] deregistered"
-      true
-    else
-      debug "Client [#{mac}] was not registered"
-      false
-    end
+  def each(&block)
+    @clients.each(&block)
+  end
+
+  def has_mac?(mac)
+    @clients.has_key?(mac)
+  end
+
+  def length
+    @clients.length
   end
 
   def add(mac, dpname, ip=nil)
     return false if has_mac?(mac)
-    m = Client.new(mac)
-    m.dpname = dpname
-    m.ip = ip
-    @mobiles[mac] = m
-    @dp[dpname].add(mac, m)
+    c = Client.new(mac)
+    c.dpname = dpname
+    c.ip = ip
+    @clients[mac] = c
+    @dp[dpname].add(mac, c)
     true
   end
 
   def modify(mac, dpname, ip=nil)
-    c = @mobiles[mac]
+    c = @clients[mac]
     return false unless c
     if dpname != c.dpname
       @dp[c.dpname].delete(mac)
@@ -57,34 +52,34 @@ class MobileClients < MObject
   end
 
   def delete(mac)
-    m = @mobiles[mac]
-    return false unless m
-    @mobiles.delete(mac)
-    @dp[m.dpname].delete(mac)
-    @dp[m.dpname].restart
+    c = @clients[mac]
+    return false unless c
+    @clients.delete(mac)
+    @dp[c.dpname].delete(mac)
+    @dp[c.dpname].restart
     true
   end
 
   def add_tunnel(mac, ch, gre)
     return unless has_mac?(mac)
     if ch == '1'
-      @mobiles[mac].ul = gre
+      @clients[mac].ul = gre
     else
-      @mobiles[mac].dl = gre
+      @clients[mac].dl = gre
     end
   end
 
   def del_tunnel(mac, ch, gre)
     return unless has_mac?(mac)
     if ch == '1'
-      @mobiles[mac].ul = nil
+      @clients[mac].ul = nil
     else
-      @mobiles[mac].dl = nil
+      @clients[mac].dl = nil
     end
   end
 
   def start(mac)
-    c = @mobiles[mac]
+    c = @clients[mac]
     return false unless c
     @dp[c.dpname].restart
     true
@@ -98,20 +93,25 @@ class MobileClients < MObject
     end
   end
 
-  def [](mac)
-    @mobiles[mac]
+  def on_client_registered(mac)
+    if client = @auth.get_client(mac)
+      add(mac, client.dpname, client.ipaddress)
+      debug "Client [#{mac}] registered for datapath #{client.dpname}"
+      true
+    else
+      debug "Denied unknown client [#{mac}]"
+      false
+    end
   end
 
-  def each(&block)
-    @mobiles.each(&block)
-  end
-
-  def has_mac?(mac)
-    @mobiles.has_key?(mac)
-  end
-
-  def length
-    @mobiles.length
+  def on_client_deregistered(mac)
+    if delete(mac)
+      debug "Client [#{mac}] deregistered"
+      true
+    else
+      debug "Client [#{mac}] was not registered"
+      false
+    end
   end
 
 end
