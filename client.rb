@@ -9,14 +9,14 @@ class Client
   attr_accessor :basic_measurement, :extended_measurement
   attr_reader :tppduul, :tppdudl, :pduul, :pdudl, :tpsduul, :tpsdudl, :sduul, :sdudl, :mcsulrate, :mcsulmod, :mcsdlrate, :mcsdlmod, :rssi
 
-  def initialize(m, basic)
-    @mac = m
+  def initialize(macaddr)
+    @mac = macaddr
     @snmp_mac = MacAddress.hex2dec(m)
+    @dpname = nil
     @ip = nil
+    @vlan = nil
     @ul = nil
     @dl = nil
-    @vlan = nil
-    @dpname = nil
     @basic_measurement = {}
     @extended_measurement = {}
     @tppdudl = @tppduul = @tpsdudl = @tpsduul = 0
