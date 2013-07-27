@@ -62,13 +62,12 @@ class WimaxrfService < LegacyGridService
     DataMapper.auto_upgrade!
 
     # create datapaths
-    dpconfig = findAllDataPaths()
-    dpconfig.each do |dpc|
+    @dpath = {}
+    all_datapaths.each do |dpc|
       @dpath[dpc['name']] = createDataPath(dpc['type'], dpc['name'], dpc)
     end
 
     @auth = Authenticator.new
-    @dpath = {}
     @mobs = MobileClients.new(@auth, @dpath)
 
     # load BS management module
@@ -90,7 +89,7 @@ class WimaxrfService < LegacyGridService
 
 #  eval(File.open("#{WIMAXRF_DIR}/necurls.rb").read)
 
-  def self.findAllDataPaths
+  def self.all_datapaths
     datapaths = []
     Datapath.all.each do |dtp|
       dpconf = {}
