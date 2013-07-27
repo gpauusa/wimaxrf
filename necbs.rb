@@ -85,56 +85,46 @@ class NecBs < Netdev
         r = UDPSocket.open
         r.bind(0, @rcvPort)
       rescue Exception => ex
-        debug("Failed to create WiMAXrf receiver control port: '#{ex}'")
+        debug("Failed to create receiver control port: '#{ex}'")
       end
       loop {
         begin
-          line = r.recvfrom(100)[0]    # Read line from the ASN
-          #           puts "L=#{line}"
+          # read line from the ASNGW
+          line = r.recvfrom(100)[0]
           args = line.split(' ')
           case args[0]
-          when /^MS_REG/ then
-            addMobile(args[1])
-          when /^MS_DEL/ then
-            @mobs.del_tunnel(args[1],args[2],args[3])
-            debug "Deleting GRE: MAC=["+args[1]+"],DIR=["+args[2]+"],TUNNEL=["+args[3]+"]"
-            if args[2] == "2" then deleteMobile(args[1]) end
-          when /^MS_GRE/ then
+          when /^MS_REG/
+            authorize_station(args[1])
+          when /^MS_DEL/
+            mac = args[1]
+            debug "Deleting GRE: MAC=["+mac+"],DIR=["+args[2]+"],TUNNEL=["+args[3]+"]"
+            @mobs.del_tunnel(mac, args[2], args[3])
+            if args[2] == "2"
+              @mobs.client_deregistered(mac)
+            end
+          when /^MS_GRE/
             mac = args[1]
             debug "Adding GRE: MAC=["+mac+"],DIR=["+args[2]+"],TUNNEL=["+args[3]+"]"
-            @mobs.add_tunnel(mac,args[2],args[3])
-            if args[2] == "2" then startMobile(mac) end
+            @mobs.add_tunnel(mac, args[2], args[3])
+            if args[2] == "2"
+              @mobs.start(mac)
+            end
           else
-            error "Unknown command: "+line
+            error("Unknown command: #{line}")
           end
         rescue Exception => ex
-          debug("Exception in control loop: '#{ex}'\n(at #{ex.backtrace})")
+          error("Exception in control loop: '#{ex}'\n(at #{ex.backtrace})")
         end
       }
     }
-
   end
 
-  def addMobile(mac)
-    aclient = @auth.get_client(mac)
-    if (aclient==nil)
-      UDPSocket.open.send("DENY", 0, @asnHost, @sndPort)
-      debug "Denied unknown client: #{mac}"
-    else
-      @mobs.add(mac,aclient.dpname,aclient.ipaddress)
+  def authorize_station(mac)
+    if @mobs.client_registered(mac)
       UDPSocket.open.send("ALLOW", 0, @asnHost, @sndPort)
-      debug "Client ["+mac+"] added to datapath "+aclient.dpname
+    else
+      UDPSocket.open.send("DENY", 0, @asnHost, @sndPort)
     end
-  end
-
-  def startMobile(mac)
-    @mobs.start(mac)
-    debug("Client ["+mac+"] started")
-  end
-
-  def deleteMobile(mac)
-    @mobs.delete(mac)
-    debug("Client ["+mac+"] deleted")
   end
 
   def check_existing
@@ -149,9 +139,9 @@ class NecBs < Netdev
       File.open(ASN_GRE_CONF).each { |line|
         begin
           mac,dir,tunnel,des = line.split(" ")
-          next if !(hGREs.has_key?(tunnel))
-          addMobile(mac)
-          @mobs.add_tunnel(mac,dir,tunnel)
+          next unless hGREs.has_key?(tunnel)
+          authorize_station(mac)
+          @mobs.add_tunnel(mac, dir, tunnel)
         rescue Exception => ex
           debug("Exception in check_existing: '#{ex}'")
         end
@@ -183,11 +173,10 @@ class NecBs < Netdev
         mac = row[0].value
         # Need to unpac this ...
         #       aip = @auth.getIP(mac)
-        #         if (aip==nil) then
-        #           #Kill the client
+        #         if aip.nil?
         #           debug "Denied unknown client: "+mac
         #         else
-        #           @mobs.add(mac,aip[1],aip[0],MacAddress.bin2dec(mac))
+        #           @mobs.add(mac,aip[1],aip[0])
         #           debug "Client ["+mac+"] added to vlan "+aip[1]
         #         end
       }
@@ -197,8 +186,7 @@ class NecBs < Netdev
   end
 
   def get_bs_stats
-    #   snmp_walk()
-    #    'necWimaxBsPmThroughputTable'
+    # necWimaxBsPmThroughputTable
   end
 
   def get_bs_main_params

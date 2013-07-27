@@ -11,64 +11,62 @@ class MobileClients < MObject
   def client_registered(mac)
     if client = @auth.get_client(mac)
       add(mac, client.dpname, client.ipaddress)
-      debug "Client [#{mac}] added to datapath #{client.dpname}"
-      start(mac)
+      debug "Client [#{mac}] registered for datapath #{client.dpname}"
+      true
     else
       debug "Denied unknown client [#{mac}]"
+      false
     end
   end
 
   def client_deregistered(mac)
-    if has_mac?(mac) then
-      delete(mac)
-      start(mac)
-      debug "Client [#{mac}] deleted"
+    if delete(mac)
+      debug "Client [#{mac}] deregistered"
+      true
     else
-      debug "Client [#{mac}] is not registered"
+      debug "Client [#{mac}] was not registered"
+      false
     end
   end
 
-  def add(mac, dpname, ip = nil, oid = nil)
-    raise("Unknown datapath: #{dpname} for mac #{mac}") unless @dp.has_key? dpname
-    return if @mobiles.has_key?(mac)
-    m = Client.new(mac, oid)
+  def add(mac, dpname, ip=nil)
+    return false if has_mac?(mac)
+    m = Client.new(mac)
     m.dpname = dpname
     m.ip = ip
     @mobiles[mac] = m
     @dp[dpname].add(mac, m)
+    true
   end
 
-  def start(mac)
-    dpname = @mobiles[mac].dpname
-    @dp[dpname].restart()
-  end
-
-  def modify(mac, dpname, ip = nil, oid = nil)
-    m = @mobiles[mac]
-    if dpname != m.dpname
-      @dp[m.dpname].delete(mac)
-      @dp[m.dpname].restart()
-      @dp[dpname].add(mac, m)
+  def modify(mac, dpname, ip=nil)
+    c = @mobiles[mac]
+    return false unless c
+    if dpname != c.dpname
+      @dp[c.dpname].delete(mac)
+      @dp[c.dpname].restart
+      c.dpname = dpname
+      c.ip = ip
+      @dp[dpname].add(mac, c)
+      @dp[dpname].restart
+    elsif ip != c.ip
+      c.ip = ip
+      @dp[dpname].restart
     end
-    m.dpname = dpname
-    m.ip = ip
-    @dp[dpname].restart()
+    true
   end
 
   def delete(mac)
-#    return unless @mobiles.has_key?(mac)
     m = @mobiles[mac]
-    @dp[m.dpname].delete(mac)
-    @dp[m.dpname].restart()
+    return false unless m
     @mobiles.delete(mac)
-  end
-
-  def add_oid(mac, oid)
-    @mobiles[mac].oid = oid
+    @dp[m.dpname].delete(mac)
+    @dp[m.dpname].restart
+    true
   end
 
   def add_tunnel(mac, ch, gre)
-    return unless @mobiles.has_key?(mac)
+    return unless has_mac?(mac)
     if ch == '1'
       @mobiles[mac].ul = gre
     else
@@ -77,8 +75,7 @@ class MobileClients < MObject
   end
 
   def del_tunnel(mac, ch, gre)
-    # Check if MAC address exists already
-    return unless @mobiles.has_key?(mac)
+    return unless has_mac?(mac)
     if ch == '1'
       @mobiles[mac].ul = nil
     else
@@ -86,44 +83,35 @@ class MobileClients < MObject
     end
   end
 
-  def each(&block)
-    @mobiles.each(&block)
+  def start(mac)
+    c = @mobiles[mac]
+    return false unless c
+    @dp[c.dpname].restart
+    true
   end
 
-  def vlan_mobiles(v)
-    @dp[v].getClients()
-  end
-
-  def has_mac?(mac)
-    @mobiles.has_key?(mac)
+  def start_all(empty=false)
+    @dp.each_value do |datapath|
+      if empty || datapath.length > 0
+        datapath.restart
+      end
+    end
   end
 
   def [](mac)
     @mobiles[mac]
   end
 
-  def get_mac_addresses
-    @mobiles.keys
+  def each(&block)
+    @mobiles.each(&block)
   end
 
-  def get_clients
-    @mobiles.values
+  def has_mac?(mac)
+    @mobiles.has_key?(mac)
   end
 
   def length
     @mobiles.length
-  end
-
-  def start_dp(v)
-    @dp[v].start()
-  end
-
-  def stop_dp(v)
-    @dp[v].stop()
-  end
-
-  def restart_dp(v)
-    @dp[v].restart()
   end
 
 end

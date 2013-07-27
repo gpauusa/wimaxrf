@@ -38,6 +38,7 @@ class AirBs < Netdev
           debug("Missing SsNotificationMacAddr in trap")
         elsif status == 1 # registration
           @mobs.client_registered(macaddr)
+          @mobs.start(macaddr)
         elsif status == 2 # deregistration
           @mobs.client_deregistered(macaddr)
         else
@@ -67,6 +68,7 @@ class AirBs < Netdev
       mac = row.name.index(root).map { |a| "%02x" % a }.join(":")
       @mobs.client_registered(mac)
     end
+    @mobs.start_all
 
     scheduler = Rufus::Scheduler.start_new
     # Local stats gathering
