@@ -61,7 +61,7 @@ class Authenticator < MObject
   private
 
   def notify(event, *args)
-    if @bs && @bs.respond_to? event
+    if @bs && @bs.respond_to?(event)
       @bs.send(event, *args)
     end
   end
