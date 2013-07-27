@@ -11,7 +11,7 @@ class Client
 
   def initialize(macaddr)
     @mac = macaddr
-    @snmp_mac = MacAddress.hex2dec(m)
+    @snmp_mac = MacAddress.hex2dec(@mac)
     @dpname = nil
     @ip = nil
     @vlan = nil
