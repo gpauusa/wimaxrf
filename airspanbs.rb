@@ -46,7 +46,7 @@ class AirBs < Netdev
             debug("Missing or invalid SsRegisterStatus in trap")
           end
         rescue => e
-          error("Exception in trap handler: #{e.message}\n#{e.backtrace.join("\n")}")
+          error("Exception in trap handler: #{e.message}\n#{e.backtrace.join("\n\t")}")
         end
       end
       manager.on_trap_default do |trap|
