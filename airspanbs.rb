@@ -22,27 +22,31 @@ class AirBs < Netdev
     SNMP::TrapListener.new(:Host => "0.0.0.0") do |manager|
       # WMAN-IF2-BS-MIB::wmanif2BsSsRegisterTrap
       manager.on_trap("1.0.8802.16.2.1.1.2.0.5") do |trap|
-        debug("Received wmanif2BsSsRegisterTrap: #{trap.inspect}")
-        macaddr = nil
-        status = nil
-        trap.each_varbind do |vb|
-          # WMAN-IF2-BS-MIB::wmanif2BsSsNotificationMacAddr
-          if vb.name.to_s == "1.0.8802.16.2.1.1.2.1.1.1"
-            macaddr = MacAddress.bin2hex(vb.value)
-          # WMAN-IF2-BS-MIB::wmanIf2BsSsRegisterStatus
-          elsif vb.name.to_s == "1.0.8802.16.2.1.1.2.1.1.8"
-            status = vb.value.to_i
+        begin
+          debug("Received wmanif2BsSsRegisterTrap: #{trap.inspect}")
+          macaddr = nil
+          status = nil
+          trap.each_varbind do |vb|
+            # WMAN-IF2-BS-MIB::wmanif2BsSsNotificationMacAddr
+            if vb.name.to_s == "1.0.8802.16.2.1.1.2.1.1.1"
+              macaddr = MacAddress.bin2hex(vb.value)
+            # WMAN-IF2-BS-MIB::wmanIf2BsSsRegisterStatus
+            elsif vb.name.to_s == "1.0.8802.16.2.1.1.2.1.1.8"
+              status = vb.value.to_i
+            end
           end
-        end
-        if macaddr.nil?
-          debug("Missing SsNotificationMacAddr in trap")
-        elsif status == 1 # registration
-          @mobs.on_client_registered(macaddr)
-          @mobs.start(macaddr)
-        elsif status == 2 # deregistration
-          @mobs.on_client_deregistered(macaddr)
-        else
-          debug("Missing or invalid SsRegisterStatus in trap")
+          if macaddr.nil?
+            debug("Missing SsNotificationMacAddr in trap")
+          elsif status == 1 # registration
+            @mobs.on_client_registered(macaddr)
+            @mobs.start(macaddr)
+          elsif status == 2 # deregistration
+            @mobs.on_client_deregistered(macaddr)
+          else
+            debug("Missing or invalid SsRegisterStatus in trap")
+          end
+        rescue => e
+          error("Exception in trap handler: #{e.message}\n#{e.backtrace.join("\n")}")
         end
       end
       manager.on_trap_default do |trap|
