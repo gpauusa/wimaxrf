@@ -96,20 +96,20 @@ class MobileClients < MObject
   def on_client_registered(mac)
     if client = @auth.get_client(mac)
       add(mac, client.dpname, client.ipaddress)
-      debug "Client [#{mac}] registered for datapath #{client.dpname}"
+      info "Client [#{mac}] registered for datapath #{client.dpname}"
       true
     else
-      debug "Denied unknown client [#{mac}]"
+      info "Denied unknown client [#{mac}]"
       false
     end
   end
 
   def on_client_deregistered(mac)
     if delete(mac)
-      debug "Client [#{mac}] deregistered"
+      info "Client [#{mac}] deregistered"
       true
     else
-      debug "Client [#{mac}] was not registered"
+      info "Client [#{mac}] was not registered"
       false
     end
   end

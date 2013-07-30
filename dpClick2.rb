@@ -27,6 +27,7 @@ class Click2Datapath < DataPath
   # Starts a new click instance if it's not already running.
   def start
     return unless @app.nil?
+    debug("Starting datapath #{name}")
     if File::exist?(@click_socket_path)
       File::delete(@click_socket_path)
     end
@@ -39,8 +40,11 @@ class Click2Datapath < DataPath
   # Stops the click instance, does nothing if it's not running.
   def stop
     return unless @app
+    debug("Stopping datapath #{name}")
+    @click_socket.send("QUIT", 0)
     @click_socket.close
     @click_socket = nil
+    sleep(0.2)
     @app.kill
     @app = nil
   end
@@ -109,7 +113,7 @@ switch[1] -> bs_queue;"
     end
 
     debug("Loading new click configuration for datapath #{name}")
-    @click_socket.send("write hotconfig #{new_config}\n", 0)
+    @click_socket.send("WRITE hotconfig #{new_config}\n", 0)
 
     while line = @click_socket.gets
       case line
