@@ -28,7 +28,7 @@ class Click2Datapath < DataPath
   # Starts a new click instance if it's not already running.
   def start
     return unless @app.nil?
-    debug("Starting datapath #{name}")
+    info("Starting datapath #{name}")
     if File::exist?(@click_socket_path)
       File::delete(@click_socket_path)
     end
@@ -50,7 +50,7 @@ class Click2Datapath < DataPath
   # Stops the click instance, does nothing if it's not running.
   def stop
     return unless @app
-    debug("Stopping datapath #{name}")
+    info("Stopping datapath #{name}")
     # gracefully shutdown the connection
     @click_socket.send("QUIT", 0)
     # close the control socket
