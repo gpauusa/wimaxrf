@@ -71,8 +71,7 @@ class AirBs < Netdev
     # ASMAX-ESTATS-MIB::asxEstatsActiveMsUlBytes.1
     root = '1.3.6.1.4.1.989.1.16.2.9.6.1.1.1'
     snmp_get_multi(root) do |row|
-      # TODO: use MacAddress module for conversion
-      mac = row.name.index(root).map { |a| "%02x" % a }.join(":")
+      mac = MacAddress.arr2hex(row.name.index(root))
       @mobs.on_client_registered(mac)
     end
     @mobs.start_all
