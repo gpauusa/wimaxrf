@@ -13,8 +13,10 @@ class AirBs < Netdev
     @meas = Measurements.new(bsconfig['bsid'], bsconfig['stats'])
     @data_vlan = bsconfig['data_vlan']
 
-    # Set frequency
-    #snmp_set("wmanIf2BsCmnPhyDownlinkCenterFreq.1", bsconfig['frequency'])
+    # Set initial frequency
+    # WMAN-IF2-BS-MIB::wmanIf2BsCmnPhyDownlinkCenterFreq.1
+    snmp_set('1.0.8802.16.2.1.2.9.1.2.1.6.1', bsconfig['frequency'])
+
     get_bs_main_params
     info("Airspan BS (Serial# #{@serial}) at #{@frequency} MHz and #{@power} dBm")
 
