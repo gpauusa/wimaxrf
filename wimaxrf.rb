@@ -57,7 +57,7 @@ class WimaxrfService < LegacyGridService
 
     # load database
     dbFile = "#{WIMAXRF_DIR}/#{@config['database']['dbFile']}"
-    debug("Loading database file #{dbFile}")
+    debug(:wimaxrf, "Loading database file #{dbFile}")
     DataMapper.setup(:default, "sqlite://#{dbFile}")
     DataMapper.auto_upgrade!
 
@@ -74,11 +74,11 @@ class WimaxrfService < LegacyGridService
     if @config['bs']['type'] == 'airspan'
       require 'omf-aggmgr/ogs_wimaxrf/airspanbs.rb'
       @bs = AirBs.new(@mobs, @config['bs'])
-      debug("wimaxrf", "Airspan basestation loaded")
+      debug(:wimaxrf, "Airspan basestation loaded")
     else
       require 'omf-aggmgr/ogs_wimaxrf/necbs.rb'
       @bs = NecBs.new(@mobs, @config['bs'], @config['asngw'])
-      debug("wimaxrf", "NEC basestation loaded")
+      debug(:wimaxrf, "NEC basestation loaded")
     end
     @auth.bs = @bs
 
@@ -297,10 +297,10 @@ class WimaxrfService < LegacyGridService
 #      if (p[:type] == 'binary')
 #        value = (value == "true") ? "1" : "0"
 #      end
-#      debug("Setting BS parameter #{p[:bsname]} to [#{value}]")
+#      debug(:wimaxrf, "Setting BS parameter #{p[:bsname]} to [#{value}]")
 #      ret = @bs.wiset(p[:bsname],value)
 #      if ret =~ /Err/
-#        error "Error setting #{name}"
+#        error(:wimaxrf, "Error setting #{name}")
 #        raise "Error setting #{name}"
 #      end
 #      return true if ret =~ /reboot/
@@ -453,11 +453,11 @@ class WimaxrfService < LegacyGridService
 #        else
 #          if !(c.text==temp)
 #            changed = true
-#            debug("Restore #{c.name} back to #{c.text}")
+#            debug(:wimaxrf, "Restore #{c.name} back to #{c.text}")
 #            responseText = responseText +"\n"+"Change #{c.name} -> #{c.text} [OK]"
-#            debug("#{c.name}")
+#            debug(:wimaxrf, "#{c.name}")
 #            attdef=findAttributeDef(c.name)
-#            debug("#{attdef}")
+#            debug(:wimaxrf, "#{attdef}")
 #            if attdef == nil
 #              @bs.wiset(c.name,c.text)
 #            else
@@ -578,14 +578,14 @@ class WimaxrfService < LegacyGridService
 #end
 
 #def self.checkMandatoryParameters
-#  debug("Mandatory parameters value check")
+#  debug(:wimaxrf, "Mandatory parameters value check")
 #  correct = true
 #  className = eval 'WirelessService'
 #  p = className.getParam(:freq)
 #  resultAll = @bs.wiget(className.getCategoryName)
 #  result = resultAll[className.getCategoryName]
 #  if result[p[:bsname]].to_i != @config['bs']['frequency'].to_i
-#    debug("#{result[p[:bsname]].to_i} FOR #{p[:bsname]} IS INCORRECT ")
+#    debug(:wimaxrf, "#{result[p[:bsname]].to_i} FOR #{p[:bsname]} IS INCORRECT ")
 #    correct = false
 #  end
 #  className = eval 'UnexposedParams'
@@ -600,52 +600,52 @@ class WimaxrfService < LegacyGridService
 #  asngwport = Integer((@config['asngw']['port']).to_s)
 #  p = className.getParam(:bsid)
 #  if result[p[:bsname]].casecmp(bsid) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['bs']['bsid']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['bs']['bsid']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwepip)
 #  if result[p[:bsname]].casecmp(asngwip) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwepport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwdpip)
 #  if result[p[:bsname]].casecmp(asngwip) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwdpport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
 #    correct = false
 #  end
 #  p = className.getParam(:authid)
 #  if result[p[:bsname]].casecmp(asngwid) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['id']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['id']}")
 #    correct = false
 #  end
 #  p = className.getParam(:authip)
 #  if result[p[:bsname]].casecmp(asngwip) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
 #    correct = false
 #  end
 #  p = className.getParam(:authport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwid)
 #  if result[p[:bsname]].casecmp(asngwid) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['id']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['id']}")
 #    correct = false
 #  end
 #  p = className.getParam(:bsrxport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
 #    correct = false
 #  end
 #  correct
@@ -698,7 +698,7 @@ class WimaxrfService < LegacyGridService
         if interfaceExists?(interface, vlan)
           return "Cannot create datapath: manage_interface is true but #{interface}.#{vlan} already exists"
         end
-        debug("Creating VLAN #{interface}.#{vlan}")
+        debug(:wimaxrf, "Creating VLAN #{interface}.#{vlan}")
         cmd = "ip link add link #{interface} name #{interface}.#{vlan} type vlan id #{vlan}"
         if not system(cmd)
           return "Could not create VLAN: command '#{cmd}' failed with status #{$?.exitstatus}"
@@ -732,7 +732,7 @@ class WimaxrfService < LegacyGridService
   end
 
   def self.createDataPath(type, name, *args)
-    info("Creating #{type} datapath #{name}")
+    info(:wimaxrf, "Creating #{type} datapath #{name}")
     case type
       when 'click1', 'click' # backward compatibility
         Click1Datapath.new(*args)
@@ -743,7 +743,7 @@ class WimaxrfService < LegacyGridService
       when 'openflow'
         OpenFlowDatapath.new(*args)
       else
-        error("Unknown type '#{type}' for datapath #{name}")
+        error(:wimaxrf, "Unknown type '#{type}' for datapath #{name}")
         nil
     end
   end
@@ -771,7 +771,7 @@ class WimaxrfService < LegacyGridService
 
     if @manageInterface
       if dp.type.start_with?('click') and vlan != '0'
-        debug("Deleting VLAN #{interface}.#{vlan}")
+        debug(:wimaxrf, "Deleting VLAN #{interface}.#{vlan}")
         cmd = "ip link set #{interface}.#{vlan} down"
         if not system(cmd)
           return "Could not bring interface down: command '#{cmd}' failed with status #{$?.exitstatus}"
@@ -934,7 +934,7 @@ class WimaxrfService < LegacyGridService
         end
       end
     rescue => e
-      debug("#{e.message}\n(at #{e.backtrace})")
+      debug(:wimaxrf, "#{e.message}\n(at #{e.backtrace})")
       message = e.message
     end
     message
