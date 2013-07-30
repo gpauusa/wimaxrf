@@ -107,17 +107,16 @@ switch[1] -> bs_queue;"
     else
       new_config = ''
     end
+
     debug("Loading new click configuration for datapath #{name}")
-    debug(new_config)
     @click_socket.send("write hotconfig #{new_config}\n", 0)
-    # TODO: better error checking
+
     while line = @click_socket.gets
-      # this will print just the first two lines for now FIXME
-      debug("Click2 status: #{line}")
-      if line.match('200|220')
-        debug('New config loaded successfully')
+      case line
+      when /^2\d\d/
+        debug("New config loaded successfully")
         break
-      elsif line.match('^5[0-9]{2}*.')
+      when /^5\d\d/
         error("Could not load new config, old config still running: #{line}")
         break
       end
