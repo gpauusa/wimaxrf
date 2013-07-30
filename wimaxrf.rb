@@ -32,6 +32,7 @@ require 'omf-aggmgr/ogs_wimaxrf/dpClick1'
 require 'omf-aggmgr/ogs_wimaxrf/dpClick2'
 require 'omf-aggmgr/ogs_wimaxrf/dpMFirst'
 require 'omf-aggmgr/ogs_wimaxrf/dpOpenflow'
+require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
 require 'omf-aggmgr/ogs_wimaxrf/sftablesParser'
 require 'omf-aggmgr/ogs_wimaxrf/util'
 
@@ -49,37 +50,37 @@ class WimaxrfService < LegacyGridService
   #
   def self.configure(config)
     @config = config
-    @dpath = {}
-
     %w(bs database datapath).each do |sect|
       raise("Missing configuration section '#{sect}' in wimaxrf.yaml") unless @config[sect]
     end
-
-    @auth = Authenticator.new
-    @manageInterface = @config['datapath']['manage_interface'] || false
+    @manageInterface = @config['datapath']['manage_interface']
 
     # load database
     dbFile = "#{WIMAXRF_DIR}/#{@config['database']['dbFile']}"
-    debug("Loading database file #{dbFile}")
+    debug(:wimaxrf, "Loading database file #{dbFile}")
     DataMapper.setup(:default, "sqlite://#{dbFile}")
     DataMapper.auto_upgrade!
 
     # create datapaths
-    dpconfig = findAllDataPaths()
-    dpconfig.each do |dpc|
+    @dpath = {}
+    all_datapaths.each do |dpc|
       @dpath[dpc['name']] = createDataPath(dpc['type'], dpc['name'], dpc)
     end
+
+    @auth = Authenticator.new
+    @mobs = MobileClients.new(@auth, @dpath)
 
     # load BS management module
     if @config['bs']['type'] == 'airspan'
       require 'omf-aggmgr/ogs_wimaxrf/airspanbs.rb'
-      @bs = AirBs.new(@dpath, @auth, @config['bs'], @config['asngw'])
-      debug("wimaxrf", "Airspan basestation loaded")
+      @bs = AirBs.new(@mobs, @config['bs'])
+      debug(:wimaxrf, "Airspan basestation loaded")
     else
       require 'omf-aggmgr/ogs_wimaxrf/necbs.rb'
-      @bs = NecBs.new(@dpath, @auth, @config['bs'], @config['asngw'])
-      debug("wimaxrf", "NEC basestation loaded")
+      @bs = NecBs.new(@mobs, @config['bs'], @config['asngw'])
+      debug(:wimaxrf, "NEC basestation loaded")
     end
+    @auth.bs = @bs
 
 #    if not checkMandatoryParameters
 #      #setMandatoryParameters
@@ -88,7 +89,7 @@ class WimaxrfService < LegacyGridService
 
 #  eval(File.open("#{WIMAXRF_DIR}/necurls.rb").read)
 
-  def self.findAllDataPaths
+  def self.all_datapaths
     datapaths = []
     Datapath.all.each do |dtp|
       dpconf = {}
@@ -296,10 +297,10 @@ class WimaxrfService < LegacyGridService
 #      if (p[:type] == 'binary')
 #        value = (value == "true") ? "1" : "0"
 #      end
-#      debug("Setting BS parameter #{p[:bsname]} to [#{value}]")
+#      debug(:wimaxrf, "Setting BS parameter #{p[:bsname]} to [#{value}]")
 #      ret = @bs.wiset(p[:bsname],value)
 #      if ret =~ /Err/
-#        error "Error setting #{name}"
+#        error(:wimaxrf, "Error setting #{name}")
 #        raise "Error setting #{name}"
 #      end
 #      return true if ret =~ /reboot/
@@ -452,11 +453,11 @@ class WimaxrfService < LegacyGridService
 #        else
 #          if !(c.text==temp)
 #            changed = true
-#            debug("Restore #{c.name} back to #{c.text}")
+#            debug(:wimaxrf, "Restore #{c.name} back to #{c.text}")
 #            responseText = responseText +"\n"+"Change #{c.name} -> #{c.text} [OK]"
-#            debug("#{c.name}")
+#            debug(:wimaxrf, "#{c.name}")
 #            attdef=findAttributeDef(c.name)
-#            debug("#{attdef}")
+#            debug(:wimaxrf, "#{attdef}")
 #            if attdef == nil
 #              @bs.wiset(c.name,c.text)
 #            else
@@ -577,14 +578,14 @@ class WimaxrfService < LegacyGridService
 #end
 
 #def self.checkMandatoryParameters
-#  debug("Mandatory parameters value check")
+#  debug(:wimaxrf, "Mandatory parameters value check")
 #  correct = true
 #  className = eval 'WirelessService'
 #  p = className.getParam(:freq)
 #  resultAll = @bs.wiget(className.getCategoryName)
 #  result = resultAll[className.getCategoryName]
 #  if result[p[:bsname]].to_i != @config['bs']['frequency'].to_i
-#    debug("#{result[p[:bsname]].to_i} FOR #{p[:bsname]} IS INCORRECT ")
+#    debug(:wimaxrf, "#{result[p[:bsname]].to_i} FOR #{p[:bsname]} IS INCORRECT ")
 #    correct = false
 #  end
 #  className = eval 'UnexposedParams'
@@ -599,52 +600,52 @@ class WimaxrfService < LegacyGridService
 #  asngwport = Integer((@config['asngw']['port']).to_s)
 #  p = className.getParam(:bsid)
 #  if result[p[:bsname]].casecmp(bsid) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['bs']['bsid']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['bs']['bsid']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwepip)
 #  if result[p[:bsname]].casecmp(asngwip) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwepport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwdpip)
 #  if result[p[:bsname]].casecmp(asngwip) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwdpport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
 #    correct = false
 #  end
 #  p = className.getParam(:authid)
 #  if result[p[:bsname]].casecmp(asngwid) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['id']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['id']}")
 #    correct = false
 #  end
 #  p = className.getParam(:authip)
 #  if result[p[:bsname]].casecmp(asngwip) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['ip']}")
 #    correct = false
 #  end
 #  p = className.getParam(:authport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
 #    correct = false
 #  end
 #  p = className.getParam(:gwid)
 #  if result[p[:bsname]].casecmp(asngwid) != 0
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['id']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['id']}")
 #    correct = false
 #  end
 #  p = className.getParam(:bsrxport)
 #  if Integer(result[p[:bsname]]) != asngwport
-#    debug("#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
+#    debug(:wimaxrf, "#{result[p[:bsname]]} FOR #{p[:bsname]} IS INCORRECT, SHOULD BE #{@config['asngw']['port']}")
 #    correct = false
 #  end
 #  correct
@@ -697,7 +698,7 @@ class WimaxrfService < LegacyGridService
         if interfaceExists?(interface, vlan)
           return "Cannot create datapath: manage_interface is true but #{interface}.#{vlan} already exists"
         end
-        debug("Creating VLAN #{interface}.#{vlan}")
+        debug(:wimaxrf, "Creating VLAN #{interface}.#{vlan}")
         cmd = "ip link add link #{interface} name #{interface}.#{vlan} type vlan id #{vlan}"
         if not system(cmd)
           return "Could not create VLAN: command '#{cmd}' failed with status #{$?.exitstatus}"
@@ -731,7 +732,7 @@ class WimaxrfService < LegacyGridService
   end
 
   def self.createDataPath(type, name, *args)
-    info("Creating #{type} datapath #{name}")
+    info(:wimaxrf, "Creating #{type} datapath #{name}")
     case type
       when 'click1', 'click' # backward compatibility
         Click1Datapath.new(*args)
@@ -742,7 +743,7 @@ class WimaxrfService < LegacyGridService
       when 'openflow'
         OpenFlowDatapath.new(*args)
       else
-        error("Unknown type '#{type}' for datapath #{name}")
+        error(:wimaxrf, "Unknown type '#{type}' for datapath #{name}")
         nil
     end
   end
@@ -770,7 +771,7 @@ class WimaxrfService < LegacyGridService
 
     if @manageInterface
       if dp.type.start_with?('click') and vlan != '0'
-        debug("Deleting VLAN #{interface}.#{vlan}")
+        debug(:wimaxrf, "Deleting VLAN #{interface}.#{vlan}")
         cmd = "ip link set #{interface}.#{vlan} down"
         if not system(cmd)
           return "Could not bring interface down: command '#{cmd}' failed with status #{$?.exitstatus}"
@@ -866,7 +867,7 @@ class WimaxrfService < LegacyGridService
     replyXML = getDatapathStatus(interface,vlan)
     begin
       conf = DataPathConfig.first_or_create({:name => name}).update({:status => replyXML.to_s, :vlan => vlan})
-    rescue Exception => ex
+    rescue => ex
       replyXML = buildXMLReply("Clients", '', ex)
     end
     self.setResponse(res,replyXML)
@@ -886,7 +887,7 @@ class WimaxrfService < LegacyGridService
       else
         responseText = "There is no #{name} datapath configuration saved"
       end
-    rescue Exception => ex
+    rescue => ex
       responseText = ex
     end
     setResponsePlainText(res, responseText)
@@ -921,20 +922,20 @@ class WimaxrfService < LegacyGridService
           if c.attributes["macaddr"]
             macaddr = c.attributes["macaddr"]
             ipaddress = c.attributes["ipaddress"]
-            client = @auth.get(macaddr)
-            if not client
-              @auth.add_client(macaddr,interface,vlan,ipaddress)
-              message << "\nCLIENT "+ c.attributes["macaddr"] + ' ADDED'
+            client = @auth.get_client(macaddr)
+            if client.nil?
+              @auth.add_client(macaddr, interface, vlan, ipaddress)
+              message << "\nClient #{macaddr} added"
             else
-              modifyClient(macaddr,interface,vlan,ipaddress)
-              message << "\nCLIENT "+ c.attributes["macaddr"] + ' MODIFIED'
+              modifyClient(client, interface, vlan, ipaddress)
+              message << "\nClient #{macaddr} updated"
             end
           end
         end
       end
-    rescue Exception => ex
-      MObject.debug("#{ex}\n(at #{ex.backtrace})")
-      message = ex
+    rescue => e
+      debug(:wimaxrf, "#{e.message}\n(at #{e.backtrace})")
+      message = e.message
     end
     message
   end
@@ -981,7 +982,7 @@ class WimaxrfService < LegacyGridService
     end
   end
 
-  s_description "Add client to datapath"
+  s_description "Add a client to a datapath"
   s_param :macaddr, 'macaddr', 'Client MAC address'
   s_param :ipaddress, 'ipaddress', 'Client IP address'
   s_param :interface, 'interface', 'Datapath interface'
@@ -994,95 +995,91 @@ class WimaxrfService < LegacyGridService
     begin
       if datapathExists?(interface, vlan)
         @auth.add_client(macaddr, interface, vlan, ipaddress)
-        if @config['bs']['data_vlan'] != 0 && @config['bs']['type'] == 'airspan' # FIXME: find a way to put this directly on airspan
-          @bs.add_new_station_bs(MacAddress.hex2dec(macaddr))
-        end
         msg = "Client added"
       else
-        msg = "Cannot add client, datapath with vlan=#{vlan} does not exist"
+        msg = "Cannot add client, datapath does not exist"
       end
-    rescue Exception => e
+    rescue => e
       msg = e.message
     end
     setResponsePlainText(res, msg)
   end
 
-  s_description "Delete client from datapath"
+  s_description "Delete a client from its datapath"
   s_param :macaddr, 'macaddr', 'Client MAC address'
   service 'datapath/clients/delete' do |req, res|
     macaddr = getParam(req, 'macaddr')
     begin
-      @auth.del_client(macaddr)
-      if @config['bs']['type'] == 'airspan'    # FIXME: find a way to put this directly on airspan
-        @bs.delete_station_bs(MacAddress.hex2dec(macaddr))
+      if @auth.del_client(macaddr)
+        msg = "Client deleted"
+      else
+        msg = "Client not found"
       end
-      msg = "Client #{macaddr} deleted"
-    rescue Exception => e
+    rescue => e
       msg = e.message
     end
     setResponsePlainText(res, msg)
   end
 
-  s_description "Change client's VLAN and/or IP address"
+  s_description "Change a client's datapath and/or IP address"
   s_param :macaddr, 'macaddr', 'Client MAC address'
   s_param :ipaddress, '[ipaddress]', 'New IP address'
   s_param :interface, '[interface]', 'New interface'
   s_param :vlan, '[vlan]', 'New VLAN ID'
   service 'datapath/clients/modify' do |req, res|
     macaddr = getParam(req, 'macaddr')
-    message = "modifyClient: "
-    aclient = @auth.get(macaddr)
+    client = @auth.get_client(macaddr)
     begin
-      if aclient
+      if client
         if req.query.has_key?('vlan')
           vlan = getParam(req, 'vlan')
         else
-          vlan = aclient.vlan
+          vlan = client.vlan
         end
         if req.query.has_key?('interface')
           interface = getParam(req, 'interface')
         else
-          interface = aclient.interface
+          interface = client.interface
         end
-        if(req.query.has_key?('ipaddress'))
+        if req.query.has_key?('ipaddress')
           ipaddress = getParam(req, 'ipaddress')
         else
           ipaddress = nil
         end
-        message << modifyClient(macaddr,interface,vlan,ipaddress)
+        msg = modifyClient(client, interface, vlan, ipaddress)
       else
-        message << "There is no client with mac = #{macaddr}!"
+        msg = "Client not found"
       end
-    rescue Exception => e
-      message = e.message
+    rescue => e
+      msg = e.message
     end
-    setResponsePlainText(res, message)
+    setResponsePlainText(res, msg)
   end
 
-  def self.modifyClient(macaddr,interface,vlan,ipaddress)
-    aclient = @auth.get(macaddr)
-    updateHash = {}
-    updateMobile = false
-    message = " "
+  def self.modifyClient(client,interface,vlan,ipaddress)
+    updates = {}
+    message = ''
+
+    # prepare datapath change
     if datapathExists?(interface, vlan)
-      if aclient.vlan != vlan || aclient.interface != interface
-        updateHash[:vlan] = vlan
-        updateHash[:interface] = interface
-        updateMobile = true
-        message << "Vlan for #{macaddr} updated"
+      if client.vlan != vlan || client.interface != interface
+        updates[:vlan] = vlan
+        updates[:interface] = interface
+        message << "Datapath for #{macaddr} updated"
       end
     else
-      message << "Can not modify client's vlan, datapath with interface=#{interface} and vlan=#{vlan} does not exist"
+      message << "Cannot modify vlan/interface, datapath #{interface}-#{vlan} does not exist"
     end
-    if ipaddress != nil && ipaddress != aclient.ipaddress
-      updateHash[:ipaddress] = ipaddress
-      updateMobile = true
+
+    # prepare ip address change
+    if ipaddress != nil && ipaddress != client.ipaddress
+      updates[:ipaddress] = ipaddress
       message << "\nIP address for #{macaddr} updated"
     end
-    if updateMobile
-      @auth.update_client(macaddr,updateHash)
-      # We should really check if anything changed before we do this
-      @bs.modifyMobile(macaddr)
+
+    if !updates.empty?
+      # apply changes
+      @auth.update_client(macaddr, updates)
     end
     message
   end
@@ -1133,7 +1130,7 @@ class WimaxrfService < LegacyGridService
 #        else
 #          res.body = "OK"
 #        end
-#      rescue Exception => e
+#      rescue => e
 #        res.body = e.message
 #      end
 #    else
@@ -1229,7 +1226,7 @@ class WimaxrfService < LegacyGridService
 #      }
 #    begin
 #      conf = Configuration.first_or_create({:name => name}).update({:configuration => replyXML.to_s})
-#    rescue Exception => ex
+#    rescue => ex
 #      replyXML = buildXMLReply("Configuration", '', ex)
 #    end
 #    self.setResponse(res,replyXML)
@@ -1249,8 +1246,8 @@ class WimaxrfService < LegacyGridService
 #      else
 #        responseText = "There is no #{name} configuration"
 #      end
-#    rescue Exception => ex
-#      responseText = ex
+#    rescue => ex
+#      responseText = ex.message
 #    end
 #    res.body = responseText
 # end

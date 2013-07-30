@@ -6,47 +6,64 @@ require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
 require 'omf-aggmgr/ogs_wimaxrf/execApp'
 
 class Click2Datapath < DataPath
-  attr_reader :interface_bs, :interface_net, :vlan_bs, :vlan # TODO FIXME
+  attr_reader :port, :vlan
 
   def initialize(config)
     super
     @app = nil
-    @vlan_bs = config['data_vlan'].to_i || 0
-    @vlan = config['vlan'].to_i || 0
-    @interface_bs = config['data_interface'] || 'eth1'
-    @interface = config['interface'] || 'eth2'
+    @port = config['interface']
+    @vlan = config['vlan'].to_i
+    @bsif = config['data_interface']
+    @bsif << ".#{config['data_vlan']}" if config['data_vlan'].to_i != 0
+    @netif = @port
+    @netif << ".#{@vlan}" if @vlan != 0
     @click_socket_path = config['click_socket_dir'] || '/var/run'
     @click_socket_path << "/click-#{name}.sock"
     @click_socket = nil
     @click_command = config['click_command'] || '/usr/bin/click'
     @click_command << " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
+    @click_timeout = config['click_timeout'] || 5.0
   end
 
-  # start a new click instance if not already running
+  # Starts a new click instance if it's not already running.
   def start
     return unless @app.nil?
+    info("Starting datapath #{name}")
     if File::exist?(@click_socket_path)
       File::delete(@click_socket_path)
     end
     @app = ExecApp.new("C2DP-#{name}", nil, @click_command)
-    sleep(0.5)
+
+    # wait for click to open the control socket
+    timeout = @click_timeout
+    until File::exist?(@click_socket_path)
+      raise "Timed out waiting for control socket to appear" if timeout <= 0
+      timeout -= 0.1
+      sleep(0.1)
+    end
+    # open control socket
     @click_socket = UNIXSocket.new(@click_socket_path)
+    # send initial configuration
     update_click_config
   end
 
-  # stop the click instance, do nothing if it's not running
+  # Stops the click instance, does nothing if it's not running.
   def stop
     return unless @app
+    info("Stopping datapath #{name}")
+    # gracefully shutdown the connection
+    @click_socket.send("QUIT", 0)
+    # close the control socket
     @click_socket.close
     @click_socket = nil
-    begin
-      @app.kill
-    rescue Exception => ex
-      error("Exception in stop:\n#{ex}")
-    end
+    # give click some time to cleanup
+    sleep(0.2)
+    # kill the process
+    @app.kill
     @app = nil
   end
 
+  # Reconfigures the running click instance without stopping it.
   def restart
     if @app
       update_click_config
@@ -57,28 +74,18 @@ class Click2Datapath < DataPath
 
   private
 
-  # generate click configuration for this datapath
+  # Generates and returns click configuration for this datapath.
   def generate_click_config
-    # first we build the parameters and the static
-    # elements that depend on the presence of VLANs
-    if @vlan_bs != 0
-      interface_bs = "#{@interface_bs}.#{@vlan_bs}"
-    else
-      interface_bs = @interface_bs
-    end
-    if @vlan != 0
-      interface_net = "#{@interface}.#{@vlan}"
-    else
-      interface_net = @interface
-    end
+    # first of all we declare the main switch element
+    # and all the sources/sinks that we're going to use
     config = "switch :: EtherSwitch; \
-from_bs :: FromDevice(#{interface_bs}, PROMISC true); \
-to_bs :: ToDevice(#{interface_bs}); \
-from_net :: FromDevice(#{interface_net}, PROMISC true); \
-to_net :: ToDevice(#{interface_net});"
+from_bs :: FromDevice(#{@bsif}, PROMISC true); \
+to_bs :: ToDevice(#{@bsif}); \
+from_net :: FromDevice(#{@netif}, PROMISC true); \
+to_net :: ToDevice(#{@netif});"
 
-    # then the two filter compounds that filter packets
-    # coming from the bs and from the outside network
+    # then the two filter compounds for whitelisting
+    # clients based on their mac address
     filter_first_output = []
     filter_second_output = []
     network_filter = 'filter_from_network :: {'
@@ -98,7 +105,7 @@ to_net :: ToDevice(#{interface_net});"
     bs_filter << filter_second_output.join(', ') << ' -> output;'
     bs_filter << filter_first_output.join(' -> ') + ' -> sink :: Discard; }'
 
-    # and at the end we generate package routing
+    # finally we plug everything into the switch
     routing = "bs_queue :: Queue -> to_bs; \
 net_queue :: Queue -> to_net; \
 from_net -> filter_from_network -> [0]switch; \
@@ -110,7 +117,7 @@ switch[1] -> bs_queue;"
     config << network_filter << bs_filter << routing
   end
 
-  # update the click configuration with a new one generated on the fly
+  # Replaces the current configuration with a new one generated on the fly.
   def update_click_config
     return unless @click_socket
     if @mobiles.length > 0
@@ -118,17 +125,16 @@ switch[1] -> bs_queue;"
     else
       new_config = ''
     end
+
     debug("Loading new click configuration for datapath #{name}")
-    debug(new_config)
-    @click_socket.send("write hotconfig #{new_config}\n", 0)
-    # TODO: better error checking
+    @click_socket.send("WRITE hotconfig #{new_config}\n", 0)
+
     while line = @click_socket.gets
-      # this will print just the first two lines for now FIXME
-      debug("Click2 status: #{line}")
-      if line.match('200|220')
-        debug('New config loaded successfully')
+      case line
+      when /^2\d\d/
+        debug("New config loaded successfully")
         break
-      elsif line.match('^5[0-9]{2}*.')
+      when /^5\d\d/
         error("Could not load new config, old config still running: #{line}")
         break
       end

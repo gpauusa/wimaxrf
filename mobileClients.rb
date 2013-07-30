@@ -1,109 +1,117 @@
 require 'omf-aggmgr/ogs_wimaxrf/client'
 
-class MobileClients
+class MobileClients < MObject
 
-  def initialize(dp, debug=nil)
+  def initialize(auth, dp)
+    @auth = auth
     @dp = dp
-    @mobiles = {}
+    @clients = {}
   end
 
-  def add(mac, dpname, ip = nil, oid = nil)
-    raise("Unknown datapath: #{dpname} for mac #{mac}") unless @dp.has_key? dpname
-    return if @mobiles.has_key?(mac)
-    m = Client.new(mac, oid)
-    m.dpname = dpname
-    m.ip = ip
-    @mobiles[mac] = m
-    @dp[dpname].add(mac, m)
+  def [](mac)
+    @clients[mac]
   end
 
-  def start(mac)
-    dpname = @mobiles[mac].dpname
-    @dp[dpname].restart()
+  def each(&block)
+    @clients.each(&block)
   end
 
-  def modify(mac, dpname, ip = nil, oid = nil)
-    m = @mobiles[mac]
-    if dpname != m.dpname
-      @dp[m.dpname].delete(mac)
-      @dp[m.dpname].restart()
-      @dp[dpname].add(mac, m)
+  def has_mac?(mac)
+    @clients.has_key?(mac)
+  end
+
+  def length
+    @clients.length
+  end
+
+  def add(mac, dpname, ip=nil)
+    return false if has_mac?(mac)
+    c = Client.new(mac)
+    c.dpname = dpname
+    c.ip = ip
+    @clients[mac] = c
+    @dp[dpname].add(mac, c)
+    true
+  end
+
+  def modify(mac, dpname, ip=nil)
+    c = @clients[mac]
+    return false unless c
+    if dpname != c.dpname
+      @dp[c.dpname].delete(mac)
+      @dp[c.dpname].restart
+      c.dpname = dpname
+      c.ip = ip
+      @dp[dpname].add(mac, c)
+      @dp[dpname].restart
+    elsif ip != c.ip
+      c.ip = ip
+      @dp[dpname].restart
     end
-    m.dpname = dpname
-    m.ip = ip
-    @dp[dpname].restart()
+    true
   end
 
   def delete(mac)
-#    return unless @mobiles.has_key?(mac)
-    m = @mobiles[mac]
-    @dp[m.dpname].delete(mac)
-    @dp[m.dpname].restart()
-    @mobiles.delete(mac)
-  end
-
-  def add_oid(mac, oid)
-    @mobiles[mac].oid = oid
+    c = @clients[mac]
+    return false unless c
+    @clients.delete(mac)
+    @dp[c.dpname].delete(mac)
+    @dp[c.dpname].restart
+    true
   end
 
   def add_tunnel(mac, ch, gre)
-    return unless @mobiles.has_key?(mac)
+    return unless has_mac?(mac)
     if ch == '1'
-      @mobiles[mac].ul = gre
+      @clients[mac].ul = gre
     else
-      @mobiles[mac].dl = gre
+      @clients[mac].dl = gre
     end
   end
 
   def del_tunnel(mac, ch, gre)
-    # Check if MAC address exists already
-    return unless @mobiles.has_key?(mac)
+    return unless has_mac?(mac)
     if ch == '1'
-      @mobiles[mac].ul = nil
+      @clients[mac].ul = nil
     else
-      @mobiles[mac].dl = nil
+      @clients[mac].dl = nil
     end
   end
 
-  def each(&block)
-    @mobiles.each(&block)
+  def start(mac)
+    c = @clients[mac]
+    return false unless c
+    @dp[c.dpname].restart
+    true
   end
 
-  def vlan_mobiles(v)
-    @dp[v].getClients()
+  def start_all(empty=false)
+    @dp.each_value do |datapath|
+      if empty || datapath.length > 0
+        datapath.restart
+      end
+    end
   end
 
-  def has_mac?(mac)
-    print "Checking for #{mac} = " + @mobiles.has_key?(mac).to_s
-    @mobiles.has_key?(mac)
+  def on_client_registered(mac)
+    if client = @auth.get_client(mac)
+      add(mac, client.dpname, client.ipaddress)
+      info "Client [#{mac}] registered for datapath #{client.dpname}"
+      true
+    else
+      info "Denied unknown client [#{mac}]"
+      false
+    end
   end
 
-  def [](mac)
-    @mobiles[mac]
-  end
-
-  def get_mac_addresses
-    @mobiles.keys
-  end
-
-  def get_clients
-    @mobiles.values
-  end
-
-  def length
-    @mobiles.length
-  end
-
-  def start_dp(v)
-    @dp[v].start()
-  end
-
-  def stop_dp(v)
-    @dp[v].stop()
-  end
-
-  def restart_dp(v)
-    @dp[v].restart()
+  def on_client_deregistered(mac)
+    if delete(mac)
+      info "Client [#{mac}] deregistered"
+      true
+    else
+      info "Client [#{mac}] was not registered"
+      false
+    end
   end
 
 end

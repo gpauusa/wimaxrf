@@ -9,29 +9,28 @@ class Client
   attr_accessor :basic_measurement, :extended_measurement
   attr_reader :tppduul, :tppdudl, :pduul, :pdudl, :tpsduul, :tpsdudl, :sduul, :sdudl, :mcsulrate, :mcsulmod, :mcsdlrate, :mcsdlmod, :rssi
 
-  def initialize(m, basic, debug=nil)
-    @mac = m
-    @snmp_mac = MacAddress.hex2dec(m)
+  def initialize(macaddr)
+    @mac = macaddr
+    @snmp_mac = MacAddress.hex2dec(@mac)
+    @dpname = nil
     @ip = nil
+    @vlan = nil
     @ul = nil
     @dl = nil
-    @vlan = nil
-    @dpname = nil
     @basic_measurement = {}
     @extended_measurement = {}
     @tppdudl = @tppduul = @tpsdudl = @tpsduul = 0
     @lastts = nil
-    @debug = debug
   end
 
   def du_reading(pduul, pdudl, sduul, sdudl, ts=nil)
     ts = Time.now.to_f if ts.nil?
     if !@lastts.nil?
       tdiff = ts - @lastts
-      @tppdudl = 8.0 * (pdudl - @pdudl)/tdiff
-      @tppduul = 8.0 * (pduul - @pduul)/tdiff
-      @tpsdudl = 8.0 * (sdudl - @sdudl)/tdiff
-      @tpsduul = 8.0 * (sduul - @sduul)/tdiff
+      @tppdudl = 8.0 * (pdudl - @pdudl) / tdiff
+      @tppduul = 8.0 * (pduul - @pduul) / tdiff
+      @tpsdudl = 8.0 * (sdudl - @sdudl) / tdiff
+      @tpsduul = 8.0 * (sduul - @sduul) / tdiff
     end
     @pdudl = pdudl
     @pduul = pduul

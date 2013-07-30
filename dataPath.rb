@@ -9,48 +9,33 @@ class DataPath < MObject
     @name = config['name']
   end
 
-  def get_mac_addresses
-    @mobiles.keys
+  # Adds the client to this datapath.
+  def add(mac, client)
+    @mobiles[mac] = client
   end
 
-  def get_clients
-    @mobiles.values
-  end
-
-  def length
-    @mobiles.length
-  end
-
-  def add(mac, mob)
-    @mobiles[mac] = mob
-  end
-
+  # Removes the client from this datapath.
   def delete(mac)
     @mobiles.delete(mac)
   end
 
-  def adddatapath(clients, mac, channel, gre)
-    if channel == '1'
-      @mobiles[mac].ul = gre
-    else
-      @mobiles[mac].dl = gre
-    end
+  # Returns the number of clients currently using this datapath.
+  def length
+    @mobiles.length
   end
 
-  def deletedatapath(clients, mac, channel, gre)
-    if channel == '1'
-      @mobiles[mac].ul = nil
-    else
-      @mobiles[mac].dl = nil
-    end
-  end
-
+  # Starts the datapath. Must be implemented by subclasses.
   def start
+    raise NotImplementedError("You must implement DataPath#start in your subclass.")
   end
 
+  # Stops the datapath. Must be implemented by subclasses.
   def stop
+    raise NotImplementedError("You must implement DataPath#stop in your subclass.")
   end
 
+  # Stops and restarts the datapath. Can be overridden by subclasses
+  # that wish to provide a different or more efficient restart method.
   def restart
     stop
     start

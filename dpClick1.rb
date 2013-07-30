@@ -7,9 +7,7 @@ require 'omf-aggmgr/ogs_wimaxrf/execApp'
 
 class Click1Datapath < DataPath
   attr_reader :def_gw, :net_mask, :def_ip
-  attr_reader :slices, :auth, :port, :vlan
-
-  $asn_gre_conf = "/etc/asnctrl_gre.conf"
+  attr_reader :port, :vlan
 
   def initialize(config)
    super
@@ -75,11 +73,7 @@ ulgre_#{i} -> GetIPAddress(16) -> arq_#{i} -> [#{i}]switch;
 
   def stop
     return unless @app
-    begin
-      @app.kill
-    rescue Exception => ex
-      print "Exception in stop: '#{ex}'"
-    end
+    @app.kill
     @app = nil
   end
 

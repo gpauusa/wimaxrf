@@ -1,4 +1,9 @@
 module MacAddress
+  def self.arr2hex(array)
+    raise "Invalid MAC address #{array.inspect}" unless array.length == 6
+    array.map { |a| "%02x" % a }.join(":")
+  end
+
   def self.bin2dec(mac)
     raise "Invalid MAC address '#{mac}'" unless mac.length == 6
     mac.unpack("CCCCCC").join(".")
@@ -10,7 +15,7 @@ module MacAddress
   end
 
   def self.dec2hex(mac)
-    mac.split(".").map { |a| "%02x" % a }.join(":")
+    arr2hex(mac.split("."))
   end
 
   def self.hex2dec(mac)

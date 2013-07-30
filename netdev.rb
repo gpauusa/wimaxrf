@@ -10,8 +10,8 @@ class Netdev < MObject
   def initialize(config = {})
     @host = config['ip']
     @port = config['snmp_port'] || 161
-    @readcommunity = config['read_community'] || "private"
-    @writecommunity = config['write_community'] || "private"
+    @readcommunity = config['read_community'] || 'public'
+    @writecommunity = config['write_community'] || 'private'
     @manager = SNMP::Manager.new(:Host => @host, :Community => @readcommunity,
                                  :Port => @port, :WriteCommunity => @writecommunity)
     @snmp_lock = Monitor.new
@@ -20,11 +20,11 @@ class Netdev < MObject
     @telnetprompt = config[:telnetprompt] || "[$%#>] \z/n"
     if @telnetuser
       @sw = Net::Telnet::new("Host" => @host, "Timeout" => 10, "Prompt" => @telnetuser)
-      sw.login(@telnetuser)
+      @sw.login(@telnetuser)
     else
       @sw = nil
     end
-    @sshuser = config[:sshuser] || "root"
+    @sshuser = config[:sshuser] || 'root'
     @sshpass = config[:sshpass] || ''
     debug("Initialized networking device at #{@host}")
   end
@@ -50,7 +50,7 @@ class Netdev < MObject
       begin
         return @manager.get_value(snmpobj)
       rescue Exception => ex
-        raise "Exception in snmp_get '#{ex}'"
+        raise "Exception in snmp_get: '#{ex}'"
       end
     }
   end
@@ -62,7 +62,7 @@ class Netdev < MObject
           yield(result)
         end
       rescue Exception => ex
-        raise "Exception in snmp_get_multi '#{ex}'"
+        raise "Exception in snmp_get_multi: '#{ex}'"
       end
     }
   end
@@ -110,7 +110,7 @@ class Netdev < MObject
           end
         end
       rescue Exception => ex
-        raise "Exception in snmp_set '#{ex}'"
+        raise "Exception in snmp_set: '#{ex}'"
       end
     }
     status
@@ -124,21 +124,21 @@ class Netdev < MObject
       end
       rescue Errno::ECONNRESET
         while tryAgain
-            print "RETRY SSH - Errno::ECONNRESET"
-            retry
-          end
+          print "RETRY SSH - Errno::ECONNRESET"
+          retry
+        end
       rescue Errno::ECONNREFUSED
         while tryAgain
-            print "RETRY SSH - Errno::ECONNREFUSED"
-            retry
-          end
+          print "RETRY SSH - Errno::ECONNREFUSED"
+          retry
+        end
       rescue Errno::EHOSTUNREACH
         while tryAgain
-            print "RETRY SSH - Errno::EHOSTUNREACH"
-            retry
-          end
-      rescue Exception => ex
-        raise "Exception in ssh command '#{ex}'"
+          print "RETRY SSH - Errno::EHOSTUNREACH"
+          retry
+        end
+      rescue => e
+        error("Exception in ssh command: #{e.message}\n#{e.backtrace.join("\n\t")}")
     end
   end
 end
