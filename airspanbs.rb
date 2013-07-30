@@ -4,7 +4,7 @@ require 'omf-aggmgr/ogs_wimaxrf/util'
 require 'rufus/scheduler'
 
 class AirBs < Netdev
-  attr_reader :nomobiles, :serial, :tpsduul, :tppduul, :tpsdudl, :tppdud
+  attr_reader :serial, :tpsduul, :tppduul, :tpsdudl, :tppdud
 
   def initialize(mobs, bsconfig)
     super(bsconfig)
@@ -15,7 +15,7 @@ class AirBs < Netdev
 
     # Set initial frequency
     # WMAN-IF2-BS-MIB::wmanIf2BsCmnPhyDownlinkCenterFreq.1
-    snmp_set('1.0.8802.16.2.1.2.9.1.2.1.6.1', bsconfig['frequency'])
+    snmp_set('1.0.8802.16.2.1.2.9.1.2.1.6.1', bsconfig['frequency']) # in kHz
 
     get_bs_main_params
     info("Airspan BS (Serial# #{@serial}) at #{@frequency} MHz and #{@power} dBm")
@@ -56,21 +56,22 @@ class AirBs < Netdev
       end
     end
 
-    # ASMAX-AD-BRIDGE-MIB::asDot1adBsPortProvIngressFilterEnabled.4
     # Right now this is needed because the ingress filter is not set
     # so we need to shutdown the filter
     # TODO: setup of ingress filter
-    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.3.1.2.4', 0)
+    # ASMAX-AD-BRIDGE-MIB::asDot1adBsPortProvIngressFilterEnabled.4
+    snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.3.1.2.4', 0) # false
 
     # FIXME: this should not be done here
     if @data_vlan && @data_vlan != 0
       create_vlan(@data_vlan)
     end
 
-    # TODO: use of MacAddress for converting the address
-    # handle already registered clients on startup
-    root = "1.3.6.1.4.1.989.1.16.2.9.6.1.1.1"
+    # Handle already registered clients on startup
+    # ASMAX-ESTATS-MIB::asxEstatsActiveMsUlBytes.1
+    root = '1.3.6.1.4.1.989.1.16.2.9.6.1.1.1'
     snmp_get_multi(root) do |row|
+      # TODO: use MacAddress module for conversion
       mac = row.name.index(root).map { |a| "%02x" % a }.join(":")
       @mobs.on_client_registered(mac)
     end
@@ -80,8 +81,9 @@ class AirBs < Netdev
     # Local stats gathering
     scheduler.every "#{@meas.localinterval}s" do
       get_bs_stats
-      get_mobile_stations
-      debug("Found #{@nomobiles} mobiles")
+      # ASMAX-ESTATS-MIB::asxEstatsRegisteredMs.1
+      registered_ms = begin snmp_get('1.3.6.1.4.1.989.1.16.2.9.5.1.1.1').to_i rescue 0 end
+      debug("Found #{registered_ms} registered mobiles (#{@mobs.length} authorized + #{registered_ms - @mobs.length} unauthorized)")
       debug("Checking mobile stats...")
       @mobs.each do |mac, ms|
         get_ms_stats(ms.snmp_mac)
@@ -93,7 +95,7 @@ class AirBs < Netdev
       debug("BS Data collection")
       get_bs_main_params
       get_bs_stats
-      @meas.bsstats(@frequency, @power, @nomobiles, @tpsduul, @tppduul, @tpsdudl, @tppdudl)
+      @meas.bsstats(@frequency, @power, @mobs.length, @tpsduul, @tppduul, @tpsdudl, @tppdudl)
     end
   end
 
@@ -134,15 +136,6 @@ class AirBs < Netdev
   def get_bs_voltage_stats
     # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonitorTable
     # TODO
-  end
-
-  def get_mobile_stations
-    begin
-      # ASMAX-ESTATS-MIB::asxEstatsRegisteredMs.1
-      @nomobiles = snmp_get("1.3.6.1.4.1.989.1.16.2.9.5.1.1.1").to_i
-    rescue
-      @nomobiles = 0
-    end
   end
 
   def get_ms_stats(mac)
