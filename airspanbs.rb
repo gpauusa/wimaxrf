@@ -95,8 +95,6 @@ class AirBs < Netdev
     end
   end
 
-  private
-
   def on_client_added(client)
     add_station(MacAddress.hex2dec(client.macaddr)) unless @data_vlan == 0
   end
@@ -104,6 +102,8 @@ class AirBs < Netdev
   def on_client_deleted(client)
     delete_station(MacAddress.hex2dec(client.macaddr)) unless @data_vlan == 0
   end
+
+  private
 
   def get_bs_main_params
     # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmInventorySerialNumber.1
