@@ -22,6 +22,7 @@ class Click2Datapath < DataPath
     @click_socket = nil
     @click_command = config['click_command'] || '/usr/bin/click'
     @click_command << " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
+    @click_timeout = config['click_timeout'] || 5.0
   end
 
   # Starts a new click instance if it's not already running.
@@ -32,8 +33,17 @@ class Click2Datapath < DataPath
       File::delete(@click_socket_path)
     end
     @app = ExecApp.new("C2DP-#{name}", nil, @click_command)
-    sleep(0.5)
+
+    # wait for click to open the control socket
+    timeout = @click_timeout
+    until File::exist?(@click_socket_path)
+      raise "Timed out waiting for control socket to appear" if timeout <= 0
+      timeout -= 0.1
+      sleep(0.1)
+    end
+    # open control socket
     @click_socket = UNIXSocket.new(@click_socket_path)
+    # send initial configuration
     update_click_config
   end
 
@@ -41,10 +51,14 @@ class Click2Datapath < DataPath
   def stop
     return unless @app
     debug("Stopping datapath #{name}")
+    # gracefully shutdown the connection
     @click_socket.send("QUIT", 0)
+    # close the control socket
     @click_socket.close
     @click_socket = nil
+    # give click some time to cleanup
     sleep(0.2)
+    # kill the process
     @app.kill
     @app = nil
   end
