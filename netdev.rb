@@ -141,4 +141,10 @@ class Netdev < MObject
         error("Exception in ssh command: #{e.message}\n#{e.backtrace.join("\n\t")}")
     end
   end
+
+  def create_vlan(vlan)
+  end
+
+  def delete_vlan(vlan)
+  end
 end

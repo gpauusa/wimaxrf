@@ -62,11 +62,6 @@ class AirBs < Netdev
     # ASMAX-AD-BRIDGE-MIB::asDot1adBsPortProvIngressFilterEnabled.4
     snmp_set('1.3.6.1.4.1.989.1.16.5.4.2.3.1.2.4', 0) # false
 
-    # FIXME: this should not be done here
-    if @data_vlan && @data_vlan != 0
-      create_vlan(@data_vlan)
-    end
-
     # Handle already registered clients on startup
     # ASMAX-ESTATS-MIB::asxEstatsActiveMsUlBytes.1
     root = '1.3.6.1.4.1.989.1.16.2.9.6.1.1.1'
