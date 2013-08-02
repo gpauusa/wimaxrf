@@ -11,7 +11,7 @@ class AirBs < Netdev
 
     @mobs = mobs
     @meas = Measurements.new(bsconfig['bsid'], bsconfig['stats'])
-    @data_vlan = bsconfig['data_vlan']
+    @data_vlan = 0
 
     # Set initial frequency
     # WMAN-IF2-BS-MIB::wmanIf2BsCmnPhyDownlinkCenterFreq.1
@@ -98,11 +98,13 @@ class AirBs < Netdev
   end
 
   def on_client_deleted(client)
-    delete_station(MacAddress.hex2dec(client.macaddr)) unless @data_vlan == 0
+    delete_station(MacAddress.hex2dec(client.macaddr))
   end
 
   def create_vlan(vlan)
     debug("Creating VLAN #{vlan} on internal bridge")
+    #setup of data_vlan
+    @data_vlan = vlan
     # The following settings are contained in the SNMP table
     # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvTable (1.3.6.1.4.1.989.1.16.5.4.1.2)
 
