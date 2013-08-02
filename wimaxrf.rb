@@ -718,19 +718,18 @@ class WimaxrfService < LegacyGridService
     end
 
     # add to database
-    newdp = Datapath.first_or_create({:vlan => vlan, :interface => interface}, :type => type)
+    newdp = Datapath.create(:type => type, :vlan => vlan, :interface => interface)
     dpc = {}
     dpc['name'] = newdp.name
     dpc['type'] = type
     dpc['vlan'] = vlan
     dpc['interface'] = interface
-    dpc['data_vlan'] = @config['datapath']['data_vlan']
-    dpc['data_interface'] = @config['datapath']['data_interface']
+    dpc['bs_interface'] = @config['datapath']['data_interface'].dup
+    dpc['bs_interface'] << ".#{@config['datapath']['data_vlan']}" if @config['datapath']['data_vlan'] != 0
     params.each do |name, value|
       dpc[name] = value
-      newdp.dpattributes.first_or_create(:name => name, :value => value, :vlan => vlan)
+      newdp.dpattributes.create(:name => name, :value => value)
     end
-    newdp.save
 
     @dpath[newdp.name] = createDataPath(type, newdp.name, dpc)
     "Datapath #{interface}-#{vlan} added"

@@ -13,8 +13,7 @@ class Click2Datapath < DataPath
     @app = nil
     @port = config['interface']
     @vlan = config['vlan'].to_i
-    @bsif = config['data_interface'].dup
-    @bsif << ".#{config['data_vlan']}" if config['data_vlan'].to_i != 0
+    @bsif = config['bs_interface']
     @netif = @port.dup
     @netif << ".#{@vlan}" if @vlan != 0
     @click_socket_path = config['click_socket_dir'] || '/var/run'
