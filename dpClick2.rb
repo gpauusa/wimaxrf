@@ -1,8 +1,6 @@
-require 'rubygems'
+require 'monitor'
 require 'socket'
-require 'omf-aggmgr/ogs_wimaxrf/client'
 require 'omf-aggmgr/ogs_wimaxrf/dataPath'
-require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
 require 'omf-aggmgr/ogs_wimaxrf/execApp'
 
 class Click2Datapath < DataPath
@@ -18,7 +16,6 @@ class Click2Datapath < DataPath
     @netif << ".#{@vlan}" if @vlan != 0
     @click_socket_path = config['click_socket_dir'] || '/var/run'
     @click_socket_path << "/click-#{name}.sock"
-    @click_socket = nil
     @click_command = config['click_command'] || '/usr/bin/click'
     @click_command << " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
     @click_timeout = config['click_timeout'] || 5.0
@@ -26,8 +23,9 @@ class Click2Datapath < DataPath
 
   # Starts a new click instance if it's not already running.
   def start
-    return unless @app.nil?
+    return if @app
     info("Starting datapath #{name}")
+
     if File::exist?(@click_socket_path)
       File::delete(@click_socket_path)
     end
@@ -42,6 +40,7 @@ class Click2Datapath < DataPath
     end
     # open control socket
     @click_socket = UNIXSocket.new(@click_socket_path)
+    @click_socket.extend(MonitorMixin)
     # send initial configuration
     update_click_config
   end
@@ -50,11 +49,14 @@ class Click2Datapath < DataPath
   def stop
     return unless @app
     info("Stopping datapath #{name}")
-    # gracefully shutdown the connection
-    @click_socket.send("QUIT", 0)
-    # close the control socket
-    @click_socket.close
-    @click_socket = nil
+
+    @click_socket.synchronize {
+      # gracefully shutdown the connection
+      @click_socket.send("QUIT", 0)
+      # close the control socket
+      @click_socket.close
+    }
+
     # give click some time to cleanup
     sleep(0.2)
     # kill the process
@@ -125,19 +127,23 @@ switch[1] -> bs_queue;"
       new_config = ''
     end
 
-    debug("Loading new click configuration for datapath #{name}")
-    @click_socket.send("WRITE hotconfig #{new_config}\n", 0)
+    @click_socket.synchronize {
+      return if @click_socket.closed?
 
-    while line = @click_socket.gets
-      case line
-      when /^2\d\d/
-        debug("New config loaded successfully")
-        break
-      when /^5\d\d/
-        error("Could not load new config, old config still running: #{line}")
-        break
+      debug("Loading new click configuration for datapath #{name}")
+      @click_socket.send("WRITE hotconfig #{new_config}\n", 0)
+
+      while line = @click_socket.gets
+        case line
+        when /^2\d\d/
+          debug("New config loaded successfully")
+          break
+        when /^5\d\d/
+          error("Could not load new config, old config still running: #{line}")
+          break
+        end
       end
-    end
+    }
   end
 
 end
