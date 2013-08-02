@@ -101,55 +101,6 @@ class AirBs < Netdev
     delete_station(MacAddress.hex2dec(client.macaddr)) unless @data_vlan == 0
   end
 
-  private
-
-  def get_bs_main_params
-    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmInventorySerialNumber.1
-    @serial = snmp_get("1.3.6.1.4.1.989.1.16.1.2.1.6.1").to_s
-    # WMAN-IF2-BS-MIB::wmanIf2BsCmnPhyDownlinkCenterFreq.1
-    #   FIXME: what about "WMAN-IF2-BS-MIB::wmanIf2BsCmnPhyUplinkCenterFreq.1" ???
-    @frequency = snmp_get("1.0.8802.16.2.1.2.9.1.2.1.6.1").to_i / 1000.0
-    # ASMAX-EBS-MIB::asxEbsBsCfgNumberOfAntennas.1
-    #@noantennas = snmp_get("1.3.6.1.4.1.989.1.16.2.7.4.1.1.43.1").to_i
-    # ASMAX-EBS-MIB::asxEbsRfStatusAchievedTxPower.<Antenna[0..3]>
-    @power = snmp_get("1.3.6.1.4.1.989.1.16.2.7.7.2.1.3." + "0").to_i / 100.0
-    # ASMAX-EBS-MIB::asxEbsRfStatusAchievedRxGain.<Antenna[0..3]>
-    @rxgain = snmp_get("1.3.6.1.4.1.989.1.16.2.7.7.2.1.4." + "0").to_i / 100.0
-  end
-
-  def get_bs_stats
-    get_bs_temperature_stats
-    get_bs_voltage_stats
-  end
-
-  def get_bs_temperature_stats
-    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTemperatureMonitorTable
-    # TODO
-  end
-
-  def get_bs_voltage_stats
-    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonitorTable
-    # TODO
-  end
-
-  def get_ms_stats(mac)
-    # ASMAX-ESTATS-MIB::asxEstatsActiveMsUlBytes.1.<MacAddr>
-    uplink_bytes = snmp_get("1.3.6.1.4.1.989.1.16.2.9.6.1.1.1." + mac).to_i
-    # ASMAX-ESTATS-MIB::asxEstatsActiveMsDlBytes.1.<MacAddr>
-    downlink_bytes = snmp_get("1.3.6.1.4.1.989.1.16.2.9.6.1.2.1." + mac).to_i
-    # ASMAX-ESTATS-MIB::asxEstatsMsDlRssi.1.<MacAddr>
-    dl_rssi = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.1.1." + mac).to_i
-    # ASMAX-ESTATS-MIB::asxEstatsMsDlCinr.1.<MacAddr>
-    dl_cinr = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.12.1." + mac).to_i
-    # ASMAX-ESTATS-MIB::asxEstatsMsUlRssi.1.<MacAddr>
-    ul_rssi = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.2.1." + mac).to_i
-    # ASMAX-ESTATS-MIB::asxEstatsMsUlCinr.1.<MacAddr>
-    ul_cinr = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.5.1." + mac).to_i
-    # ASMAX-ESTATS-MIB::asxEstatsMsUlTxPower.1.<MacAddr>
-    ul_txpower = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.13.1." + mac).to_i
-#    @meas.clstats(ma, mac, ul_rssi, ul_cinr, dl_rssi, dl_cinr, m.mcsulmod, m.mcsdlmod)
-  end
-
   def create_vlan(vlan)
     debug("Creating VLAN #{vlan} on internal bridge")
     # The following settings are contained in the SNMP table
@@ -233,6 +184,55 @@ class AirBs < Netdev
 
     # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvRowStatus.<Vlan>
     snmp_set('1.3.6.1.4.1.989.1.16.5.4.1.2.1.12.' + vlan.to_s, 6) # destroy
+  end
+
+  private
+
+  def get_bs_main_params
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmInventorySerialNumber.1
+    @serial = snmp_get("1.3.6.1.4.1.989.1.16.1.2.1.6.1").to_s
+    # WMAN-IF2-BS-MIB::wmanIf2BsCmnPhyDownlinkCenterFreq.1
+    #   FIXME: what about "WMAN-IF2-BS-MIB::wmanIf2BsCmnPhyUplinkCenterFreq.1" ???
+    @frequency = snmp_get("1.0.8802.16.2.1.2.9.1.2.1.6.1").to_i / 1000.0
+    # ASMAX-EBS-MIB::asxEbsBsCfgNumberOfAntennas.1
+    #@noantennas = snmp_get("1.3.6.1.4.1.989.1.16.2.7.4.1.1.43.1").to_i
+    # ASMAX-EBS-MIB::asxEbsRfStatusAchievedTxPower.<Antenna[0..3]>
+    @power = snmp_get("1.3.6.1.4.1.989.1.16.2.7.7.2.1.3." + "0").to_i / 100.0
+    # ASMAX-EBS-MIB::asxEbsRfStatusAchievedRxGain.<Antenna[0..3]>
+    @rxgain = snmp_get("1.3.6.1.4.1.989.1.16.2.7.7.2.1.4." + "0").to_i / 100.0
+  end
+
+  def get_bs_stats
+    get_bs_temperature_stats
+    get_bs_voltage_stats
+  end
+
+  def get_bs_temperature_stats
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTemperatureMonitorTable
+    # TODO
+  end
+
+  def get_bs_voltage_stats
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonitorTable
+    # TODO
+  end
+
+  def get_ms_stats(mac)
+    # ASMAX-ESTATS-MIB::asxEstatsActiveMsUlBytes.1.<MacAddr>
+    uplink_bytes = snmp_get("1.3.6.1.4.1.989.1.16.2.9.6.1.1.1." + mac).to_i
+    # ASMAX-ESTATS-MIB::asxEstatsActiveMsDlBytes.1.<MacAddr>
+    downlink_bytes = snmp_get("1.3.6.1.4.1.989.1.16.2.9.6.1.2.1." + mac).to_i
+    # ASMAX-ESTATS-MIB::asxEstatsMsDlRssi.1.<MacAddr>
+    dl_rssi = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.1.1." + mac).to_i
+    # ASMAX-ESTATS-MIB::asxEstatsMsDlCinr.1.<MacAddr>
+    dl_cinr = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.12.1." + mac).to_i
+    # ASMAX-ESTATS-MIB::asxEstatsMsUlRssi.1.<MacAddr>
+    ul_rssi = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.2.1." + mac).to_i
+    # ASMAX-ESTATS-MIB::asxEstatsMsUlCinr.1.<MacAddr>
+    ul_cinr = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.5.1." + mac).to_i
+    # ASMAX-ESTATS-MIB::asxEstatsMsUlTxPower.1.<MacAddr>
+    ul_txpower = snmp_get("1.3.6.1.4.1.989.1.16.2.9.2.1.13.1." + mac).to_i
+#    @meas.clstats(ma, mac, ul_rssi, ul_cinr, dl_rssi, dl_cinr, m.mcsulmod, m.mcsdlmod)
   end
 
   def add_station(mac)
