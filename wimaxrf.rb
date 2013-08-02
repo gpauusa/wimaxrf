@@ -81,7 +81,6 @@ class WimaxrfService < LegacyGridService
       debug(:wimaxrf, "NEC basestation loaded")
     end
 
-    # FIXME: this should not be done here
     if @config['datapath']['data_vlan'] && @config['datapath']['data_vlan'] != 0
       @bs.create_vlan(@config['datapath']['data_vlan'])
     end
