@@ -81,8 +81,8 @@ class WimaxrfService < LegacyGridService
       debug(:wimaxrf, "NEC basestation loaded")
     end
 
-    if @config['datapath']['data_vlan'] && @config['datapath']['data_vlan'] != 0
-      @bs.create_vlan(@config['datapath']['data_vlan'])
+    if @config['datapath']['source_vlan'].to_i != 0
+      @bs.create_vlan(@config['datapath']['source_vlan'].to_i)
     end
 
     @auth.bs = @bs
@@ -102,8 +102,8 @@ class WimaxrfService < LegacyGridService
       dpconf['type'] = dtp.type
       dpconf['vlan'] = dtp.vlan
       dpconf['interface'] = dtp.interface
-      dpconf['data_vlan'] = @config['datapath']['data_vlan']
-      dpconf['data_interface'] = @config['datapath']['data_interface']
+      dpconf['bs_interface'] = @config['datapath']['data_interface'].dup
+      dpconf['bs_interface'] << ".#{@config['datapath']['source_vlan']}" if @config['datapath']['source_vlan'] != 0
       if dtp.dpattributes
         dtp.dpattributes.each { |att| dpconf[att.name] = att.value }
       end
@@ -725,7 +725,7 @@ class WimaxrfService < LegacyGridService
     dpc['vlan'] = vlan
     dpc['interface'] = interface
     dpc['bs_interface'] = @config['datapath']['data_interface'].dup
-    dpc['bs_interface'] << ".#{@config['datapath']['data_vlan']}" if @config['datapath']['data_vlan'] != 0
+    dpc['bs_interface'] << ".#{@config['datapath']['source_vlan']}" if @config['datapath']['source_vlan'] != 0
     params.each do |name, value|
       dpc[name] = value
       newdp.dpattributes.create(:name => name, :value => value)

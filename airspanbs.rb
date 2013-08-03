@@ -103,7 +103,6 @@ class AirBs < Netdev
 
   def create_vlan(vlan)
     debug("Creating VLAN #{vlan} on internal bridge")
-    #setup of data_vlan
     @data_vlan = vlan
     # The following settings are contained in the SNMP table
     # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvTable (1.3.6.1.4.1.989.1.16.5.4.1.2)
