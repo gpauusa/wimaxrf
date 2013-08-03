@@ -13,7 +13,7 @@ class Netdev < MObject
     @writecommunity = config['write_community'] || 'private'
     @manager = SNMP::Manager.new(:Host => @host, :Community => @readcommunity,
                                  :Port => @port, :WriteCommunity => @writecommunity)
-    @snmp_lock = Monitor.new
+    @manager.extend(MonitorMixin)
     @telnetuser = config[:telnetuser]
     @telnetpass = config[:telnetpass]
     @telnetprompt = config[:telnetprompt] || "[$%#>] \z/n"
@@ -39,13 +39,13 @@ class Netdev < MObject
   end
 
   def add_snmp_module(modfile)
-    @snmp_lock.synchronize {
+    @manager.synchronize {
       @manager.load_module(modfile)
     }
   end
 
   def snmp_get(snmpobj)
-    @snmp_lock.synchronize {
+    @manager.synchronize {
       begin
         return @manager.get_value(snmpobj)
       rescue Exception => ex
@@ -55,7 +55,7 @@ class Netdev < MObject
   end
 
   def snmp_get_multi(row, &block)
-    @snmp_lock.synchronize {
+    @manager.synchronize {
       begin
         @manager.walk(row) do |result|
           yield(result)
@@ -67,14 +67,14 @@ class Netdev < MObject
   end
 
   def get_oid(name)
-    @snmp_lock.synchronize {
+    @manager.synchronize {
       @manager.mib.oid(name)
     }
   end
 
   def snmp_set(oid, value)
     status = ''
-    @snmp_lock.synchronize {
+    @manager.synchronize {
       begin
         # uses snmp to set MIB values - needs to check previous state and be able to handle more OID's
         newoid = get_oid(oid)
