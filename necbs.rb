@@ -1,10 +1,11 @@
+require 'rufus/scheduler'
+require 'snmp'
 require 'socket'
 require 'omf-aggmgr/ogs_wimaxrf/circularBuffer'
 require 'omf-aggmgr/ogs_wimaxrf/measurements'
 require 'omf-aggmgr/ogs_wimaxrf/netdev'
 require 'omf-aggmgr/ogs_wimaxrf/necbsparams'
 require 'omf-aggmgr/ogs_wimaxrf/util'
-require 'rufus/scheduler'
 
 EXTRA_NEC_MODULES = ["WMAN-DEV-MIB","WMAN-IF2-MIB","WMAN-IF2M-MIB","NEC-WIMAX-COMMON-REG",
   "NEC-WIMAX-COMMON-MIB-MODULE","NEC-WIMAX-BS-DEV-MIB","NEC-WIMAX-BS-IF-MIB"]

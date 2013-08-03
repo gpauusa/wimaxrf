@@ -1,8 +1,7 @@
-require 'snmp'
 require 'monitor'
 require 'net/ssh'
-require 'net/scp'
 require 'net/telnet'
+require 'snmp'
 
 class Netdev < MObject
   attr_reader :host, :port

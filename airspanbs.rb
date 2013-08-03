@@ -1,7 +1,8 @@
+require 'rufus/scheduler'
+require 'snmp'
 require 'omf-aggmgr/ogs_wimaxrf/measurements'
 require 'omf-aggmgr/ogs_wimaxrf/netdev'
 require 'omf-aggmgr/ogs_wimaxrf/util'
-require 'rufus/scheduler'
 
 class AirBs < Netdev
   attr_reader :serial, :tpsduul, :tppduul, :tpsdudl, :tppdud
@@ -9,9 +10,9 @@ class AirBs < Netdev
   def initialize(mobs, bsconfig)
     super(bsconfig)
 
+    @data_vlan = 0
     @mobs = mobs
     @meas = Measurements.new(bsconfig['bsid'], bsconfig['stats'])
-    @data_vlan = 0
 
     # Set initial frequency
     # WMAN-IF2-BS-MIB::wmanIf2BsCmnPhyDownlinkCenterFreq.1

@@ -1,8 +1,6 @@
 require 'rubygems'
 require 'open4'
-require 'omf-aggmgr/ogs_wimaxrf/client'
 require 'omf-aggmgr/ogs_wimaxrf/dataPath'
-require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
 require 'omf-aggmgr/ogs_wimaxrf/execApp'
 
 class Click1Datapath < DataPath
