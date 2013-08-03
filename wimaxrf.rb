@@ -41,7 +41,7 @@ WIMAXRF_DIR = File.expand_path(File.dirname(__FILE__))
 class WimaxrfService < LegacyGridService
   # used to register/mount the service, the service's url will be based on it
   name 'wimaxrf'
-  info 'Service to configure and control WiMAX (Basestation) RF Section'
+  info :wimaxrf, 'Service to configure and control WiMAX (Basestation) RF Section'
 
   #
   # Configure the service through a hash of options
