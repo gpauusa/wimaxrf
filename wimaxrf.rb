@@ -63,8 +63,8 @@ class WimaxrfService < LegacyGridService
 
     # create datapaths
     @dpath = {}
-    all_datapaths.each do |dpc|
-      @dpath[dpc['name']] = createDataPath(dpc['type'], dpc['name'], dpc)
+    Datapath.all.each do |dp|
+      @dpath[dp.name] = createDataPath(dp)
     end
 
     @auth = Authenticator.new
@@ -94,24 +94,6 @@ class WimaxrfService < LegacyGridService
 
 #  eval(File.open("#{WIMAXRF_DIR}/necurls.rb").read)
 
-  def self.all_datapaths
-    datapaths = []
-    Datapath.all.each do |dtp|
-      dpconf = {}
-      dpconf['name'] = dtp.name
-      dpconf['type'] = dtp.type
-      dpconf['vlan'] = dtp.vlan
-      dpconf['interface'] = dtp.interface
-      dpconf['bs_interface'] = @config['datapath']['data_interface'].dup
-      dpconf['bs_interface'] << ".#{@config['datapath']['source_vlan']}" if @config['datapath']['source_vlan'] != 0
-      if dtp.dpattributes
-        dtp.dpattributes.each { |att| dpconf[att.name] = att.value }
-      end
-      datapaths << dpconf
-    end
-    datapaths
-  end
-
   # check database for datapath with given interface and vlan
   def self.datapathExists?(interface, vlan)
     !!Datapath.get(interface, vlan)
@@ -123,7 +105,6 @@ class WimaxrfService < LegacyGridService
     result = `ip link show | grep "#{interface}:"`
     !result.empty?
   end
-
 
   #
   # Create new XML reply containing a given result value.
@@ -719,35 +700,35 @@ class WimaxrfService < LegacyGridService
 
     # add to database
     newdp = Datapath.create(:type => type, :vlan => vlan, :interface => interface)
-    dpc = {}
-    dpc['name'] = newdp.name
-    dpc['type'] = type
-    dpc['vlan'] = vlan
-    dpc['interface'] = interface
-    dpc['bs_interface'] = @config['datapath']['data_interface'].dup
-    dpc['bs_interface'] << ".#{@config['datapath']['source_vlan']}" if @config['datapath']['source_vlan'] != 0
     params.each do |name, value|
-      dpc[name] = value
       newdp.dpattributes.create(:name => name, :value => value)
     end
 
-    @dpath[newdp.name] = createDataPath(type, newdp.name, dpc)
+    @dpath[newdp.name] = createDataPath(newdp)
     "Datapath #{interface}-#{vlan} added"
   end
 
-  def self.createDataPath(type, name, *args)
-    info(:wimaxrf, "Creating #{type} datapath #{name}")
-    case type
+  def self.createDataPath(dp)
+    info(:wimaxrf, "Creating #{dp.type} datapath #{dp.name}")
+    dpconf = {}
+    dpconf['name'] = dp.name
+    dpconf['vlan'] = dp.vlan
+    dpconf['interface'] = dp.interface
+    dpconf['bs_interface'] = @config['datapath']['data_interface'].dup
+    dpconf['bs_interface'] << ".#{@config['datapath']['source_vlan']}" if @config['datapath']['source_vlan'] != 0
+    dp.dpattributes.each { |k, v| dpconf[k] = v }
+
+    case dp.type
       when 'click1', 'click' # backward compatibility
-        Click1Datapath.new(*args)
+        Click1Datapath.new(dpconf)
       when 'click2'
-        Click2Datapath.new(*args)
+        Click2Datapath.new(dpconf)
       when 'mf'
-        MFirstDatapath.new(*args)
+        MFirstDatapath.new(dpconf)
       when 'openflow'
-        OpenFlowDatapath.new(*args)
+        OpenFlowDatapath.new(dpconf)
       else
-        error(:wimaxrf, "Unknown type '#{type}' for datapath #{name}")
+        error(:wimaxrf, "Unknown type '#{dp.type}' for datapath #{dp.name}")
         nil
     end
   end
