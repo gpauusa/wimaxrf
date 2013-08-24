@@ -92,8 +92,6 @@ class WimaxrfService < LegacyGridService
 #    end
   end
 
-#  eval(File.open("#{WIMAXRF_DIR}/necurls.rb").read)
-
   # check database for datapath with given interface and vlan
   def self.datapathExists?(interface, vlan)
     !!Datapath.get(interface, vlan)
@@ -282,17 +280,17 @@ class WimaxrfService < LegacyGridService
   end
 
   def self.findAttributeDef(name)
-   attDef=nil
-   @bs.get_params_classes.each { |pc|
-    className = eval pc
-    className.each { |n,p|
-      if name == p[:bsname]
-        attDef = p
-        break
-      end
-        }
+    attDef = nil
+    @bs.get_params_classes.each { |pc|
+      className = eval pc
+      className.each { |n, p|
+        if name == p[:bsname]
+          attDef = p
+          break
+        end
       }
-      attDef
+    }
+    attDef
   end
 
 #def self.setFromXml(docNew)
@@ -583,7 +581,7 @@ class WimaxrfService < LegacyGridService
     end
 
     @dpath[newdp.name] = createDataPath(newdp)
-    "Datapath #{interface}-#{vlan} added"
+    "Datapath #{newdp.name} added"
   end
 
   def self.createDataPath(dp)
