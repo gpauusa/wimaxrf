@@ -219,52 +219,6 @@ class WimaxrfService < LegacyGridService
     self.setResponse(res, replyXML)
   end
 
-#  s_description "setSingleDLMCS the Base Station"
-#  s_param :mcs, 'mcs', 'Modulation-coding scheme'
-#  service 'bs/setSingleDLMCS' do |req, res|
-#    msgEmpty = "Failed to setSingleDLMCS basestation"
-#    mcs = getParam(req, 'mcs')
-#    value = mcs.to_i
-#    ret = ""
-#    ret = ret + @bs.wiset(:dl_profile1, value)
-#    value = 255
-#    ret = ret + @bs.wiset(:dl_profile2, value)
-#    ret = ret + @bs.wiset(:dl_profile3, value)
-#    ret = ret + @bs.wiset(:dl_profile4, value)
-#    ret = ret + @bs.wiset(:dl_profile5, value)
-#    ret = ret + @bs.wiset(:dl_profile6, value)
-#    ret = ret + @bs.wiset(:dl_profile7, value)
-#    ret = ret + @bs.wiset(:dl_profile8, value)
-#    ret = ret + @bs.wiset(:dl_profile9, value)
-#    ret = ret + @bs.wiset(:dl_profile10, value)
-#    ret = ret + @bs.wiset(:dl_profile11, value)
-#    ret = ret + @bs.wiset(:dl_profile12, value)
-#    responseText = ret
-#    res.body = responseText
-#  end
-
-#  s_description "setSingleULMCS the Base Station"
-#  s_param :mcs, 'mcs', 'Modulation-coding scheme'
-#  service 'bs/setSingleULMCS' do |req, res|
-#    msgEmpty = "Failed to setSingleULMCS basestation"
-#    mcs = getParam(req, 'mcs')
-#    value = mcs.to_i
-#    ret = ""
-#    ret = ret + @bs.wiset(:ul_profile1, value)
-#    value = 255
-#    ret = ret + @bs.wiset(:ul_profile2, value)
-#    ret = ret + @bs.wiset(:ul_profile3, value)
-#    ret = ret + @bs.wiset(:ul_profile4, value)
-#    ret = ret + @bs.wiset(:ul_profile5, value)
-#    ret = ret + @bs.wiset(:ul_profile6, value)
-#    ret = ret + @bs.wiset(:ul_profile7, value)
-#    ret = ret + @bs.wiset(:ul_profile8, value)
-#    ret = ret + @bs.wiset(:ul_profile9, value)
-#    ret = ret + @bs.wiset(:ul_profile10, value)
-#    responseText = ret
-#    res.body = responseText
-#  end
-
   s_description "Restart the Base Station"
   service 'bs/restart' do |req, res|
     msgEmpty = "Failed to restart basestation"
@@ -272,123 +226,48 @@ class WimaxrfService < LegacyGridService
     setResponsePlainText(res, responseText)
   end
 
-#  def self.checkAndSetParam( req, name, p )
-#    if ((p[:name] =~ /\[/) != 0)
-#     p "N=#{p[:name]} D=#{default} P=#{param}"
-#     value = getParam(req,name)
-#    else
-#      value = getParamDef(req,name,p[:default])
-#    end
-#    if value
-#      if (p[:type] == 'binary')
-#        value = (value == "true") ? "1" : "0"
-#      end
-#      debug(serviceName, "Setting BS parameter #{p[:bsname]} to [#{value}]")
-#      ret = @bs.wiset(p[:bsname],value)
-#      if ret =~ /Err/
-#        error(serviceName, "Error setting #{name}")
-#        raise "Error setting #{name}"
-#      end
-#      return true if ret =~ /reboot/
-#    end
-#    false
-#  end
 
-#  def self.processServiceQuerry( servDef, req )
-#    rst = false
-#    servDef.each { |n,p|
-#      rst ||= checkAndSetParam(req, n.to_s,p)
-#    }
-#    rst
-#  end
-
-#  def self.processServiceStatusOLD( servDef, req )
-#    bsst = {}
-#    a = @bs.wiget(servDef.getCategoryName)
-#    a.each { |key, value| bsst = bsst.merge(value) }
-#    #bsst = @bs.wiget(servDef.getCategoryName)[servDef.getCategoryName]
-#
-#    p bsst
-#    sst = {}
-#    servDef.each { |n,p|
-#      next unless p[:bsname]
-#      if (p[:type] == 'binary')
-#        sst[n.to_s] = bsst[p[:bsname]] == 1 ? "true" : "false"
-#      else
-#        if bsst[p[:bsname]]
-#          sst[n.to_s] = bsst[p[:bsname]]
-#        end
-#      end
-#    }
-#    sst
-#  end
+  def self.processServiceQuery( servDef, req )
+    rst = false
+    servDef.each { |n,p|
+      if ((p[:name] =~ /\[/) != 0)
+        value = getParam(req,n)
+      else
+        value = getParamDef(req,n,p[:default])
+      end
+      rst ||= @bs.checkAndSetParam(value, n.to_s,p)
+    }
+    rst
+  end
 
 
-#  def self.processServiceStatus( servDef, req )
-#    bsst = {}
-#    query = getAllParams(req)
-#    a = @bs.wiget(servDef.getCategoryName)
-#    a.each { |key, value| bsst = bsst.merge(value) }
-#    #bsst = @bs.wiget(servDef.getCategoryName)[servDef.getCategoryName]
-#
-#    p bsst
-#    p query,query.empty?
-#    sst = {}
-#    servDef.each { |n,p|
-#      p n,p[:bsname],query.has_key?(n.to_s)
-#
-#      #next unless p[:bsname]
-#      next unless ( (p[:bsname] && (query.empty?)) || ((not query.empty?) && ( query.has_key?(n.to_s)) && (p[:bsname])))
-#      param = {}
-#      if bsst[p[:bsname]] =~ /->/
-#        b = bsst[p[:bsname]].split('->')
-#        param['value'] = b[0].strip
-#        c = b[1].split
-#        param['afterreboot'] =  c[0].strip
-#        if (p[:type] == 'binary')
-#          param['afterreboot'] = param['afterreboot'] == "1" ? "true" : "false"
-#        end
-#      else
-#        param['value'] = bsst[p[:bsname]]
-#      end
-#      if (p[:type] == 'binary')
-#        param['value'] = param['value'] == "1" ? "true" : "false"
-#        param['type'] = p[:type]
-#      end
-#       param['desc'] = p[:help]
-#       sst[n.to_s] = param
-#    }
-#    sst
-#  end
+  s_description "Get Basestation Static Parameter"
+  service 'bs/get' do |req, res|
+    query = getAllParams(req)
+    if not query.empty?
+      msgEmpty = "Failed to get basestation status"
+      #take first parameter
+      replyXML = buildXMLReply("STATUS", msgEmpty, msgEmpty) { |root, dummy|
+        bsEl = root.add_element("BaseStation")
+        query.each { |key,value| addXMLElementsFromHash(bsEl,@bs.get(key)) }
+      }
+      self.setResponse(res, replyXML)
+    else
+      raise HTTPStatus::BadRequest, "Missing parameter"
+    end
+  end
 
-#  s_description "Get Basestation Static Parameter"
-#  service 'bs/get' do |req, res|
-#    query = getAllParams(req)
-#    if not query.empty?
-#      msgEmpty = "Failed to get basestation status"
-#      #take first parameter
-#      replyXML = buildXMLReply("STATUS", msgEmpty, msgEmpty) { |root, dummy|
-#        bsEl = root.add_element("BaseStation")
-#        query.each { |key,value| addXMLElementsFromHash(bsEl,@bs.wiget(key)) }
-#      }
-#      self.setResponse(res, replyXML)
-#    else
-#      raise HTTPStatus::BadRequest, "Missing parameter"
-#    end
-#  end
-
-
-#  s_description "Set Basestation Static Parameter"
-#  service 'bs/set' do |req, res|
-#    query = getAllParams(req)
-#    responseText=''
-#    if not query.empty?
-#      query.each { |key,value| responseText = responseText+"\n"+@bs.wiset(key,value) }
-#      res.body = responseText
-#    else
-#      raise HTTPStatus::BadRequest, "Missing parameter"
-#    end
-#  end
+  s_description "Set Basestation Static Parameter"
+  service 'bs/set' do |req, res|
+    query = getAllParams(req)
+    responseText = ''
+    if not query.empty?
+      query.each { |key,value| responseText = responseText+"\n"+@bs.set(key,value) }
+      res.body = responseText
+    else
+      raise HTTPStatus::BadRequest, "Missing parameter"
+    end
+  end
 
   def self.authorize(req, res)
     puts "Checking authorization"
@@ -402,19 +281,19 @@ class WimaxrfService < LegacyGridService
     true
   end
 
-# def self.findAttributeDef(name)
-#   attDef=nil
-#   NecBs::PARAMS_CLASSES.each { |pc|
-#    claseName = eval pc
-#    claseName.each { |n,p|
-#      if name == p[:bsname]
-#        attDef = p
-#        break
-#      end
-#        }
-#      }
-#      attDef
-#  end
+  def self.findAttributeDef(name)
+   attDef=nil
+   @bs.get_params_classes.each { |pc|
+    className = eval pc
+    className.each { |n,p|
+      if name == p[:bsname]
+        attDef = p
+        break
+      end
+        }
+      }
+      attDef
+  end
 
 #def self.setFromXml(docNew)
 #  responseText=""
@@ -636,7 +515,6 @@ class WimaxrfService < LegacyGridService
 #  end
 #  correct
 #end
-
 
 #  s_description "Restore Base Station parameters from default configuration"
 #  service 'bs/default' do |req, res|
@@ -1129,73 +1007,6 @@ class WimaxrfService < LegacyGridService
 #    end
 #  end
 #    }
-
-#  s_description "Set/Get Modulation-coding scheme."
-#  s_param :dl, '[dl]', 'Array of Dl link profile specification.'
-#  s_param :ul, '[ul]', 'Array of Up link profile specification.'
-#  service 'bs/mcsProfile' do |req, res|
-#    isget=true
-#    ret =""
-#    if(req.query.has_key?('dl'))
-#      dl = getParam(req,'dl')
-#      isget = false
-#      ret = ret + setULorDL("dl_profile",12,dl)
-#    end
-#    if(req.query.has_key?('ul'))
-#      ul = getParam(req,'ul')
-#      isget = false
-#      ret = ret + setULorDL("ul_profile",10,ul)
-#    end
-#    if isget
-#      #get DL/UL values
-#      root = REXML::Element.new("MCSProfile")
-#      dl_profile = getULorDL("dl_profile",12)
-#      ul_profile = getULorDL("ul_profile",10)
-#      root.elements <<  dl_profile
-#      root.elements <<  ul_profile
-#      self.setResponse(res, root)
-#    else
-#      responseText = ret
-#      res.body = responseText
-#    end
-#  end
-
-#  def self.setULorDL(name,no,listOfValues)
-#    profileValues = listOfValues.split(",")
-#    #profilesValues.sort!
-#    d_value = 255
-#    i=1
-#    ret = ""
-#    profileValues.each { |value|
-#      key = (name+i.to_s).to_sym
-#      ret = ret + @bs.wiset(key, value)
-#      i+=1
-#    }
-#    for k in i..no
-#      key = (name+k.to_s).to_sym
-#      @bs.wiset(key, d_value)
-#    end
-#    ret
-#  end
-
-#  def self.getULorDL(name,no)
-#    d_value = 255
-#    i=1
-#    root = REXML::Element.new("#{name}")
-#    for k in 1..no
-#      key = (name+k.to_s)
-#      result = @bs.wiget(key)
-#      category = result[key]
-#      element = category[key]
-#      index1 = element.rindex("(")+1
-#      index2 = element.rindex(")")
-#      value = element[index1..index2].to_i
-#      if value != d_value
-#        addXMLElement(root, key, value.to_s)
-#      end
-#    end
-#    root
-#  end
 
 
     #------------ talk to db ---------------#
