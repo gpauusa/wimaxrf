@@ -73,7 +73,7 @@ class WimaxrfService < LegacyGridService
     # load BS management module
     if @config['bs']['type'] == 'airspan'
       require 'omf-aggmgr/ogs_wimaxrf/airspanbs.rb'
-      @bs = AirBs.new(@mobs, @config['bs'])
+      @bs = AirspanBs.new(@mobs, @config['bs'])
       debug(serviceName, "Airspan basestation loaded")
     else
       require 'omf-aggmgr/ogs_wimaxrf/necbs.rb'

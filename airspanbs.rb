@@ -4,7 +4,7 @@ require 'omf-aggmgr/ogs_wimaxrf/bs'
 require 'omf-aggmgr/ogs_wimaxrf/measurements'
 require 'omf-aggmgr/ogs_wimaxrf/util'
 
-class AirBs < Bs
+class AirspanBs < Bs
   attr_reader :serial, :tpsduul, :tppduul, :tpsdudl, :tppdud
 
   PARAMS_CLASSES = []
