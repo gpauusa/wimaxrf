@@ -141,9 +141,4 @@ class Netdev < MObject
     end
   end
 
-  def create_vlan(vlan)
-  end
-
-  def delete_vlan(vlan)
-  end
 end

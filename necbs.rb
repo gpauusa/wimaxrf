@@ -1,9 +1,9 @@
 require 'rufus/scheduler'
 require 'snmp'
 require 'socket'
+require 'omf-aggmgr/ogs_wimaxrf/bs'
 require 'omf-aggmgr/ogs_wimaxrf/circularBuffer'
 require 'omf-aggmgr/ogs_wimaxrf/measurements'
-require 'omf-aggmgr/ogs_wimaxrf/netdev'
 require 'omf-aggmgr/ogs_wimaxrf/necbsparams'
 require 'omf-aggmgr/ogs_wimaxrf/util'
 
@@ -12,7 +12,7 @@ EXTRA_NEC_MODULES = ["WMAN-DEV-MIB","WMAN-IF2-MIB","WMAN-IF2M-MIB","NEC-WIMAX-CO
 
 ASN_GRE_CONF = '/etc/asnctrl_gre.conf'
 
-class NecBs < Netdev
+class NecBs < Bs
   attr_reader :nomobiles, :serial, :tpsduul, :tppduul, :tpsdudl, :tppdud
   attr_reader :asnHost, :sndPort, :rcvPort
 
@@ -255,54 +255,13 @@ class NecBs < Netdev
     end
   end
 
-  def wiset(param, value)
-    debug("wiset #{param} #{value}")
-    result = ssh("/usr/sbin/wimax/cmd_app 3 #{param} #{value}")
-  end
-
-  def wigetAll
-    wiget("all")
-  end
-
-  def wiget(param)
-    #result = wiget("all")
-    result = ssh("/usr/sbin/wimax/cmd_app 4 #{param}")
-    wigetResult = {}
-    attr = {}
-    attrsKey = String.new(param)
-    result.each_line("\n") do |row|
-      if row.match('^\w{2,}')
-        # add to main hash
-        if not attr.empty?
-          wigetResult[attrsKey] = attr
-        end
-      end
-      if row.match(/^\w/)
-        #new set of parameters
-        attr = {}
-        columns = row.split(":")
-        if columns[1] != nil
-          attrsKey = columns[1].strip
-        end
-      end
-      if row.match(/^\s\S/)
-        columns = row.split(":")
-        if columns != nil
-          attr[columns[0].strip]=columns[1].strip
-        end
-      end
-    end
-    wigetResult[attrsKey] = attr
-    wigetResult
-  end
-
   def get_info
     result = {}
     result["sysDescr0"] = snmp_get("sysDescr.0").to_s
     result["swVersion"] = @serial
     result["serialNo"] = snmp_get("necWimaxBsDevSerialNumber.1").to_s
     result["hwType"] = snmp_get("necWimaxBsDevHwType.1").to_s
-    result = result.merge(wigetAll())
+    result = result.merge(getAll())
     result
   end
 
@@ -337,6 +296,105 @@ class NecBs < Netdev
   def to_s
     s = "NEC Basestation\n"
     s += "Serial number: #{@serial}\n"
+  end
+
+  def set(param, value)
+    wiset(param, value)
+  end
+
+  def getAll
+    wiget("all")
+  end
+
+  def get(param)
+    wiget(param)
+  end
+
+  def checkAndSetParam( value, p )
+    if value
+      if (p[:type] == 'binary')
+        value = (value == "true") ? "1" : "0"
+      end
+      debug("Setting BS parameter #{p[:bsname]} to [#{value}]")
+      ret = set(p[:bsname],value)
+      if ret =~ /Err/
+        error("Error setting #{p[:bsname]}")
+        raise "Error setting #{p[:bsname]}"
+      end
+      return true if ret =~ /reboot/
+    end
+    false
+  end
+
+  def processServiceStatus( servDef, query )
+    bsst = {}
+    a = get(servDef.getCategoryName)
+    a.each { |key, value| bsst = bsst.merge(value) }
+
+    sst = {}
+    servDef.each { |n,p|
+
+      #next unless p[:bsname]
+      next unless ( (p[:bsname] && (query.empty?)) || ((not query.empty?) && ( query.has_key?(n.to_s)) && (p[:bsname])))
+      param = {}
+      if bsst[p[:bsname]] =~ /->/
+        b = bsst[p[:bsname]].split('->')
+        param['value'] = b[0].strip
+        c = b[1].split
+        param['afterreboot'] =  c[0].strip
+        if (p[:type] == 'binary')
+          param['afterreboot'] = param['afterreboot'] == "1" ? "true" : "false"
+        end
+      else
+        param['value'] = bsst[p[:bsname]]
+      end
+      if (p[:type] == 'binary')
+        param['value'] = param['value'] == "1" ? "true" : "false"
+        param['type'] = p[:type]
+      end
+       param['desc'] = p[:help]
+       sst[n.to_s] = param
+    }
+    sst
+  end
+
+  private
+
+  def wiset(param, value)
+    debug("wiset #{param} #{value}")
+    result = ssh("/usr/sbin/wimax/cmd_app 3 #{param} #{value}")
+  end
+
+  def wiget(param)
+    #result = wiget("all")
+    result = ssh("/usr/sbin/wimax/cmd_app 4 #{param}")
+    wigetResult = {}
+    attr = {}
+    attrsKey = String.new(param)
+    result.each_line("\n") do |row|
+      if row.match('^\w{2,}')
+        # add to main hash
+        if not attr.empty?
+          wigetResult[attrsKey] = attr
+        end
+      end
+      if row.match(/^\w/)
+        #new set of parameters
+        attr = {}
+        columns = row.split(":")
+        if columns[1] != nil
+          attrsKey = columns[1].strip
+        end
+      end
+      if row.match(/^\s\S/)
+        columns = row.split(":")
+        if columns != nil
+          attr[columns[0].strip]=columns[1].strip
+        end
+      end
+    end
+    wigetResult[attrsKey] = attr
+    wigetResult
   end
 
 end

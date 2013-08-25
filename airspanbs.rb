@@ -1,11 +1,13 @@
 require 'rufus/scheduler'
 require 'snmp'
+require 'omf-aggmgr/ogs_wimaxrf/bs'
 require 'omf-aggmgr/ogs_wimaxrf/measurements'
-require 'omf-aggmgr/ogs_wimaxrf/netdev'
 require 'omf-aggmgr/ogs_wimaxrf/util'
 
-class AirBs < Netdev
+class AirBs < Bs
   attr_reader :serial, :tpsduul, :tppduul, :tpsdudl, :tppdud
+
+  PARAMS_CLASSES = []
 
   def initialize(mobs, bsconfig)
     super(bsconfig)
