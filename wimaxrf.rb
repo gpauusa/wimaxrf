@@ -599,8 +599,12 @@ class WimaxrfService < LegacyGridService
     dptype = dp.type.downcase == 'click' ? 'Click1' : dp.type.capitalize
 
     # load and instantiate datapath class
-    require "omf-aggmgr/ogs_wimaxrf/dp#{dptype}"
-    Kernel.const_get("#{dptype}Datapath").new(dpconf)
+    begin
+      require "omf-aggmgr/ogs_wimaxrf/dp#{dptype}"
+      Kernel.const_get("#{dptype}Datapath").new(dpconf)
+    rescue ScriptError, StandardError => e
+      raise(e.message)
+    end
   end
 
   s_description "Delete datapath"
