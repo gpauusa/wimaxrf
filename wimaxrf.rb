@@ -527,7 +527,7 @@ class WimaxrfService < LegacyGridService
 # end
 
   s_description "Add datapath"
-  s_param :type, 'type', 'Type of datapath, can be: click1, click2, mf, openflow'
+  s_param :type, 'type', 'Type of datapath'
   s_param :vlan, 'vlan', 'VLAN ID'
   s_param :interface, 'interface', 'Name of the network interface that hosts the VLAN'
   service 'datapath/add' do |req, res|
