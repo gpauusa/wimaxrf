@@ -596,11 +596,11 @@ class WimaxrfService < LegacyGridService
     dp.dpattributes.each { |k, v| dpconf[k] = v }
 
     # backward compatibility
-    dptype = dp.type == 'click' ? 'click1' : dp.type
+    dptype = dp.type.downcase == 'click' ? 'Click1' : dp.type.capitalize
 
     # load and instantiate datapath class
-    require "omf-aggmgr/ogs_wimaxrf/dp#{dptype.downcase}"
-    Kernel.const_get("#{dptype.capitalize}Datapath").new(dpconf)
+    require "omf-aggmgr/ogs_wimaxrf/dp#{dptype}"
+    Kernel.const_get("#{dptype}Datapath").new(dpconf)
   end
 
   s_description "Delete datapath"
