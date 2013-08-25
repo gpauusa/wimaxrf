@@ -28,12 +28,7 @@
 require 'omf-aggmgr/ogs/legacyGridService'
 require 'omf-aggmgr/ogs_wimaxrf/authenticator'
 require 'omf-aggmgr/ogs_wimaxrf/dbClasses'
-require 'omf-aggmgr/ogs_wimaxrf/dpClick1'
-require 'omf-aggmgr/ogs_wimaxrf/dpClick2'
-require 'omf-aggmgr/ogs_wimaxrf/dpMFirst'
-require 'omf-aggmgr/ogs_wimaxrf/dpOpenflow'
 require 'omf-aggmgr/ogs_wimaxrf/mobileClients'
-require 'omf-aggmgr/ogs_wimaxrf/sftablesParser'
 require 'omf-aggmgr/ogs_wimaxrf/util'
 
 WIMAXRF_DIR = File.expand_path(File.dirname(__FILE__))
@@ -66,7 +61,11 @@ class WimaxrfService < LegacyGridService
     # create datapaths
     @dpath = {}
     Datapath.all.each do |dp|
-      @dpath[dp.name] = createDataPath(dp)
+      begin
+        @dpath[dp.name] = createDataPath(dp)
+      rescue => e
+        error(serviceName, "Failed to create #{dp.name} datapath: #{e.message}")
+      end
     end
 
     @auth = Authenticator.new
@@ -576,8 +575,14 @@ class WimaxrfService < LegacyGridService
       newdp.dpattributes.create(:name => name, :value => value)
     end
 
-    @dpath[newdp.name] = createDataPath(newdp)
-    "Datapath #{newdp.name} added"
+    begin
+      @dpath[newdp.name] = createDataPath(newdp)
+      "Datapath #{newdp.name} added"
+    rescue => e
+      # rollback db changes
+      newdp.destroy
+      "Failed to create datapath: #{e.message}"
+    end
   end
 
   def self.createDataPath(dp)
@@ -590,19 +595,12 @@ class WimaxrfService < LegacyGridService
     dpconf['bs_interface'] << ".#{@config['datapath']['source_vlan']}" if @config['datapath']['source_vlan'] != 0
     dp.dpattributes.each { |k, v| dpconf[k] = v }
 
-    case dp.type
-      when 'click1', 'click' # backward compatibility
-        Click1Datapath.new(dpconf)
-      when 'click2'
-        Click2Datapath.new(dpconf)
-      when 'mf'
-        MFirstDatapath.new(dpconf)
-      when 'openflow'
-        OpenFlowDatapath.new(dpconf)
-      else
-        error(serviceName, "Unknown type '#{dp.type}' for datapath #{dp.name}")
-        nil
-    end
+    # backward compatibility
+    dptype = dp.type == 'click' ? 'click1' : dp.type
+
+    # load and instantiate datapath class
+    require "omf-aggmgr/ogs_wimaxrf/dp#{dptype.downcase}"
+    Kernel.const_get("#{dptype.capitalize}Datapath").new(dpconf)
   end
 
   s_description "Delete datapath"
