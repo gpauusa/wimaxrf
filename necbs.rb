@@ -20,10 +20,11 @@ class NecBs < Bs
     "MaintenanceService","DriverBaseService","DLProfileService","ULProfileService","WirelessService",
     "MPCService","MimoService","DebugService","MobileService","SecurityService"]
 
-  def initialize(mobs, bsconfig, asnconfig)
+  def initialize(mobs, bsconfig)
     super(bsconfig)
 
     @mobs = mobs
+    asnconfig = bsconfig['asngw']
     @asnHost = asnconfig['asnip'] || 'localhost'
     @rcvPort = asnconfig['asnrcvport'] || 54321
     @sndPort = asnconfig['asnsndport'] || 54322

@@ -41,7 +41,7 @@ WIMAXRF_DIR = File.expand_path(File.dirname(__FILE__))
 class WimaxrfService < LegacyGridService
   # used to register/mount the service, the service's url will be based on it
   name 'wimaxrf'
-  info serviceName, 'Service to configure and control WiMAX (Basestation) RF Section'
+  info serviceName, 'Service to configure and control WiMAX (Base Station) RF Section'
 
   #
   # Configure the service through a hash of options
@@ -53,6 +53,8 @@ class WimaxrfService < LegacyGridService
     %w(bs database datapath).each do |sect|
       raise("Missing configuration section '#{sect}' in wimaxrf.yaml") unless @config[sect]
     end
+    bstype = @config['bs']['type'].to_s
+    raise("'type' cannot be empty in 'bs' section in wimaxrf.yaml") if bstype.empty?
     @manageInterface = !!@config['datapath']['manage_interface']
 
     # load database
@@ -71,15 +73,9 @@ class WimaxrfService < LegacyGridService
     @mobs = MobileClients.new(@auth, @dpath)
 
     # load BS management module
-    if @config['bs']['type'] == 'airspan'
-      require 'omf-aggmgr/ogs_wimaxrf/airspanbs.rb'
-      @bs = AirspanBs.new(@mobs, @config['bs'])
-      debug(serviceName, "Airspan basestation loaded")
-    else
-      require 'omf-aggmgr/ogs_wimaxrf/necbs.rb'
-      @bs = NecBs.new(@mobs, @config['bs'], @config['asngw'])
-      debug(serviceName, "NEC basestation loaded")
-    end
+    debug(serviceName, "Loading #{bstype.capitalize} base station module")
+    require "omf-aggmgr/ogs_wimaxrf/#{bstype.downcase}bs"
+    @bs = Kernel.const_get("#{bstype.capitalize}Bs").new(@mobs, @config['bs'])
 
     if @config['datapath']['source_vlan'].to_i != 0
       @bs.create_vlan(@config['datapath']['source_vlan'].to_i)
