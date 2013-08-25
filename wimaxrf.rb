@@ -53,7 +53,7 @@ class WimaxrfService < LegacyGridService
     %w(bs database datapath).each do |sect|
       raise("Missing configuration section '#{sect}' in wimaxrf.yaml") unless @config[sect]
     end
-    @manageInterface = @config['datapath']['manage_interface']
+    @manageInterface = !!@config['datapath']['manage_interface']
 
     # load database
     dbFile = "#{WIMAXRF_DIR}/#{@config['database']['dbFile']}"
