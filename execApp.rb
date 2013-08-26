@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2006-2009 National ICT Australia (NICTA), Australia
-#
 # Copyright (c) 2004-2009 WINLAB, Rutgers University, USA
+# Copyright (c) 2012-2013 University of California, Los Angeles, USA
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -43,30 +43,30 @@ class ExecApp < MObject
   # as far as we are concerned, this is a 'clean' exit)
   @cleanExit = false
 
-  def ExecApp.[](id)
+  def self.[](id)
     app = @@apps[id]
     if app.nil?
-      info "Unknown application '#{id}/#{id.class}'"
+      error "Unknown application '#{id}/#{id.class}'"
     end
     app
   end
 
-  def ExecApp.killAll(signal = 'KILL')
+  def self.killAll(signal = 'KILL')
     @@apps.each_value { |app|
       app.kill(signal)
     }
-  end
-
-  def stdin(line)
-    debug "writing '#{line}' to app '#{@id}'"
-    @stdin.write("#{line}\n")
-    @stdin.flush
   end
 
   def kill(signal = 'KILL')
     @cleanExit = true
     debug "Sending #{signal} to application '#{@id}'"
     Process.kill(signal, @pid)
+  end
+
+  def stdin(line)
+    debug "Writing '#{line}' to app '#{@id}'"
+    @stdin.write("#{line}\n")
+    @stdin.flush
   end
 
   #
@@ -77,7 +77,7 @@ class ExecApp < MObject
   # @param id ID of application (used for reporting)
   # @param observer Observer of application's progress
   # @param cmd Command path and args
-  # @param mapStderrToStdout If true report stderr as stdin [false]
+  # @param mapStderrToStdout If true report stderr as stdout [false]
   #
   def initialize(id, observer, cmd, mapStderrToStdout = false)
     @id = id
@@ -88,8 +88,7 @@ class ExecApp < MObject
     pr = IO::pipe
     pe = IO::pipe
 
-    debug "Starting application '#{id}' - cmd: '#{cmd}'"
-    notify('STARTED', @id)
+    info "Starting application '#{id}' - cmd: '#{cmd}'"
     @pid = fork {
       # child will remap pipes to std and exec cmd
       pw[1].close
@@ -106,15 +105,16 @@ class ExecApp < MObject
 
       begin
         exec(cmd)
-      rescue => ex
+      rescue => e
         if cmd.kind_of?(Array)
           cmd = cmd.join(' ')
         end
-        STDERR.puts "exec failed for '#{cmd}' (#{$!}): #{ex}"
+        error "exec failed for '#{cmd}' (#{$!}): #{e.message}\n#{e.backtrace.join("\n\t")}"
       end
       # Should never get here
       exit!
     }
+    notify('STARTED', @id)
 
     pw[0].close
     pr[1].close
@@ -122,21 +122,20 @@ class ExecApp < MObject
     monitorAppPipe('stdout', pr[0])
     monitorAppPipe(mapStderrToStdout ? 'stdout' : 'stderr', pe[0])
 
-    # Create thread which waits for application to exit
+    # Start a thread that waits for the application to exit
     Thread.new(id, @pid) do |id, pid|
-      ret = Process.waitpid(pid)
-      status = $?
+      p, status = Process.waitpid2(pid)
       @@apps.delete(@id)
-      # app finished
-      if (status == 0) || @cleanExit
+      if status.success? || @cleanExit
         s = "OK"
         info "Application '#{id}' finished"
       else
         s = "ERROR"
-        error "Application '#{id}' failed (code=#{status})"
+        error "Application '#{id}' failed (exitstatus=#{status.exitstatus})"
       end
-      notify("DONE.#{s}", @id, "status: #{status}")
+      notify("DONE.#{s}", @id, "exitstatus: #{status.exitstatus}")
     end
+
     @stdin = pw[1]
   end
 
@@ -152,7 +151,7 @@ class ExecApp < MObject
   def monitorAppPipe(name, pipe)
     Thread.new {
       begin
-        while true do
+        loop do
           s = pipe.readline.chomp
           notify(name, @id, s)
         end
