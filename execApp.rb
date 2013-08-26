@@ -114,7 +114,7 @@ class ExecApp < MObject
       # Should never get here
       exit!
     }
-    notify('STARTED', @id)
+    notify('STARTED', @id, @pid)
 
     pw[0].close
     pr[1].close
@@ -127,13 +127,13 @@ class ExecApp < MObject
       p, status = Process.waitpid2(pid)
       @@apps.delete(@id)
       if status.success? || @cleanExit
-        s = "OK"
+        s = 'OK'
         info "Application '#{id}' finished"
       else
-        s = "ERROR"
+        s = 'ERROR'
         error "Application '#{id}' failed (exitstatus=#{status.exitstatus})"
       end
-      notify("DONE.#{s}", @id, "exitstatus: #{status.exitstatus}")
+      notify("DONE.#{s}", @id, status)
     end
 
     @stdin = pw[1]

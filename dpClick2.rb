@@ -29,7 +29,7 @@ class Click2Datapath < DataPath
     if File::exist?(@click_socket_path)
       File::delete(@click_socket_path)
     end
-    @app = ExecApp.new("C2DP-#{name}", nil, @click_command)
+    @app = ExecApp.new("C2DP-#{name}", self, @click_command)
 
     # wait for click to open the control socket
     timeout = @click_timeout
@@ -57,10 +57,8 @@ class Click2Datapath < DataPath
       @click_socket.close
     }
 
-    # give click some time to cleanup
-    sleep(0.2)
     # kill the process
-    @app.kill
+    @app.kill('TERM')
     @app = nil
   end
 
@@ -69,6 +67,15 @@ class Click2Datapath < DataPath
     if @app
       update_click_config
     else
+      start
+    end
+  end
+
+  def onAppEvent(event, id, msg)
+    case event
+    when 'DONE.ERROR'
+      # click crashed, restart it
+      @app = nil
       start
     end
   end
@@ -128,19 +135,26 @@ switch[1] -> bs_queue;"
     end
 
     @click_socket.synchronize {
-      return if @click_socket.closed?
-
       debug("Loading new click configuration for datapath #{name}")
-      @click_socket.send("WRITE hotconfig #{new_config}\n", 0)
 
-      while line = @click_socket.gets
-        case line
-        when /^2\d\d/
-          debug("New config loaded successfully")
-          break
-        when /^5\d\d/
-          error("Could not load new config, old config still running: #{line}")
-          break
+      begin
+        @click_socket.send("WRITE hotconfig #{new_config}\n", 0)
+      rescue IOError
+        # the socket has been closed on our end: do nothing
+        # because it means that the datapath is stopping
+      rescue Errno::EPIPE
+        # the click process has crashed: do nothing because
+        # it will be automatically restarted with the new config
+      else
+        while line = @click_socket.gets
+          case line
+          when /^2\d\d/
+            debug("New config loaded successfully")
+            break
+          when /^5\d\d/
+            error("Could not load new config, old config still running: #{line}")
+            break
+          end
         end
       end
     }
