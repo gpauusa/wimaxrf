@@ -48,8 +48,8 @@ class WimaxrfService < LegacyGridService
     %w(bs database datapath).each do |sect|
       raise("Missing configuration section '#{sect}' in wimaxrf.yaml") unless @config[sect]
     end
-    bstype = @config['bs']['type'].to_s
-    raise("'type' cannot be empty in 'bs' section in wimaxrf.yaml") if bstype.empty?
+    @bstype = @config['bs']['type'].to_s.downcase
+    raise("'type' cannot be empty in 'bs' section in wimaxrf.yaml") if @bstype.empty?
     @manageInterface = !!@config['datapath']['manage_interface']
 
     # load database
@@ -72,9 +72,9 @@ class WimaxrfService < LegacyGridService
     @mobs = MobileClients.new(@auth, @dpath)
 
     # load BS management module
-    debug(serviceName, "Loading #{bstype.capitalize} base station module")
-    require "omf-aggmgr/ogs_wimaxrf/#{bstype.downcase}bs"
-    @bs = Kernel.const_get("#{bstype.capitalize}Bs").new(@mobs, @config['bs'])
+    debug(serviceName, "Loading #{@bstype.capitalize} base station module")
+    require "omf-aggmgr/ogs_wimaxrf/#{@bstype}bs"
+    @bs = Kernel.const_get("#{@bstype.capitalize}Bs").new(@mobs, @config['bs'])
 
     if @config['datapath']['source_vlan'].to_i != 0
       @bs.create_vlan(@config['datapath']['source_vlan'].to_i)
@@ -591,6 +591,7 @@ class WimaxrfService < LegacyGridService
     dpconf['name'] = dp.name
     dpconf['vlan'] = dp.vlan
     dpconf['interface'] = dp.interface
+    dpconf['bstype'] = @bstype
     dpconf['bs_interface'] = @config['datapath']['data_interface'].dup
     dpconf['bs_interface'] << ".#{@config['datapath']['source_vlan']}" if @config['datapath']['source_vlan'] != 0
     dp.dpattributes.each { |k, v| dpconf[k] = v }

@@ -11,6 +11,7 @@ class Click2Datapath < DataPath
   def initialize(config)
     super
     @app = nil
+    @bstype = config['bstype']
     @port = config['interface']
     @vlan = config['vlan'].to_i
     @bsif = config['bs_interface']
@@ -92,8 +93,8 @@ class Click2Datapath < DataPath
 
   private
 
-  # Generates and returns click configuration for this datapath.
-  def generate_click_config
+  # Returns a click configuration string suitable for Airspan-style base stations.
+  def gen_airspan_config
     # first of all we declare the main switch element
     # and all the sources/sinks that we're going to use
     config = "switch :: EtherSwitch; \
@@ -108,37 +109,43 @@ to_net :: ToDevice(#{@netif});"
     filter_second_output = []
     network_filter = 'filter_from_network :: {'
     bs_filter = 'filter_from_bs :: {'
-    counter = 1
+    n = 1
     @mobiles.each_key do |mac|
-      network_filter << "filter_#{counter} :: HostEtherFilter(#{mac}, DROP_OWN false, DROP_OTHER true);"
-      bs_filter << "filter_#{counter} :: HostEtherFilter(#{mac}, DROP_OWN true, DROP_OTHER false);"
-      filter_first_output << "filter_#{counter}[0]"
-      filter_second_output << "filter_#{counter}[1]"
-      counter += 1
+      network_filter << "filter_#{n} :: HostEtherFilter(#{mac}, DROP_OWN false, DROP_OTHER true);"
+      bs_filter << "filter_#{n} :: HostEtherFilter(#{mac}, DROP_OWN true, DROP_OTHER false);"
+      filter_first_output << "filter_#{n}[0]"
+      filter_second_output << "filter_#{n}[1]"
+      n += 1
     end
     network_filter << 'input -> filter_1;'
     network_filter << filter_first_output.join(', ') << ' -> output;'
-    network_filter << filter_second_output.join(' -> ') << ' -> sink :: Discard; }'
+    network_filter << filter_second_output.join(' -> ') << ' -> Discard; }'
     bs_filter << 'input -> filter_1;'
     bs_filter << filter_second_output.join(', ') << ' -> output;'
-    bs_filter << filter_first_output.join(' -> ') + ' -> sink :: Discard; }'
+    bs_filter << filter_first_output.join(' -> ') + ' -> Discard; }'
 
     # finally we plug everything into the switch
     routing = "bs_queue :: Queue -> to_bs; \
 net_queue :: Queue -> to_net; \
-from_net -> filter_from_network -> [0]switch; \
-switch[0] -> net_queue; \
-from_bs -> filter_from_bs -> [1]switch; \
-switch[1] -> bs_queue;"
+from_net -> filter_from_network -> [0]switch[0] -> net_queue; \
+from_bs -> filter_from_bs -> [1]switch[1] -> bs_queue;"
 
     # put all the sections together and return the config
     config << network_filter << bs_filter << routing
   end
 
+  # Returns a click configuration string suitable for NEC-style base stations.
+  def gen_nec_config
+  end
+
   # Replaces the current configuration with a new one generated on the fly.
   def update_click_config
     if @mobiles.length > 0
-      new_config = generate_click_config
+      if @bstype == 'nec'
+        new_config = gen_nec_config
+      else
+        new_config = gen_airspan_config
+      end
     else
       new_config = ''
     end
