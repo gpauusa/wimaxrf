@@ -46,7 +46,7 @@ class ExecApp < MObject
   def self.[](id)
     app = @@apps[id]
     if app.nil?
-      error "Unknown application '#{id}/#{id.class}'"
+      error("Unknown application '#{id}/#{id.class}'")
     end
     app
   end
@@ -59,12 +59,12 @@ class ExecApp < MObject
 
   def kill(signal = 'KILL')
     @cleanExit = true
-    debug "Sending #{signal} to application '#{@id}'"
+    debug("Sending #{signal} to application '#{@id}'")
     Process.kill(signal, @pid)
   end
 
   def stdin(line)
-    debug "Writing '#{line}' to app '#{@id}'"
+    debug("Writing '#{line}' to app '#{@id}'")
     @stdin.write("#{line}\n")
     @stdin.flush
   end
@@ -88,7 +88,7 @@ class ExecApp < MObject
     pr = IO::pipe
     pe = IO::pipe
 
-    info "Starting application '#{id}' - cmd: '#{cmd}'"
+    info("Starting application '#{id}' - cmd: '#{cmd}'")
     @pid = fork {
       # child will remap pipes to std and exec cmd
       pw[1].close
@@ -106,10 +106,7 @@ class ExecApp < MObject
       begin
         exec(cmd)
       rescue => e
-        if cmd.kind_of?(Array)
-          cmd = cmd.join(' ')
-        end
-        error "exec failed for '#{cmd}' (#{$!}): #{e.message}\n#{e.backtrace.join("\n\t")}"
+        error("exec() failed: #{e.message}\n#{e.backtrace.join("\n\t")}")
       end
       # Should never get here
       exit!
@@ -128,10 +125,10 @@ class ExecApp < MObject
       @@apps.delete(@id)
       if status.success? || @cleanExit
         s = 'OK'
-        info "Application '#{id}' finished"
+        info("Application '#{id}' finished")
       else
         s = 'ERROR'
-        error "Application '#{id}' failed (exitstatus=#{status.exitstatus})"
+        error("Application '#{id}' failed (exitstatus=#{status.exitstatus})")
       end
       notify("DONE.#{s}", @id, status)
     end
@@ -158,7 +155,7 @@ class ExecApp < MObject
       rescue EOFError
         # do nothing
       rescue => e
-        error "Exception in monitorAppPipe(#{@id}): #{e}"
+        error("Exception in monitorAppPipe(#{@id}): #{e.message}\n#{e.backtrace.join("\n\t")}")
       ensure
         pipe.close
       end
@@ -170,7 +167,11 @@ class ExecApp < MObject
   #
   def notify(*args)
     if @observer
-      @observer.onAppEvent(*args)
+      begin
+        @observer.onAppEvent(*args)
+      rescue => e
+        error("Exception in onAppEvent(#{args.join(', ')}): #{e.message}\n#{e.backtrace.join("\n\t")}")
+      end
     end
   end
 
