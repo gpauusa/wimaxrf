@@ -51,7 +51,7 @@ class AirspanBs < Bs
             debug("Missing or invalid SsRegisterStatus in trap")
           end
         rescue => e
-          error("Exception in trap handler: #{e.message}\n#{e.backtrace.join("\n\t")}")
+          error("Exception in trap handler: #{e.message}\n\t#{e.backtrace.join("\n\t")}")
         end
       end
       manager.on_trap_default do |trap|

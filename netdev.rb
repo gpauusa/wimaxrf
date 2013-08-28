@@ -137,7 +137,7 @@ class Netdev < MObject
           retry
         end
       rescue => e
-        error("Exception in ssh command: #{e.message}\n#{e.backtrace.join("\n\t")}")
+        error("Exception in ssh command: #{e.message}\n\t#{e.backtrace.join("\n\t")}")
     end
   end
 

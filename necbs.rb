@@ -115,7 +115,7 @@ class NecBs < Bs
             error("Unknown command: #{line}")
           end
         rescue => e
-          error("Exception in control loop: #{e.message}\n#{e.backtrace.join("\n\t")}")
+          error("Exception in control loop: #{e.message}\n\t#{e.backtrace.join("\n\t")}")
         end
       }
     }
@@ -216,7 +216,7 @@ class NecBs < Bs
         ma = Time.now.inspect
         @meas.clstats(ma, mac, ulrssi, ulcinr, dlrssi, dlcinr, m.mcsulmod, m.mcsdlmod)
       rescue => e
-        error("Exception in get_mobile_stats for [#{mac}]: #{e.message}\n#{e.backtrace.join("\n\t")}")
+        error("Exception in get_mobile_stats for [#{mac}]: #{e.message}\n\t#{e.backtrace.join("\n\t")}")
       end
     }
     #     @mobile_history.push(ma)

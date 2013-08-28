@@ -106,7 +106,7 @@ class ExecApp < MObject
       begin
         exec(cmd)
       rescue => e
-        error("exec() failed: #{e.message}\n#{e.backtrace.join("\n\t")}")
+        error("exec() failed: #{e.message}\n\t#{e.backtrace.join("\n\t")}")
       end
       # Should never get here
       exit!
@@ -155,7 +155,7 @@ class ExecApp < MObject
       rescue EOFError
         # do nothing
       rescue => e
-        error("Exception in monitorAppPipe(#{@id}): #{e.message}\n#{e.backtrace.join("\n\t")}")
+        error("Exception in monitorAppPipe(#{@id}): #{e.message}\n\t#{e.backtrace.join("\n\t")}")
       ensure
         pipe.close
       end
@@ -170,7 +170,7 @@ class ExecApp < MObject
       begin
         @observer.onAppEvent(*args)
       rescue => e
-        error("Exception in onAppEvent(#{args.join(', ')}): #{e.message}\n#{e.backtrace.join("\n\t")}")
+        error("Exception in onAppEvent(#{args.join(', ')}): #{e.message}\n\t#{e.backtrace.join("\n\t")}")
       end
     end
   end
