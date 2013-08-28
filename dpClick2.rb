@@ -4,6 +4,8 @@ require 'omf-aggmgr/ogs_wimaxrf/dataPath'
 require 'omf-aggmgr/ogs_wimaxrf/execApp'
 
 class Click2Datapath < DataPath
+  include MonitorMixin
+
   attr_reader :port, :vlan
 
   def initialize(config)
@@ -23,60 +25,68 @@ class Click2Datapath < DataPath
 
   # Starts a new click instance if it's not already running.
   def start
-    return if @app
-    info("Starting datapath #{name}")
+    synchronize {
+      return if @app
+      info("Starting datapath #{name}")
 
-    if File::exist?(@click_socket_path)
-      File::delete(@click_socket_path)
-    end
-    @app = ExecApp.new("C2DP-#{name}", self, @click_command)
+      if File::exist?(@click_socket_path)
+        File::delete(@click_socket_path)
+      end
 
-    # wait for click to open the control socket
-    timeout = @click_timeout
-    until File::exist?(@click_socket_path)
-      raise "Timed out waiting for control socket to appear" if timeout <= 0
-      timeout -= 0.1
-      sleep(0.1)
-    end
-    # open control socket
-    @click_socket = UNIXSocket.new(@click_socket_path)
-    @click_socket.extend(MonitorMixin)
-    # send initial configuration
-    update_click_config
+      # start click process
+      @app = ExecApp.new("C2DP-#{name}", self, @click_command)
+
+      # wait for click to open the control socket
+      timeout = @click_timeout.to_f
+      until File::exist?(@click_socket_path)
+        raise "Timed out waiting for control socket to appear" if timeout <= 0
+        timeout -= 0.1
+        sleep(0.1)
+      end
+      # open control socket
+      @click_socket = UNIXSocket.new(@click_socket_path)
+
+      # send initial configuration
+      update_click_config
+    }
   end
 
   # Stops the click instance, does nothing if it's not running.
   def stop
-    return unless @app
-    info("Stopping datapath #{name}")
+    synchronize {
+      return unless @app
+      info("Stopping datapath #{name}")
 
-    @click_socket.synchronize {
       # gracefully shutdown the connection
-      @click_socket.send("QUIT", 0)
+      begin @click_socket.send("QUIT", 0) rescue Errno::EPIPE end
       # close the control socket
       @click_socket.close
-    }
 
-    # kill the process
-    @app.kill('TERM')
-    @app = nil
+      # kill the process
+      begin @app.kill('TERM') rescue Errno::ESRCH end
+      @app = nil
+    }
   end
 
   # Reconfigures the running click instance without stopping it.
   def restart
-    if @app
-      update_click_config
-    else
-      start
-    end
+    synchronize {
+      if @app
+        update_click_config
+      else
+        start
+      end
+    }
   end
 
   def onAppEvent(event, id, msg)
     case event
     when 'DONE.ERROR'
       # click crashed, restart it
-      @app = nil
-      start
+      synchronize {
+        stop
+        start
+      }
     end
   end
 
@@ -127,37 +137,31 @@ switch[1] -> bs_queue;"
 
   # Replaces the current configuration with a new one generated on the fly.
   def update_click_config
-    return unless @click_socket
     if @mobiles.length > 0
       new_config = generate_click_config
     else
       new_config = ''
     end
 
-    @click_socket.synchronize {
-      debug("Loading new click configuration for datapath #{name}")
-
-      begin
-        @click_socket.send("WRITE hotconfig #{new_config}\n", 0)
-      rescue IOError
-        # the socket has been closed on our end: do nothing
-        # because it means that the datapath is stopping
-      rescue Errno::EPIPE
-        # the click process has crashed: do nothing because
-        # it will be automatically restarted with the new config
-      else
-        while line = @click_socket.gets
-          case line
-          when /^2\d\d/
-            debug("New config loaded successfully")
-            break
-          when /^5\d\d/
-            error("Could not load new config, old config still running: #{line}")
-            break
-          end
+    debug("Loading new click configuration for datapath #{name}")
+    begin
+      @click_socket.send("WRITE hotconfig #{new_config}\n", 0)
+    rescue Errno::EPIPE => e
+      # click has probably crashed, so don't do anything because
+      # it will be automatically restarted with the new config
+      debug("Error writing on control socket: #{e.message}")
+    else
+      while line = @click_socket.gets
+        case line
+        when /^2\d\d/
+          debug("New config loaded successfully")
+          break
+        when /^5\d\d/
+          error("Could not load new config, old config still running: #{line}")
+          break
         end
       end
-    }
+    end
   end
 
 end
