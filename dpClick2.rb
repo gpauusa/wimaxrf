@@ -103,45 +103,41 @@ class Click2Datapath < DataPath
 from_bs :: FromDevice(#{@bsif}, PROMISC true); \
 to_bs :: ToDevice(#{@bsif}); \
 from_net :: FromDevice(#{@netif}, PROMISC true); \
-to_net :: ToDevice(#{@netif});"
+to_net :: ToDevice(#{@netif}); "
 
     # then the two filter compounds for whitelisting
     # clients based on their mac address
     filter_first_output = []
     filter_second_output = []
-    network_filter = 'filter_from_network :: {'
-    bs_filter = 'filter_from_bs :: {'
-    n = 1
+    network_filter = 'filter_from_network :: { '
+    bs_filter = 'filter_from_bs :: { '
+    i = 1
     @mobiles.each_key do |mac|
-      network_filter << "filter_#{n} :: HostEtherFilter(#{mac}, DROP_OWN false, DROP_OTHER true);"
-      bs_filter << "filter_#{n} :: HostEtherFilter(#{mac}, DROP_OWN true, DROP_OTHER false);"
-      filter_first_output << "filter_#{n}[0]"
-      filter_second_output << "filter_#{n}[1]"
-      n += 1
+      network_filter << "filter_#{i} :: HostEtherFilter(#{mac}, DROP_OWN false, DROP_OTHER true); "
+      bs_filter << "filter_#{i} :: HostEtherFilter(#{mac}, DROP_OWN true, DROP_OTHER false); "
+      filter_first_output << "filter_#{i}[0]"
+      filter_second_output << "filter_#{i}[1]"
+      i += 1
     end
-    network_filter << 'input -> filter_1;'
-    network_filter << filter_first_output.join(', ') << ' -> output;'
-    network_filter << filter_second_output.join(' -> ') << ' -> Discard; }'
-    bs_filter << 'input -> filter_1;'
-    bs_filter << filter_second_output.join(', ') << ' -> output;'
-    bs_filter << filter_first_output.join(' -> ') + ' -> Discard; }'
+    network_filter << 'input -> filter_1; '
+    network_filter << filter_first_output.join(', ') << ' -> output; '
+    network_filter << filter_second_output.join(' -> ') << ' -> Discard; } '
+    bs_filter << 'input -> filter_1; '
+    bs_filter << filter_second_output.join(', ') << ' -> output; '
+    bs_filter << filter_first_output.join(' -> ') + ' -> Discard; } '
+    config << network_filter << bs_filter
 
     # finally we plug everything into the switch
-    routing = "bs_queue :: Queue -> to_bs; \
-net_queue :: Queue -> to_net; \
-from_net -> filter_from_network -> [0]switch[0] -> net_queue; \
-from_bs -> filter_from_bs -> [1]switch[1] -> bs_queue;"
-
-    # put all the sections together and return the config
-    config << network_filter << bs_filter << routing
+    config << "from_net -> filter_from_network -> [0]switch[0] -> Queue -> to_net; \
+from_bs -> filter_from_bs -> [1]switch[1] -> Queue -> to_bs;"
   end
 
   # Returns a click configuration string suitable for NEC-style base stations.
   def gen_nec_config
     config = "switch :: EtherSwitch; \
 FromDevice(#{@netif}, PROMISC true) -> [0]switch; \
-switch[0] -> Queue -> ToDevice(#{@netif}); \
-"
+switch[0] -> Queue -> ToDevice(#{@netif}); "
+
     i = 1
     @mobiles.each do |mac, client|
       next unless client.ul && client.dl && client.ip
@@ -158,8 +154,7 @@ switch[#{i}] -> cf_#{i} :: Classifier(12/0806 20/0001, 12/0806 20/0002, -); \
 cf_#{i}[0] -> arr_#{i} -> [#{i}]switch; \
 cf_#{i}[1] -> [1]arq_#{i}; \
 cf_#{i}[2] -> Strip(14) -> dlgreq_#{i} :: Queue -> dlgre_#{i}; \
-ulgre_#{i} -> GetIPAddress(16) -> arq_#{i} -> [#{i}]switch; \
-"
+ulgre_#{i} -> GetIPAddress(16) -> arq_#{i} -> [#{i}]switch; "
       i += 1
     end
     config
