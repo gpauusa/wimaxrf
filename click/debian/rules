@@ -1,0 +1,11 @@
+#!/usr/bin/make -f
+%:
+	dh $@
+
+
+override_dh_auto_configure:
+	dh_auto_configure -- --disable-linuxmodule --enable-etherswitch
+
+override_dh_auto_install:
+	 $(MAKE) DESTDIR=$$(pwd)/debian/click prefix=/usr install
+

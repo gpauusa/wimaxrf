@@ -1,0 +1,51 @@
+This package was debianized by Francesco Berni <kurojishi@gmail.com> on
+Fri, 19 Jul 2013 12:08:30 -0700.
+
+It was downloaded from https://github.com/kohler/click/
+
+Licence for the package unless otherwise specified:
+
+(c) 1999-2007 Massachusetts Institute of Technology
+(c) 2000-2007 Mazu Networks, Inc.
+(c) 2001-2007 International Computer Science Institute
+(c) 2004-2007 Regents of the University of California
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+The name and trademarks of copyright holders may NOT be used in advertising or publicity pertaining to the Software without specific, written prior permission. Title to copyright in this Software and any associated documentation will at all times remain with copyright holders.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+
+Parts of Click are distributed under different licenses. The
+specific licenses are listed below.
+
+    drivers/e1000*, etc/linux-*-patch, linuxmodule/proclikefs.c: These
+portions of the Click software are derived from the Linux kernel, and
+are thus distributed under the GNU General Public License, version 2.
+The GNU General Public License is available via the Web at
+<http://www.gnu.org/licenses/gpl.html>, or in the COPYING file in this
+directory.
+
+On Debian systems, the complete text of the GNU General Public License can be
+found in `/usr/share/common-licenses/GPL-2'.
+
+    include/click/bigint.hh: This portion of the Click software
+derives from the GNU Multiple Precision Arithmetic Library, and is
+thus distributed under the GNU Lesser General Public License, version
+3. This license is available via the Web at
+<http://www.gnu.org/licenses/lgpl.html>. The LGPL specifically permits
+direct linking with code with other licenses.
+
+On Debian systems, the complete text of the GNU General Public License can be
+found in `/usr/share/common-licenses/LGPL-3'.
+
+    Element code that uses only Click's interfaces will *not* be
+derived from the Linux kernel. (For instance, those interfaces have
+multiple implementations, including some that run at user level.)
+Thus, for element code that uses only Click's interfaces, the BSD-like
+Click license applies, not the GPL or the LGPL.
+

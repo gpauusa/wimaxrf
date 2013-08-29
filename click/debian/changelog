@@ -1,0 +1,6 @@
+click (2.1-git20130722) UNRELEASED; urgency=low
+
+  * Initial release. (Closes: #XXXXXX)
+  * Fixed man pages issues and corrected description and rules 
+
+ -- Francesco Berni <kurojishi@gmail.com>  Mon, 22 Jul 2013 11:02:36 -0700
