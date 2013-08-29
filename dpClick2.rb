@@ -17,8 +17,10 @@ class Click2Datapath < DataPath
     @bsif = config['bs_interface']
     @netif = @port.dup
     @netif << ".#{@vlan}" if @vlan != 0
+    @defgw = config['default_gw'] || '10.41.0.1'
+    @netmask = config['netmask'] || '255.255.0.0'
     @click_socket_path = config['click_socket_dir'] || '/var/run'
-    @click_socket_path << "/click-#{name}.sock"
+    @click_socket_path << "/click-#{@bstype}-#{name}.sock"
     @click_command = config['click_command'] || '/usr/bin/click'
     @click_command << " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
     @click_timeout = config['click_timeout'] || 5.0
@@ -136,6 +138,31 @@ from_bs -> filter_from_bs -> [1]switch[1] -> bs_queue;"
 
   # Returns a click configuration string suitable for NEC-style base stations.
   def gen_nec_config
+    config = "switch :: EtherSwitch; \
+FromDevice(#{@netif}, PROMISC true) -> [0]switch; \
+switch[0] -> Queue -> ToDevice(#{@netif}); \
+"
+    i = 1
+    @mobiles.each do |mac, client|
+      next unless client.ul && client.dl && client.ip
+      config << "AddressInfo(c_#{i} #{client.ip} #{client.mac}); \
+arr_#{i} :: ARPResponder(c_#{i}); \
+arq_#{i} :: ARPQuerier(c_#{i}); \
+\
+Script(write arq_#{i}.gateway #{@defgw}, write arq_#{i}.netmask #{@netmask}); \
+\
+ulgre_#{i} :: FromDevice(#{client.ul}); \
+dlgre_#{i} :: ToDevice(#{client.dl}); \
+\
+switch[#{i}] -> cf_#{i} :: Classifier(12/0806 20/0001, 12/0806 20/0002, -); \
+cf_#{i}[0] -> arr_#{i} -> [#{i}]switch; \
+cf_#{i}[1] -> [1]arq_#{i}; \
+cf_#{i}[2] -> Strip(14) -> dlgreq_#{i} :: Queue -> dlgre_#{i}; \
+ulgre_#{i} -> GetIPAddress(16) -> arq_#{i} -> [#{i}]switch; \
+"
+      i += 1
+    end
+    config
   end
 
   # Replaces the current configuration with a new one generated on the fly.
