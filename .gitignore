@@ -1,5 +1,8 @@
 /db/*.db
-.*.swp
+debian/*.debhelper.log
+debian/*.substvars
+debian/files
 *~
-tags
+.*.swp
 .project
+tags
