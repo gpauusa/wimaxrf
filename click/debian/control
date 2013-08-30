@@ -2,14 +2,14 @@ Source: click
 Maintainer: Francesco Berni <kurojishi@gmail.com>
 Section: net
 Priority: optional
-Vcs-git: git://github.com/kohler/click/
-Vcs-browser: https://github.com/kohler/click/
-HomePage: http://www.read.cs.ucla.edu/click/click
+Vcs-git: https://github.com/kohler/click.git
+Vcs-browser: https://github.com/kohler/click
+HomePage: http://www.read.cs.ucla.edu/click/
 Standards-Version: 3.9.2
-Build-Depends: debhelper (>= 8)
+Build-Depends: debhelper (>= 7)
 
 Package: click
-Architecture: i386 amd64
+Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Modular router.
  Click is a tool for building flexible and configurable routers.

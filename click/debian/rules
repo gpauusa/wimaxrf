@@ -4,8 +4,7 @@
 
 
 override_dh_auto_configure:
-	dh_auto_configure -- --disable-linuxmodule --enable-etherswitch
+	dh_auto_configure -- --disable-linuxmodule --enable-etherswitch --disable-test
 
 override_dh_auto_install:
-	 $(MAKE) DESTDIR=$$(pwd)/debian/click prefix=/usr install
-
+	$(MAKE) DESTDIR=$$(pwd)/debian/click prefix=/usr install
