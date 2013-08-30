@@ -11,11 +11,12 @@ Vcs-Git: https://github.com/kohler/click.git
 Package: click
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Click modular router.
+Description: Modular software router
  Click is a tool for building flexible and configurable routers.
  .
- A click router is assembled from simple elements that implement simple functions,
- such as packets classification, queuing, scheduling and interfacing with network devices.
- A click configuration is a graph of elements that send each others packets and process them.
+ A click router is assembled from simple elements that implement simple
+ functionalities, such as packet classification, queuing, scheduling and
+ interfacing with network devices. A click configuration is a graph of
+ elements that send each others packets and process them.
  .
  This package provides the userspace tools for using click.
