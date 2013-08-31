@@ -1,6 +1,5 @@
 wimaxrf (1.0~beta1) UNRELEASED; urgency=low
 
-  * Initial release. (Closes: #XXXXXX)
-  * Fixed bugs and moved vlan to the datapath section of the config file 
+  * Initial release.
 
  -- Francesco Berni <kurojishi@gmail.com>  Thu, 01 Aug 2013 20:29:53 -0700
