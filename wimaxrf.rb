@@ -81,6 +81,7 @@ class WimaxrfService < LegacyGridService
     end
 
     @auth.bs = @bs
+    initMethods
 
 #    if not checkMandatoryParameters
 #      #setMandatoryParameters
@@ -970,40 +971,42 @@ class WimaxrfService < LegacyGridService
     setResponse(res, root)
   end
 
+  # services defined on base station param classes
+  def self.initMethods
+    eval("#{@config['bs']['type']}::PARAMS_CLASSES").each do |pc|
+      className = eval pc
 
-#  #services defind base on base station param classes
-#  NecBs::PARAMS_CLASSES.each { |pc|
-#    claseName = eval pc
-#
-#  s_description claseName.getInfo
-#  claseName.each { |n,p|
-#    s_param n,p[:name],p[:help]
-#    p p[:name]
-#  }
-#  service "bs/"+claseName.getName do |req, res|
-#    query = getAllParams(req)
-#    query_string = req.query_string()
-#    if ((not query.empty?) && (query_string.include? "="))
-#      begin
-#        if processServiceQuerry( claseName, req )
-#          res.body = "BS needs to be rebooted for changes to take effect"
-#        else
-#          res.body = "OK"
-#        end
-#      rescue => e
-#        res.body = e.message
-#      end
-#    else
-#      msgEmpty = "Failed to get basestation status"
-#      replyXML = buildXMLReply("STATUS", msgEmpty, msgEmpty) { |root, dummy|
-#        bsEl = root.add_element(claseName.getName.capitalize())
-#        harqst = processServiceStatus( claseName, req )
-#        addXMLElementsFromHash(bsEl,harqst)
-#      }
-#      self.setResponse(res, replyXML)
-#    end
-#  end
-#    }
+      s_description className.getInfo
+      className.each { |n, p|
+        s_param n, p[:name], p[:help]
+        p p[:name]
+      }
+
+      service "bs/#{className.getName}" do |req, res|
+        query = getAllParams(req)
+        query_string = req.query_string()
+        if !query.empty? && query_string.include?('=') # set bs parameters
+          begin
+            if processServiceQuery(className, req)
+              res.body = "BS needs to be rebooted for changes to take effect"
+            else
+              res.body = "OK"
+            end
+          rescue => e
+            res.body = e.message
+          end
+        else # get bs parameters
+          msgEmpty = "Failed to get basestation status"
+          replyXML = buildXMLReply("STATUS", msgEmpty, msgEmpty) { |root, dummy|
+            bsEl = root.add_element(className.getName.capitalize)
+            harqst = @bs.processServiceStatus(className, query)
+            addXMLElementsFromHash(bsEl, harqst)
+          }
+          self.setResponse(res, replyXML)
+        end
+      end
+    end
+  end
 
 
     #------------ talk to db ---------------#
