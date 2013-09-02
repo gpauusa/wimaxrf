@@ -1,11 +1,12 @@
 class BSPBase
-  @name = nil #name of service
+
+  @name = nil # name of service
   @info = nil
-  @categoryName = nil #name of parameter to retrieve
+  @categoryName = nil # name of parameter to retrieve
   @params = {}
 
   def self.each(&block)
-    @params.each &block
+    @params.each(&block)
   end
 
   def self.name(n)
@@ -32,7 +33,7 @@ class BSPBase
     @categoryName
   end
 
-  def self.param(pname, opts = {} )
+  def self.param(pname, opts={})
       p = @params ||= {}
       p[pname] = opts.dup
   end
