@@ -96,7 +96,7 @@ class WimaxrfService < LegacyGridService
   # returns true if the given interface exists, false otherwise
   def self.interfaceExists?(interface, vlan=nil)
     interface += ".#{vlan}" if vlan
-    result = `ip link show | grep "#{interface}:"`
+    result = `ip link show | grep "#{interface}"`
     !result.empty?
   end
 
