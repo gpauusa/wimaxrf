@@ -19,9 +19,17 @@ class Click2Datapath < DataPath
     @netif << ".#{@vlan}" if @vlan != 0
     @defgw = config['default_gw'] || '10.41.0.1'
     @netmask = config['netmask'] || '255.255.0.0'
-    @click_socket_path = config['click_socket_dir'] || '/var/run'
+    if config['click_socket_dir']
+      @click_socket_path = "#{config['click_socket_dir']}"
+    else
+      @click_socket_path = '/var/run'
+    end
     @click_socket_path << "/click-#{@bstype}-#{name}.sock"
-    @click_command = config['click_command'] || '/usr/bin/click'
+    if config['click_command']
+      @click_command = "#{config['click_command']}"
+    else
+      @click_command = '/usr/bin/click'
+    end
     @click_command << " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
     @click_timeout = config['click_timeout'] || 5.0
   end
@@ -38,7 +46,6 @@ class Click2Datapath < DataPath
 
       # start click process
       @app = ExecApp.new("C2DP-#{name}", self, @click_command)
-
       # wait for click to open the control socket
       timeout = @click_timeout.to_f
       until File::exist?(@click_socket_path)
