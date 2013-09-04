@@ -921,13 +921,12 @@ class WimaxrfService < LegacyGridService
   def self.modifyClient(client,interface,vlan,ipaddress)
     updates = {}
     message = ''
-
     # prepare datapath change
     if datapathExists?(interface, vlan)
       if client.vlan != vlan || client.interface != interface
         updates[:vlan] = vlan
         updates[:interface] = interface
-        message << "Datapath for #{macaddr} updated"
+        message << "Datapath for #{client.macaddr} updated"
       end
     else
       message << "Cannot modify vlan/interface, datapath #{interface}-#{vlan} does not exist"
@@ -936,12 +935,12 @@ class WimaxrfService < LegacyGridService
     # prepare ip address change
     if ipaddress != nil && ipaddress != client.ipaddress
       updates[:ipaddress] = ipaddress
-      message << "\nIP address for #{macaddr} updated"
+      message << "\nIP address for #{client.macaddr} updated"
     end
 
     if !updates.empty?
       # apply changes
-      @auth.update_client(macaddr, updates)
+      @auth.update_client(client.macaddr, updates)
     end
     message
   end
