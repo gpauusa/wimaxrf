@@ -593,8 +593,8 @@ class WimaxrfService < LegacyGridService
     dpconf['vlan'] = dp.vlan
     dpconf['interface'] = dp.interface
     dpconf['bstype'] = @bstype
-    dpconf['bs_interface'] = @config['datapath']['data_interface'].dup
-    dpconf['bs_interface'] << ".#{@config['datapath']['source_vlan']}" if @config['datapath']['source_vlan'] != 0
+    dpconf['bs_interface'] = @config['datapath']['data_interface']
+    dpconf['bs_interface'] += ".#{@config['datapath']['source_vlan']}" if @config['datapath']['source_vlan'] != 0
     dp.dpattributes.each { |k, v| dpconf[k] = v }
 
     # backward compatibility

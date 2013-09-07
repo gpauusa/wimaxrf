@@ -15,14 +15,14 @@ class Click2Datapath < DataPath
     @port = config['interface']
     @vlan = config['vlan'].to_i
     @bsif = config['bs_interface']
-    @netif = @port.dup
-    @netif << ".#{@vlan}" if @vlan != 0
+    @netif = @port
+    @netif += ".#{@vlan}" if @vlan != 0
     @defgw = config['default_gw'] || '10.41.0.1'
     @netmask = config['netmask'] || '255.255.0.0'
     @click_socket_path = config['click_socket_dir'] || '/var/run'
-    @click_socket_path << "/click-#{@bstype}-#{name}.sock"
+    @click_socket_path += "/click-#{@bstype}-#{name}.sock"
     @click_command = config['click_command'] || '/usr/bin/click'
-    @click_command << " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
+    @click_command += " --allow-reconfigure --file /dev/null --unix-socket #{@click_socket_path}"
     @click_timeout = config['click_timeout'] || 5.0
   end
 
