@@ -213,7 +213,46 @@ class AirspanBs < Bs
 
   def get_bs_temperature_stats
     # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTemperatureMonitorTable
-    # TODO
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonValue
+    cpu_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.2")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonStatus
+    cpu_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.2")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonValue
+    psu_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.3")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonStatus
+    psu_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.3")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonValue
+    pico_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.4")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonStatus
+    pico_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.4")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonValue
+    fpga_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.5")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonStatus
+    fpga_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.5")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonValue
+    gps_sdr_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.20")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonStatus
+    gps_sdr_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.20")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonValue
+    rf_tx_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.21")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonStatus
+    rf_tx_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.21")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonValue
+    rf_fpga_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.22")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonStatus
+    rf_fpga_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.22")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonValue
+    rf_board_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.23")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonStatus
+    rf_board_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.23")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonValue
+    fem1_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.24")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonStatus
+    fem1_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.24")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonValue
+    fem2_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.25")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonStatus
+    fem2_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.25")
   end
 
   def get_bs_voltage_stats
