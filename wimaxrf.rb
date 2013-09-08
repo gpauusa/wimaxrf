@@ -595,6 +595,9 @@ class WimaxrfService < LegacyGridService
     dpconf['bstype'] = @bstype
     dpconf['bs_interface'] = @config['datapath']['data_interface']
     dpconf['bs_interface'] += ".#{@config['datapath']['source_vlan']}" if @config['datapath']['source_vlan'] != 0
+    %w(click_command click_socket_dir click_timeout).each do |k|
+      dpconf[k] = @config['datapath'][k] if @config['datapath'].has_key?(k)
+    end
     dp.dpattributes.each { |k, v| dpconf[k] = v }
 
     # backward compatibility
