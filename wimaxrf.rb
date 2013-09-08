@@ -595,6 +595,9 @@ class WimaxrfService < LegacyGridService
     dpconf['bstype'] = @bstype
     dpconf['bs_interface'] = @config['datapath']['data_interface']
     dpconf['bs_interface'] += ".#{@config['datapath']['source_vlan']}" if @config['datapath']['source_vlan'] != 0
+    %w(click_command click_socket_dir click_timeout).each do |k|
+      dpconf[k] = @config['datapath'][k] if @config['datapath'].has_key?(k)
+    end
     dp.dpattributes.each { |k, v| dpconf[k] = v }
 
     # backward compatibility
@@ -926,7 +929,7 @@ class WimaxrfService < LegacyGridService
       if client.vlan != vlan || client.interface != interface
         updates[:vlan] = vlan
         updates[:interface] = interface
-        message << "Datapath for #{macaddr} updated"
+        message << "Datapath for #{client.macaddr} updated"
       end
     else
       message << "Cannot modify vlan/interface, datapath #{interface}-#{vlan} does not exist"
@@ -935,12 +938,12 @@ class WimaxrfService < LegacyGridService
     # prepare ip address change
     if ipaddress != nil && ipaddress != client.ipaddress
       updates[:ipaddress] = ipaddress
-      message << "\nIP address for #{macaddr} updated"
+      message << "\nIP address for #{client.macaddr} updated"
     end
 
     if !updates.empty?
       # apply changes
-      @auth.update_client(macaddr, updates)
+      @auth.update_client(client.macaddr, updates)
     end
     message
   end
