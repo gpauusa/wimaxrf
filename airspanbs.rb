@@ -257,7 +257,26 @@ class AirspanBs < Bs
 
   def get_bs_voltage_stats
     # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonitorTable
-    # TODO
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonValue
+    qrtd_5vo_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.1")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonStatus
+    qrtd_5vo_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.1")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonValue
+    qrtd_3v3_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.1")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonStatus
+    qrtd_3v3_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.1")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonValue
+    qrtd_2v5_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.1")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonStatus
+    qrtd_2v5_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.1")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonValue
+    qrtd_1v8_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.1")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonStatus
+    qrtd_1v8_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.1")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonValue
+    qrtd_1v0_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.1")
+    # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonStatus
+    qrtd_1v0_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.1")
   end
 
   def get_ms_stats(mac)
