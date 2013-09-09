@@ -318,7 +318,7 @@ class AirspanBs < Bs
     purge_timeout = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.12.1.46.1", 10)
   end
 
-  def harq_settings
+  def set_harq_settings
     # default values for now
     # ASMAX-ESVC-MIB::asxEsvcServiceClassExtRowStatus.1.1
     # Valid values are: active(1), notInService(2), notReady(3),
@@ -351,7 +351,7 @@ class AirspanBs < Bs
     snmp_set("1.3.6.1.4.1.989.1.16.2.7.3.12.1.46.1", 10)
   end
 
-  def get_bs_various_settings
+  def get_bs_sector_settings
     # ASMAX-EBS-MIB::asxEbsSectorCfgResourceRetainTimeout
     resource_retain_timeout = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.15.1")
 		# ASMAX-EBS-MIB::asxEbsSectorCfgT46IdleModeInitiateTimeout
