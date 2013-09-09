@@ -211,6 +211,211 @@ class AirspanBs < Bs
     get_bs_voltage_stats
   end
 
+  def get_bs_status
+    # ASMAX-EBS-MIB::asxEbsBsStatusOperationalStatus.1
+    status = snmp_get("1.3.6.1.4.1.989.1.16.2.7.4.2.1.1.1")
+    return status
+  end
+
+  def get_bs_security_info
+    # ASMAX-EBS-MIB::asxEbsBsStatusActiveEncryptionMode.1
+    encryption_mode = snmp_get("1.3.6.1.4.1.989.1.16.2.7.4.2.1.4.1")
+    # ASMAX-EBS-MIB::asxEbsSecuritySaChallengeTimer.1
+    sa_tek_timeout = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.5.1.1.1")
+    # ASMAX-EBS-MIB::asxEbsSecuritySaChallengeMaxResends.1
+    sa_tek_max_resends = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.5.1.2.1")
+    # ASMAX-EBS-MIB::asxEbsSecurityTekLifetime.1
+    sa_tek_lifetime = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.5.1.3.1")
+    # ASMAX-EBS-MIB::asxEbsSecurityPmkChangeOverTime.1
+    sa_tek_change_over_time = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.5.1.4.1")
+    # ASMAX-EBS-MIB::asxEbsSecurityAllowInsecureSs.1
+    insecure_station_allowed = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.5.1.5.1")
+    # ASMAX-EBS-MIB::asxEbsSecurityAllowPkmv1Authentication.1
+    pkm_v1_allowed = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.5.1.6.1")
+    # ASMAX-EBS-MIB::asxEbsSecurityAllowPkmv2Authentication.1
+    pkm_v2_allowed = snmp_get ("1.3.6.1.4.1.989.1.16.2.7.3.5.1.7.1")
+    # ASMAX-EBS-MIB::asxEbsSecurityAllowCcmAesKeyWrapEncryption.1
+    aes_wrap_encryption_allowed = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.5.1.8.1")
+    # ASMAX-EBS-MIB::asxEbsSecurityAllowNoEncryption.1
+    no_encryption_allowed = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.5.1.9.1")
+  end
+
+  def get_zone_info
+    # ASMAX-EBS-MIB::asxEbsStdZoneType.1.0
+    type = snmp_get("1.3.6.1.4.1.989.1.16.2.7.5.4.1.2.1.0")
+    # ASMAX-EBS-MIB::asxEbsStdZoneUseAllSubchannels.1.0
+    use_all_subchanels = snmp_get("1.3.6.1.4.1.989.1.16.2.7.5.4.1.3.1.0")
+    # ASMAX-EBS-MIB::asxEbsStdZoneMaxProportio.1.0
+    max_extention_percentage = snmp_get("1.3.6.1.4.1.989.1.16.2.7.5.4.1.4.1.0")
+    # ASMAX-EBS-MIB::asxEbsStdZonePermutationBase.1.0
+    permutation_base = snmp_get("1.3.6.1.4.1.989.1.16.2.7.5.4.1.5.1.0")
+    # ASMAX-EBS-MIB::asxEbsStdZoneStcMode.1.0
+    stc_code = snmp_get("1.3.6.1.4.1.989.1.16.2.7.5.4.1.7.1.0")
+    # ASMAX-EBS-MIB::asxEbsStdZoneStcMatrix1.0
+    stc_matrix = snmp_get("1.3.6.1.4.1.989.1.16.2.7.5.4.1.8.1.0")
+    # ASMAX-EBS-MIB::asxEbsStdZoneAmcType.1.0
+    stc_type = snmp_get("1.3.6.1.4.1.989.1.16.2.7.5.4.1.9.1.0")
+    # ASMAX-EBS-MIB::asxEbsStdZoneDedicatedPilots.1.0
+    dedicated_pilots = snmp_get("1.3.6.1.4.1.989.1.16.2.7.5.4.1.12.1.0")
+  end
+
+  def get_dreg_cmd_info
+    # ASMAX-EBS-MIB::asxEbsSectorCfgT46IdleModeInitiateTimeout.1
+    unsolicited_timeout = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.16.1")
+    # ASMAX-EBS-MIB::asxEbsSectorCfgDregCmdWaitTime.1
+    wait_time = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.84.1")
+    # ASMAX-EBS-MIB::asxEbsSectorCfgDregCmdNumRetries.1
+    retries = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.85.1")
+  end
+
+  def get_arq_settings
+    # ASMAX-ESVC-MIB::asxEsvcServiceClassExtArqEnabled.1.1
+    # INTEGER: booleanFalse(0)/booleanTrue(1)
+    enabled = snmp_get("1.3.6.1.4.1.989.1.16.2.8.3.3.1.7.1.1")
+    # ASMAX-ESVC-MIB::asxEsvcServiceClassExtArqDeliverInOrder.1.1
+    # INTEGER: booleanFalse(0)/booleanTrue(1)
+    in_order = snmp_get("1.3.6.1.4.1.989.1.16.2.8.3.3.1.8.1.1")
+  end
+
+  def arq_settings
+    # ASMAX-ESVC-MIB::asxEsvcServiceClassExtRowStatus.1.1
+    # Valid values are: active(1), notInService(2), notReady(3),
+    # createAndGo(4), createAndWait(5), destroy(6)
+    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.2.1.1", 5)
+    # ASMAX-ESVC-MIB::asxEsvcServiceClassExtArqEnabled.1.1
+    # INTEGER: booleanFalse(0)/booleanTrue(1)
+    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.7.1.1", 0)
+    # ASMAX-ESVC-MIB::asxEsvcServiceClassExtArqDeliverInOrder.1.1
+    # INTEGER: booleanFalse(0)/booleanTrue(1)
+    #snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.8.1.1", 1)
+    # ASMAX-ESVC-MIB::asxEsvcServiceClassExtRowStatus.1.1
+    # Valid values are: active(1), notInService(2), notReady(3),
+    # createAndGo(4), createAndWait(5), destroy(6)
+    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.2.1.1", 1)
+  end
+
+  def get_harq_settings
+    # ASMAX-EBS-MIB::asxEsvcServiceClassExtHarqEnabled.1.1
+    enabled = snmp_get("1.3.6.1.4.1.989.1.16.2.8.3.3.1.3.1.1", 0)
+    # ASMAX-EBS-MIB::asxEsvcServiceClassExtHarqMaxTransmission.1.1
+    # Integer: 0 == no limit
+    max_transmission = snmp_get("1.3.6.1.4.1.989.1.16.2.8.3.3.1.5.1.1", 0)
+    # ASMAX-EBS-MIB::asxEbsArqCfgHarqAckDelay.1
+    ack_delay = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.7.1.6.1.", 50)
+    # ASMAX-EBS-MIB::asxEbsArqCfgHarqNumAckChannels.1
+    number_of_ack_channgels = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.7.1.7.1", 24)
+    # ASMAX-EBS-MIB::asxEbsRrmCfgDlHarqErrLow.1
+    # Integer 0..40
+    error_rate_threashold_lower = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.12.1.43.1", 2)
+    # ASMAX-EBS-MIB::asxEbsRrmCfgDlHarqErrHigh.1
+    # Integer 0..40
+    error_rate_threshold_higher = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.12.1.44.1", 10)
+    # ASMAX-EBS-MIB::asxEbsRrmCfgDlHarqErrFastHigh.1
+    # Integer 0..40
+    fast_error_rate_threshold = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.12.1.45.1", 30)
+    # ASMAX-EBS-MIB::asxEbsRrmCfgDlHarqPurgeTimeout
+    # Integer 0..100
+    purge_timeout = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.12.1.46.1", 10)
+  end
+
+  def harq_settings
+    # default values for now
+    # ASMAX-ESVC-MIB::asxEsvcServiceClassExtRowStatus.1.1
+    # Valid values are: active(1), notInService(2), notReady(3),
+    # createAndGo(4), createAndWait(5), destroy(6)
+    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.2.1.1", 5)
+    # ASMAX-EBS-MIB::asxEsvcServiceClassExtHarqEnabled.1.1
+    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.3.1.1", 0)
+    # ASMAX-EBS-MIB::asxEsvcServiceClassExtHarqMaxTransmission.1.1
+    # Integer: 0 == no limit
+    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.5.1.1", 0)
+    # ASMAX-ESVC-MIB::asxEsvcServiceClassExtRowStatus.1.1
+    # Valid values are: active(1), notInService(2), notReady(3),
+    # createAndGo(4), createAndWait(5), destroy(6)
+    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.3.1.1", 1)
+    # ASMAX-EBS-MIB::asxEbsArqCfgHarqAckDelay.1 -> integer 1/0
+    snmp_set("1.3.6.1.4.1.989.1.16.2.7.3.7.1.6.1.", 50)
+    # ASMAX-EBS-MIB::asxEbsArqCfgHarqNumAckChannels.1 -> integer
+    snmp_set("1.3.6.1.4.1.989.1.16.2.7.3.7.1.7.1", 24)
+    # ASMAX-EBS-MIB::asxEbsRrmCfgDlHarqErrLow.1
+    # Integer 0..40
+    snmp_set("1.3.6.1.4.1.989.1.16.2.7.3.12.1.43.1", 2)
+    # ASMAX-EBS-MIB::asxEbsRrmCfgDlHarqErrHigh.1
+    # Integer 0..40
+    snmp_set("1.3.6.1.4.1.989.1.16.2.7.3.12.1.44.1", 10)
+    # ASMAX-EBS-MIB::asxEbsRrmCfgDlHarqErrFastHigh.1 
+    # Integer 0..40
+    snmp_set("1.3.6.1.4.1.989.1.16.2.7.3.12.1.45.1", 30)
+    # ASMAX-EBS-MIB::asxEbsRrmCfgDlHarqPurgeTimeout
+    # Integer 0..100
+    snmp_set("1.3.6.1.4.1.989.1.16.2.7.3.12.1.46.1", 10)
+  end
+
+  def get_bs_various_settings
+    # ASMAX-EBS-MIB::asxEbsSectorCfgResourceRetainTimeout
+    resource_retain_timeout = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.15.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgT46IdleModeInitiateTimeout -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.16.1
+    idle_mode_timeout = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.16.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgBsMgmtResourceHoldTimeout -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.17.1
+    resource_hold_timeout = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.17.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgMaxUlAllocation ->  1.3.6.1.4.1.989.1.16.2.7.3.1.1.20.1
+    max_upload_allocation = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.20.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgMaxDlAllocation -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.21.1
+    max_download_allocation = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.21.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgTtg -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.22.1
+    # INTEGER: us
+    downlink_uplink_gap = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.22.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgRtg -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.23.1
+    # INTEGER: us
+    uplink_downlink_gap = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.23.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgNumRangingRetries -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.35.1
+    ranging_retry_period = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.35.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgNumExpectedSss -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.40.1
+    expected_stations = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.40.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgRegistrationTimeout -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.41.1
+    registration_timeout = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.41.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgInService -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.52.1
+    phy_operation_enabled = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.52.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgNumNoReportsForSignoff -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.55.1
+    max_rep_rsp_fails = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.55.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgTxPower -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.59.1
+    transmit_power= snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.59.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgT42HoRngRspTimeout -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.70.1
+    rng_req_response_timeout= snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.69.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgHoTimeToTriggerDuration -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.71.1
+    time_to_trigger = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.71.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgIncludeMsTxPowerLimit -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.72.1
+    tx_power_limit_enabled = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.72.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgMsTxPowerLimit -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.73.1
+    tx_power_limit = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.73.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgDeadPeriodicRangingInterval -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.74.1
+    periodic_ranging_interval = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.74.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgDregCmdWaitTime -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.84.1
+    dreg_cmd_wait = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.84.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgDregCmdNumRetries ->  1.3.6.1.4.1.989.1.16.2.7.3.1.1.85.1
+    dreg_cmd_retries = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.85.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgDlPermutationBase -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.87.1
+    downlink_permutation_base = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.85.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgSnReportingBase -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.92.1
+    sn_reports_base = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.92.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgPowerControlMode -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.102.1
+    power_control_mode = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.102.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgNiIePeriod -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.103.1
+    uplink_noise_interfaerance_level_period = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.103.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgMsMaxTxPowerBackoff -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.107.1
+    max_tx_power_backoff = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.107.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgCarrierSenseHysteresis -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.112.1
+    carrier_sense_hysteresis = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.112.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgCarrierSenseMeasurePeriod -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.114.1
+    carrier_sense_measure_period = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.114.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgPrivateMapMode -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.115.1
+    private_map_compression = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.115.1")
+		# ASMAX-EBS-MIB::asxEbsSectorCfgScanScheduleEnable -> 1.3.6.1.4.1.989.1.16.2.7.3.1.1.118.1
+    fb_scan_enabled = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.1.1.118.1")
+		# ASMAX-EBS-MIB::asxEbsHoTriggerMsAction
+    handoff_trigger_action = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.8.1.4.1")
+  end
+
   def get_bs_temperature_stats
     # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTemperatureMonitorTable
     # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTempMonValue
