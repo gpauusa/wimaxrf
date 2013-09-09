@@ -296,26 +296,26 @@ class AirspanBs < Bs
 
   def get_harq_settings
     # ASMAX-EBS-MIB::asxEsvcServiceClassExtHarqEnabled.1.1
-    enabled = snmp_get("1.3.6.1.4.1.989.1.16.2.8.3.3.1.3.1.1", 0)
+    enabled = snmp_get("1.3.6.1.4.1.989.1.16.2.8.3.3.1.3.1.1")
     # ASMAX-EBS-MIB::asxEsvcServiceClassExtHarqMaxTransmission.1.1
     # Integer: 0 == no limit
-    max_transmission = snmp_get("1.3.6.1.4.1.989.1.16.2.8.3.3.1.5.1.1", 0)
+    max_transmission = snmp_get("1.3.6.1.4.1.989.1.16.2.8.3.3.1.5.1.1")
     # ASMAX-EBS-MIB::asxEbsArqCfgHarqAckDelay.1
-    ack_delay = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.7.1.6.1.", 50)
+    ack_delay = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.7.1.6.1.")
     # ASMAX-EBS-MIB::asxEbsArqCfgHarqNumAckChannels.1
-    number_of_ack_channgels = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.7.1.7.1", 24)
+    number_of_ack_channgels = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.7.1.7.1")
     # ASMAX-EBS-MIB::asxEbsRrmCfgDlHarqErrLow.1
     # Integer 0..40
-    error_rate_threashold_lower = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.12.1.43.1", 2)
+    error_rate_threashold_lower = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.12.1.43.1")
     # ASMAX-EBS-MIB::asxEbsRrmCfgDlHarqErrHigh.1
     # Integer 0..40
-    error_rate_threshold_higher = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.12.1.44.1", 10)
+    error_rate_threshold_higher = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.12.1.44.1")
     # ASMAX-EBS-MIB::asxEbsRrmCfgDlHarqErrFastHigh.1
     # Integer 0..40
-    fast_error_rate_threshold = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.12.1.45.1", 30)
+    fast_error_rate_threshold = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.12.1.45.1")
     # ASMAX-EBS-MIB::asxEbsRrmCfgDlHarqPurgeTimeout
     # Integer 0..100
-    purge_timeout = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.12.1.46.1", 10)
+    purge_timeout = snmp_get("1.3.6.1.4.1.989.1.16.2.7.3.12.1.46.1")
   end
 
   def set_harq_settings
