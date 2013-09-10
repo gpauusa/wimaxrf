@@ -323,16 +323,16 @@ class AirspanBs < Bs
     # ASMAX-ESVC-MIB::asxEsvcServiceClassExtRowStatus.1.1
     # Valid values are: active(1), notInService(2), notReady(3),
     # createAndGo(4), createAndWait(5), destroy(6)
-    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.2.1.1", 5)
+    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.2.1.2", 5)
     # ASMAX-EBS-MIB::asxEsvcServiceClassExtHarqEnabled.1.1
-    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.3.1.1", 1)
+    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.3.1.2", 1)
     # ASMAX-EBS-MIB::asxEsvcServiceClassExtHarqMaxTransmission.1.1
     # Integer: 0 == no limit
-    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.5.1.1", 0)
+    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.5.1.2", 0)
     # ASMAX-ESVC-MIB::asxEsvcServiceClassExtRowStatus.1.1
     # Valid values are: active(1), notInService(2), notReady(3),
     # createAndGo(4), createAndWait(5), destroy(6)
-    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.3.1.1", 1)
+    snmp_set("1.3.6.1.4.1.989.1.16.2.8.3.3.1.3.1.2", 1)
     # ASMAX-EBS-MIB::asxEbsArqCfgHarqAckDelay.1 -> integer 1/0
     snmp_set("1.3.6.1.4.1.989.1.16.2.7.3.7.1.6.1.", 50)
     # ASMAX-EBS-MIB::asxEbsArqCfgHarqNumAckChannels.1 -> integer
