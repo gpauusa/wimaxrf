@@ -4,15 +4,15 @@ class ArqService < BSPBase
   @name = 'arq'
   @categoryName = 'arq'
   @info = 'Set ARQ parameters'
-  param :enable, :bsname => 'arq', :name => '[enable]', :oid => '3.6.1.4.1.989.1.16.2.8.3.3.1.2.1.2', :help => 'Set to TRUE to enable the operation of ARQ: true/false (false) '
-  param :deliverinorder, :bsname => 'arq_deliver_in_order', :name => '[deliverinorder]', :oid => '1.3.6.1.4.1.989.1.16.2.8.3.3.1.8.1.1', :help => 'Set to TRUE if ARQ protected traffic is to be delivered in order: true/false (true)'
+  param :enable, :bsname => 'arq', :name => '[enable]', :oid => '3.6.1.4.1.989.1.16.2.8.3.3.1.2.1.2', :help => 'Set to TRUE to enable the operation of ARQ: Boolean (false) '
+  param :deliverinorder, :bsname => 'arq_deliver_in_order', :name => '[deliverinorder]', :oid => '1.3.6.1.4.1.989.1.16.2.8.3.3.1.8.1.1', :help => 'Set to TRUE if ARQ protected traffic is to be delivered in order: Boolean (true)'
 end
 
 class HarqService < BSPBase
   @name = 'harq'
   @categoryName = 'harq'
   @info = 'Set HARQ parameters'
-  param :enable, :bsname => 'harq', :name => '[enable]', :oid => '1.3.6.1.4.1.989.1.16.2.8.3.3.1.3.1.1', :help => 'Set to TRUE to enable the operation of HARQ: true/false (false) '
+  param :enable, :bsname => 'harq', :name => '[enable]', :oid => '1.3.6.1.4.1.989.1.16.2.8.3.3.1.3.1.1', :help => 'Set to TRUE to enable the operation of HARQ: Boolean (false) '
   param :maxtransmission, :bsname => 'harq_max_transmission', :name => '[maxtransmission]', :oid => '1.3.6.1.4.1.989.1.16.2.8.3.3.1.3.1.1', :help => 'The maximum number of HARQ transmissions: Integer (0)'
   param :ackdelay, :bsname => 'harq_ack_delay', :name => '[ackdelay]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.7.1.6.1.1', :help => 'The HARQ ACK delay advertised in the UCD (TLV 171): Integer (50)'
   param :ackchannels, :bsname => 'harq_ack_channels', :name => '[ackchannels]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.7.1.7.1.1', :help => 'The number of HARQ ACK channels that will be allocated in each frame: Integer (24)'
@@ -39,25 +39,25 @@ class SecurityService < BSPBase
   param :sachallengemaxresend, :bsname => 'tek_challenge_maxresend', :name => '[sachallengemaxresend]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.5.1.2.1', :help => 'The number of times the BS will retry the SA TEK challenge before the SS is signed off: Integer (3)'
   param :teklifetime, :bsname => 'tek_lifetime', :name => '[teklifetime]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.5.1.3.1', :help => 'The lifetime of the traffic encryption keys in seconds: Integer (43200)'
   param :tekchangeovertime, :bsname => 'tekchange_over_time', :name => '[tekchangeovertime]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.5.1.4.1', :help => 'The time after the completion of the SA TEK 3 way challenge that the old PMK and association AKs must be discarded in ms: Integer (50)'
-  param :insecurestationallowed, :bsname => 'insecure_station_allowed', :name => '[insecurestationallowed]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.5.1.5.1', :help => 'A value of TRUE will allow SSs that have negotiated no security to enter the network: true/false (true)'
-  param :pkmv1allowed, :bsname => 'pkm_v1_allowed', :name => '[pkmv1allowed]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.5.1.6.1', :help => 'The BS is to allow PKM version 1 authentication: true/false (true)'
-  param :pkmv2allowed, :bsname => 'pkm_v2_allowed', :name => '[pkmv2allowed]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.5.1.7.1', :help => 'The BS is to allow PKM version 2 authentication: true/false (true)'
-  param :aeswrap, :bsname => 'aes_key_wrap_allowed', :name => '[aeswrap]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.5.1.8.1', :help => 'Enables the BS to use the CCM AES encryption mode with AES key wrapped key encryption: true/false (false)'
-  param :noencryption, :bsname => 'allow_no_encryption', :name => '[noencryption]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.5.1.9.1', :help => 'Allow no encryption: true/false (true)'
+  param :insecurestationallowed, :bsname => 'insecure_station_allowed', :name => '[insecurestationallowed]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.5.1.5.1', :help => 'A value of TRUE will allow SSs that have negotiated no security to enter the network: Boolean (true)'
+  param :pkmv1allowed, :bsname => 'pkm_v1_allowed', :name => '[pkmv1allowed]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.5.1.6.1', :help => 'The BS is to allow PKM version 1 authentication: Boolean (true)'
+  param :pkmv2allowed, :bsname => 'pkm_v2_allowed', :name => '[pkmv2allowed]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.5.1.7.1', :help => 'The BS is to allow PKM version 2 authentication: Boolean (true)'
+  param :aeswrap, :bsname => 'aes_key_wrap_allowed', :name => '[aeswrap]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.5.1.8.1', :help => 'Enables the BS to use the CCM AES encryption mode with AES key wrapped key encryption: Boolean (false)'
+  param :noencryption, :bsname => 'allow_no_encryption', :name => '[noencryption]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.5.1.9.1', :help => 'Allow no encryption: Boolean (true)'
 end
 
 class ZoneService < BSPBase
   @name = 'zone'
   @categoryName = 'zone'
   @info = 'Set ZONE parameters'
-  param :type, :bsname => 'zone_type', :name => '[type]', :oid => '1.3.6.1.4.1.989.1.16.2.7.5.4.1.2.1.0', :help => "The zone type, which defines the zone's direction (UL or DL), PHY mode (OFDM or OFDMA) and structure (PUSC, STC, etc): INTEGER (3)"
-  param :useallsubchannels, :bsname => 'use_all_subchanels', :name => '[useallsubchannels]', :oid => '1.3.6.1.4.1.989.1.16.2.7.5.4.1.3.1.0', :help => 'Set to TRUE if the zone must use all subchannels: true/false (true)'
+  param :type, :bsname => 'zone_type', :name => '[type]', :oid => '1.3.6.1.4.1.989.1.16.2.7.5.4.1.2.1.0', :help => "The zone type, which defines the zone's direction (UL or DL), PHY mode (OFDM or OFDMA) and structure (PUSC, STC, etc): Integer (3)"
+  param :useallsubchannels, :bsname => 'use_all_subchanels', :name => '[useallsubchannels]', :oid => '1.3.6.1.4.1.989.1.16.2.7.5.4.1.3.1.0', :help => 'Set to TRUE if the zone must use all subchannels: Boolean (true)'
   param :maxproportion, :bsname => 'zone_max_proportion', :name => '[maxproportion]', :oid => '1.3.6.1.4.1.989.1.16.2.7.5.4.1.4.1.0', :help => 'The maximum percentage of the subframe that this zone will occupy: Integer[1..100] (96)'
   param :permutationbase, :bsname => 'zone_permutation_base', :name => '[permutationbase]', :oid => '1.3.6.1.4.1.989.1.16.2.7.5.4.1.5.1.0', :help => 'The base used for the sub-carrier permutation in PUSC zones: Integer[1..31] (0)'
   param :stccode, :bsname => 'stc_code', :name => '[stccode]', :oid => '1.3.6.1.4.1.989.1.16.2.7.5.4.1.7.1.0', :help => 'The STC mode and number of antennas used in this zone: Integer (0)'
   param :stcmatrix, :bsname => 'stc_matrix', :name => '[stcmatrix]', :oid => '1.3.6.1.4.1.989.1.16.2.7.5.4.1.8.1.0', :help => 'The STC matrix used in this zone, if STC is enabled: Integer (0)'
   param :acmtype, :bsname => 'zone_acm_type', :name => '[acmtype]', :oid => '1.3.6.1.4.1.989.1.16.2.7.5.4.1.9.1.0', :help => 'The AMC type used in this zone: Integer (0)'
-  param :dedicatedpilots, :bsname => 'dedicated_pilots', :name => '[dedicatedpilots]', :oid => '1.3.6.1.4.1.989.1.16.2.7.5.4.1.12.1.0', :help => 'Set to TRUE if dedicated pilots are required in this zone, or FALSE if broadcast pilots are required: true/false (0)'
+  param :dedicatedpilots, :bsname => 'dedicated_pilots', :name => '[dedicatedpilots]', :oid => '1.3.6.1.4.1.989.1.16.2.7.5.4.1.12.1.0', :help => 'Set to TRUE if dedicated pilots are required in this zone, or FALSE if broadcast pilots are required: Boolean (false)'
 end
 
 class WirelessService < BSPBase
@@ -74,12 +74,12 @@ class WirelessService < BSPBase
   param :rangingretry, :bsname => 'ranging_retry_period', :name => '[rangingretry]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.35.1', :help => 'The number of ranging attempts before the BS gives up trying to align the SS: Integer (16)'
   param :numexpectedss, :bsname => 'num_expected_stations', :name => '[numexpectedss]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.40.1', :help => 'The number of expected SSs the sector is to support. It does not limit the number of SSs that may be supported: Integer (512)'
   param :regtimeout, :bsname => 'registration_timeout', :name => '[regtimeout]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.41.1', :help => 'Time that the BS waits for registration to occur after authorization before aborting the sign-on: Integer (10000)'
-  param :phyenabled, :bsname => 'phy_operation_enabled', :name => '[phyenabled]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.52.1', :help => 'Set to TRUE to enable PHY operation of this sector: true/false (true)'
+  param :phyenabled, :bsname => 'phy_operation_enabled', :name => '[phyenabled]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.52.1', :help => 'Set to TRUE to enable PHY operation of this sector: Boolean (true)'
   param :maxreprspfails, :bsname => 'max_rep_rsp_fails', :name => '[maxreprspfails]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.55.1', :help => 'The number of consecutive times that the MS can fail to send a REP-RSP message in reply to a REP-REQ from the base station before the MS is signed off: Integer (5)'
   param :txpower, :bsname => 'tx_power', :name => '[txpower]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.59.1', :help => 'The transmit power required by the base station, in units of 0.01 dBm: Integer[0..7500]'
   param :rngreqtimeout, :bsname => 'rng_req_response_timeout', :name => '[rngreqtimeout]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.69.1', :help => 'Length of time the target BS waits for a RNG-REQ message after the preparation phase before abandoning the handover: Integer (10000)'
   param :hotimetotrigger, :bsname => 'ho_time_to_trigger', :name => '[hotimetotrigger]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.71.1', :help => 'Time-to-Trigger duration is the time duration for MS decides to select a neighbor BS as a possible target BS: Integer[0..255] (0)'
-  param :txpowerlimitenabled, :bsname => 'tx_power_limit_enabled', :name => '[txpowerlimitenabled]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.72.1', :help => 'Set to true to include the MS transmit power limitation TLV in the UCD. For user it means MS tx power limit enabled: true/false (false)'
+  param :txpowerlimitenabled, :bsname => 'tx_power_limit_enabled', :name => '[txpowerlimitenabled]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.72.1', :help => 'Set to true to include the MS transmit power limitation TLV in the UCD. For user it means MS tx power limit enabled: Boolean (false)'
   param :txpowerlimit, :bsname => 'tx_power_limit', :name => '[txpowerlimit]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.73.1', :help => 'The MS transmit power limitation to be included in the UCD if the asxEbsSectorCfgIncludeMsTxPowerLimit field is true: Integer[0..255] (0)'
   param :ranginginterval, :bsname => 'periodic_ranging_interval', :name => '[ranginginterval]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.74.1', :help => 'The period during which the BS does not calculate any further adjustments for an SS after it has made an adjustment: Integer (50)'
   param :dregcmdwait, :bsname => 'dreg_cmd_wait_time', :name => '[dregcmdwait]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.84.1', :help => 'The length of time the BS waits for a response to a DREG-CMD: Inteer (500)'
@@ -92,5 +92,5 @@ class WirelessService < BSPBase
   param :carriersensehysteresis, :bsname => 'carrier_sense_hysteresis', :name => '[carriersensehysteresis]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.112.1', :help => 'The carrier sense detection hysteresis, relatively to the high detection threshold, defines the lower RSSI detection threshold: Integer[-1000..-100] (-500)'
   param :carriersenseperiod, :bsname => 'carrier_sense_measure_period', :name => '[carriersenseperiod]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.114.1', :help => 'Duration of each measurement period: Integer (229)'
   param :privmapmode, :bsname => 'private_map_mode', :name => '[privmapmode]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.115.1', :help => 'The type of compression to use on the private maps: Integer[0..1] (1)'
-  param :fbscanenabled, :bsname => 'fb_scan_enabled', :name => '[fbscanenabled]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.118.1', :help => 'Allow the FB to intiate a scheduled scan: true/false (false)'
+  param :fbscanenabled, :bsname => 'fb_scan_enabled', :name => '[fbscanenabled]', :oid => '1.3.6.1.4.1.989.1.16.2.7.3.1.1.118.1', :help => 'Allow the FB to intiate a scheduled scan: Boolean (false)'
 end
