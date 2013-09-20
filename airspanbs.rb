@@ -221,6 +221,8 @@ class AirspanBs < Bs
 
   def get_bs_temperature_stats
     # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmTemperatureMonitorTable
+    #  - temp is in Celsius degrees
+    #  - status can be: normal(0), tooHigh(1), tooLow(2)
 
     cpu_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.2")
     cpu_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.2")
@@ -246,6 +248,8 @@ class AirspanBs < Bs
 
   def get_bs_voltage_stats
     # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonitorTable
+    #  - voltage is in mV
+    #  - status can be nominal(0), tooHigh(1), tooLow(2), outOfRange(3)
 
     qrtd_5v0_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.1")
     qrtd_5v0_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.1")
