@@ -230,8 +230,8 @@ class AirspanBs < Bs
     pico_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.4")
     fpga_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.5")
     fpga_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.5")
-    gps_sdr_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.20")
-    gps_sdr_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.20")
+    gps_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.20")
+    gps_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.20")
     rf_tx_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.21")
     rf_tx_status = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.5.21")
     rf_fpga_temp = snmp_get("1.3.6.1.4.1.989.1.16.1.5.1.4.22")
@@ -247,16 +247,16 @@ class AirspanBs < Bs
   def get_bs_voltage_stats
     # AIRSPAN-ASMAX-COMMON-MIB::asMaxCmDcVoltageMonitorTable
 
-    qrtd_5vo_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.1")
-    qrtd_5vo_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.1")
-    qrtd_3v3_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.1")
-    qrtd_3v3_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.1")
-    qrtd_2v5_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.1")
-    qrtd_2v5_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.1")
-    qrtd_1v8_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.1")
-    qrtd_1v8_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.1")
-    qrtd_1v0_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.1")
-    qrtd_1v0_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.1")
+    qrtd_5v0_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.1")
+    qrtd_5v0_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.1")
+    qrtd_3v3_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.2")
+    qrtd_3v3_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.2")
+    qrtd_2v5_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.3")
+    qrtd_2v5_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.3")
+    qrtd_1v8_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.4")
+    qrtd_1v8_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.4")
+    qrtd_1v0_voltage = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.4.5")
+    qrtd_1v0_status = snmp_get("1.3.6.1.4.1.989.1.16.1.7.1.5.5")
   end
 
   def get_ms_stats(mac)
