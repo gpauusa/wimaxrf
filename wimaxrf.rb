@@ -594,7 +594,7 @@ class WimaxrfService < LegacyGridService
     dpconf['interface'] = dp.interface
     dpconf['bstype'] = @bstype
     dpconf['bs_interface'] = @config['datapath']['data_interface']
-    dpconf['bs_interface'] += ".#{@config['datapath']['source_vlan']}" if @config['datapath']['source_vlan'] != 0
+    dpconf['bs_interface'] += ".#{@config['datapath']['source_vlan']}" if @config['datapath']['source_vlan'].to_i != 0
     %w(click_command click_socket_dir click_timeout).each do |k|
       dpconf[k] = @config['datapath'][k] if @config['datapath'].has_key?(k)
     end
