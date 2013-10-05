@@ -848,14 +848,18 @@ class WimaxrfService < LegacyGridService
 
   s_description "Add a client to a datapath"
   s_param :macaddr, 'macaddr', 'Client MAC address'
-  s_param :ipaddress, 'ipaddress', 'Client IP address'
   s_param :interface, 'interface', 'Datapath interface'
   s_param :vlan, 'vlan', 'VLAN ID'
+  s_param :ipaddress, '[ipaddress]', 'Client IP address'
   service 'datapath/clients/add' do |req, res|
     macaddr = getParam(req, 'macaddr')
-    ipaddress = getParam(req, 'ipaddress')
     interface = getParam(req, 'interface')
     vlan = getParam(req, 'vlan')
+    if req.query.has_key?('ipaddress')
+      ipaddress = getParam(req, 'ipaddress')
+    else
+      ipaddress = nil
+    end
     begin
       if datapathExists?(interface, vlan)
         @auth.add_client(macaddr, interface, vlan, ipaddress)

@@ -30,9 +30,9 @@ end
 class AuthClient
   include DataMapper::Resource
   storage_names[:default] = 'clients'
-  property :macaddr,    String, :length => 1..20, :key => true
-  property :vlan,       String, :length => 1..4,  :field => 'vlanid'
+  property :macaddr,    String, :length => 1..20, :required => true, :key => true
   property :interface,  String, :length => 1..20, :required => true
+  property :vlan,       String, :length => 1..4,  :field => 'vlanid'
   property :ipaddress,  String, :length => 1..20
   property :sliceid,    Text
   property :greup,      Text
