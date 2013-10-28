@@ -1,9 +1,9 @@
 Source: wimaxrf
 Section: science
 Priority: optional
-Maintainer: Francesco Berni <kurojishi@gmail.com>
+Maintainer: Davide Pesavento <davidepesa@ucla.edu>
 Build-Depends: debhelper (>= 9)
-Standards-Version: 3.9.4
+Standards-Version: 3.9.3
 Homepage: https://www.geni.net/?p=2448
 Vcs-Browser: https://github.com/gpauusa/wimaxrf
 Vcs-Git: https://github.com/gpauusa/wimaxrf.git
