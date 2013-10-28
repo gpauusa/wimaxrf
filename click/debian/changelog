@@ -1,5 +1,5 @@
-click (2.1-git20130722) UNRELEASED; urgency=low
+click (2.1~git20131006-1) UNRELEASED; urgency=low
 
   * Initial release.
 
- -- Francesco Berni <kurojishi@gmail.com>  Mon, 22 Jul 2013 11:02:36 -0700
+ -- Davide Pesavento <davidepesa@ucla.edu>  Mon, 28 Oct 2013 10:52:01 -0700
