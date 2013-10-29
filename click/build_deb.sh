@@ -20,3 +20,4 @@ popd > /dev/null
 # cleanup
 rm -rf "${prefix}" "${tarball}"
 git reset --hard HEAD
+git clean -dfX
