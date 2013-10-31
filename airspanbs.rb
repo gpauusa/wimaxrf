@@ -77,20 +77,20 @@ class AirspanBs < Bs
     @mobs.start_all
 
     # Local stats gathering
-    Rufus::Scheduler.singleton.every "#{@meas.localinterval}s" do
+    Rufus::Scheduler.singleton.every "#{@meas.localinterval}s", :overlap => false do
       get_bs_stats
       # ASMAX-ESTATS-MIB::asxEstatsRegisteredMs.1
       registered_ms = begin snmp_get("1.3.6.1.4.1.989.1.16.2.9.5.1.1.1").to_i rescue 0 end
       debug("Found #{registered_ms} registered mobiles (#{@mobs.length} authorized + #{registered_ms - @mobs.length} unauthorized)")
-      debug("Checking mobile stats...")
+      debug("Collecting stats...")
       @mobs.each do |mac, ms|
         get_ms_stats(ms.snmp_mac)
       end
       debug("...done")
     end
     # Global stats gathering
-    Rufus::Scheduler.singleton.every "#{@meas.globalinterval}s" do
-      debug("BS Data collection")
+    Rufus::Scheduler.singleton.every "#{@meas.globalinterval}s", :overlap => false do
+      debug("Global BS data collection")
       get_bs_main_params
       get_bs_stats
       @meas.bsstats(@frequency, @power, @mobs.length, @tpsduul, @tppduul, @tpsdudl, @tppdudl)
