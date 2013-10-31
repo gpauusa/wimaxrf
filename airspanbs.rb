@@ -25,12 +25,16 @@ class AirspanBs < Bs
     get_bs_main_params
     info("Airspan BS (Serial# #{@serial}) at #{@frequency} MHz and #{@power} dBm")
 
-    debug("Creating trap handler")
+    debug("Creating SNMP trap listener")
     SNMP::TrapListener.new(:Host => "0.0.0.0") do |manager|
+      # SNMPv2-MIB::coldStart
+      manager.on_trap("1.3.6.1.6.3.1.1.5.1") do |trap|
+        info("Base station restarted")
+      end
       # WMAN-IF2-BS-MIB::wmanif2BsSsRegisterTrap
       manager.on_trap("1.0.8802.16.2.1.1.2.0.5") do |trap|
         begin
-          debug("Received wmanif2BsSsRegisterTrap: #{trap.inspect}")
+          debug("Received wmanif2BsSsRegisterTrap")
           macaddr = nil
           status = nil
           trap.each_varbind do |vb|
@@ -57,7 +61,7 @@ class AirspanBs < Bs
         end
       end
       manager.on_trap_default do |trap|
-        info("Received SNMP trap #{trap.inspect}")
+        debug("Received SNMP trap #{trap.inspect}")
       end
     end
 
