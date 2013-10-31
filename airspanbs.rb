@@ -76,9 +76,8 @@ class AirspanBs < Bs
     end
     @mobs.start_all
 
-    scheduler = Rufus::Scheduler.start_new
     # Local stats gathering
-    scheduler.every "#{@meas.localinterval}s" do
+    Rufus::Scheduler.singleton.every "#{@meas.localinterval}s" do
       get_bs_stats
       # ASMAX-ESTATS-MIB::asxEstatsRegisteredMs.1
       registered_ms = begin snmp_get("1.3.6.1.4.1.989.1.16.2.9.5.1.1.1").to_i rescue 0 end
@@ -90,7 +89,7 @@ class AirspanBs < Bs
       debug("...done")
     end
     # Global stats gathering
-    scheduler.every "#{@meas.globalinterval}s" do
+    Rufus::Scheduler.singleton.every "#{@meas.globalinterval}s" do
       debug("BS Data collection")
       get_bs_main_params
       get_bs_stats
