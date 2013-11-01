@@ -86,9 +86,9 @@ class AirspanBs < Bs
       end
     end
 
-    # Right now this is needed because the ingress filter is not set
-    # so we need to shutdown the filter
-    # TODO: setup of ingress filter
+    # TODO: implement ingress filter setup
+    # If the ingress filter is not correctly configured, it will block
+    # all traffic on the bridge, so for now just disable it entirely
     # ASMAX-AD-BRIDGE-MIB::asDot1adBsPortProvIngressFilterEnabled.4
     snmp_set("1.3.6.1.4.1.989.1.16.5.4.2.3.1.2.4", 0) # false
 
