@@ -48,6 +48,7 @@ class AirspanBs < Bs
               msg = "GPS lock lost"
             end
           end
+        end
         info("Received asMaxBsCmGpsLockChangeTrap: #{msg}")
       end
       # WMAN-IF2-BS-MIB::wmanif2BsSsRegisterTrap
