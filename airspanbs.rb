@@ -29,10 +29,12 @@ class AirspanBs < Bs
     SNMP::TrapListener.new(:Host => "0.0.0.0") do |manager|
       # SNMPv2-MIB::coldStart
       manager.on_trap("1.3.6.1.6.3.1.1.5.1") do |trap|
+        next unless trap.source_ip == bsconfig['ip']
         info("Base station restarted")
       end
       # WMAN-IF2-BS-MIB::wmanif2BsSsRegisterTrap
       manager.on_trap("1.0.8802.16.2.1.1.2.0.5") do |trap|
+        next unless trap.source_ip == bsconfig['ip']
         begin
           debug("Received wmanif2BsSsRegisterTrap")
           macaddr = nil
