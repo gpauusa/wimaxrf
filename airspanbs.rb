@@ -41,7 +41,7 @@ class AirspanBs < Bs
           #   0 -> locked
           #   1 -> lock lost (degraded)
           #   2 -> lock lost (expired)
-          if vb.name.to_s == "1.3.6.1.4.1.989.1.16.2.1.2.2.1.3"
+          if vb.name == SNMP::ObjectId.new("1.3.6.1.4.1.989.1.16.2.1.2.2.1.3")
             if vb.value.to_i == 0
               msg = "GPS locked"
             else
@@ -60,10 +60,10 @@ class AirspanBs < Bs
           status = nil
           trap.each_varbind do |vb|
             # WMAN-IF2-BS-MIB::wmanif2BsSsNotificationMacAddr
-            if vb.name.to_s == "1.0.8802.16.2.1.1.2.1.1.1"
+            if vb.name == SNMP::ObjectId.new("1.0.8802.16.2.1.1.2.1.1.1")
               macaddr = MacAddress.bin2hex(vb.value)
             # WMAN-IF2-BS-MIB::wmanIf2BsSsRegisterStatus
-            elsif vb.name.to_s == "1.0.8802.16.2.1.1.2.1.1.8"
+            elsif vb.name == SNMP::ObjectId.new("1.0.8802.16.2.1.1.2.1.1.8")
               status = vb.value.to_i
             end
           end
