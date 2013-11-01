@@ -32,11 +32,29 @@ class AirspanBs < Bs
         next unless trap.source_ip == bsconfig['ip']
         info("Base station restarted")
       end
+      # AIRSPAN-ASMAX-BS-COMMON-MIB::asMaxBsCmGpsLockChangeTrap
+      manager.on_trap("1.3.6.1.4.1.989.1.16.2.1.2.0.2") do |trap|
+        next unless trap.source_ip == bsconfig['ip']
+        msg = "unknown GPS lock status"
+        trap.each_varbind do |vb|
+          # AIRSPAN-ASMAX-BS-COMMON-MIB::asMaxBsCmGpsTrapStatusGpsLock
+          #   0 -> locked
+          #   1 -> lock lost (degraded)
+          #   2 -> lock lost (expired)
+          if vb.name.to_s == "1.3.6.1.4.1.989.1.16.2.1.2.2.1.3"
+            if vb.value.to_i == 0
+              msg = "GPS locked"
+            else
+              msg = "GPS lock lost"
+            end
+          end
+        info("Received asMaxBsCmGpsLockChangeTrap: #{msg}")
+      end
       # WMAN-IF2-BS-MIB::wmanif2BsSsRegisterTrap
       manager.on_trap("1.0.8802.16.2.1.1.2.0.5") do |trap|
         next unless trap.source_ip == bsconfig['ip']
         begin
-          debug("Received wmanif2BsSsRegisterTrap")
+          info("Received wmanif2BsSsRegisterTrap")
           macaddr = nil
           status = nil
           trap.each_varbind do |vb|
