@@ -29,8 +29,11 @@ class AirspanBs < Bs
       create_vlan(@data_vlan)
     end
 
-    debug("Creating SNMP trap listener")
-    SNMP::TrapListener.new(:Host => "0.0.0.0") do |manager|
+    bind_addr = Util.get_interface_address(bsconfig['mgmt_if'])
+    trap_port = bsconfig['snmp_trap_port'] || 162
+    info("Creating SNMP trap listener on #{bind_addr}:#{trap_port}")
+
+    SNMP::TrapListener.new(:Host => bind_addr, :Port => trap_port) do |manager|
       # SNMPv2-MIB::coldStart
       manager.on_trap("1.3.6.1.6.3.1.1.5.1") do |trap|
         next unless trap.source_ip == bsconfig['ip']
