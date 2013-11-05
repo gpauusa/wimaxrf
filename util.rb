@@ -64,3 +64,16 @@ def id2Hex(a)
   end
   hexString
 end
+
+module Util
+  # Returns the IPv4 address of the network interface 'ifname'
+  def get_interface_address(ifname)
+    `ip addr show dev #{ifname} | sed -nre 's,.*inet ([0-9\.]+)/.*,\1,p'`
+  end
+
+  # Returns the vlan id of the network interface 'ifname'
+  def get_interface_vlan(ifname)
+    vlan = `ip -d link show dev #{ifname} | sed -nre 's,.*vlan id ([0-9]+) .*,\1,p'`
+    vlan.to_i
+  end
+end
