@@ -14,9 +14,9 @@ class AirspanBs < Bs
   def initialize(mobs, bsconfig)
     super(bsconfig)
 
-    @data_vlan = 0
     @mobs = mobs
     @meas = Measurements.new(bsconfig['bsid'], bsconfig['stats'])
+    @data_vlan = Util.get_interface_vlan(bsconfig['data_if'])
 
     # Set initial frequency
     # WMAN-IF2-BS-MIB::wmanIf2BsCmnPhyDownlinkCenterFreq.1
@@ -24,6 +24,10 @@ class AirspanBs < Bs
 
     get_bs_main_params
     info("Airspan BS (Serial# #{@serial}) at #{@frequency} MHz and #{@power} dBm")
+
+    if @data_vlan != 0
+      create_vlan(@data_vlan)
+    end
 
     debug("Creating SNMP trap listener")
     SNMP::TrapListener.new(:Host => "0.0.0.0") do |manager|
@@ -132,7 +136,6 @@ class AirspanBs < Bs
 
   def create_vlan(vlan)
     debug("Creating VLAN #{vlan} on internal bridge")
-    @data_vlan = vlan
     # The following settings are contained in the SNMP table
     # ASMAX-AD-BRIDGE-MIB::asDot1adVlanProvTable (1.3.6.1.4.1.989.1.16.5.4.1.2)
 

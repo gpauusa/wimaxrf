@@ -76,10 +76,6 @@ class WimaxrfService < LegacyGridService
     require "omf-aggmgr/ogs_wimaxrf/#{@bstype}bs"
     @bs = Kernel.const_get("#{@bstype.capitalize}Bs").new(@mobs, @config['bs'])
 
-    if @config['datapath']['source_vlan'].to_i != 0
-      @bs.create_vlan(@config['datapath']['source_vlan'].to_i)
-    end
-
     @auth.bs = @bs
     initMethods
 
@@ -592,9 +588,8 @@ class WimaxrfService < LegacyGridService
     dpconf['name'] = dp.name
     dpconf['vlan'] = dp.vlan
     dpconf['interface'] = dp.interface
+    dpconf['bs_interface'] = @config['bs']['data_if']
     dpconf['bstype'] = @bstype
-    dpconf['bs_interface'] = @config['datapath']['data_interface']
-    dpconf['bs_interface'] += ".#{@config['datapath']['source_vlan']}" if @config['datapath']['source_vlan'].to_i != 0
     %w(click_command click_socket_dir click_timeout).each do |k|
       dpconf[k] = @config['datapath'][k] if @config['datapath'].has_key?(k)
     end
