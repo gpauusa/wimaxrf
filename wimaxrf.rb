@@ -89,13 +89,6 @@ class WimaxrfService < LegacyGridService
     !!Datapath.get(interface, vlan)
   end
 
-  # returns true if the given interface exists, false otherwise
-  def self.interfaceExists?(interface, vlan=nil)
-    interface += ".#{vlan}" if vlan
-    result = `ip link show | grep "#{interface}"`
-    !result.empty?
-  end
-
   #
   # Create new XML reply containing a given result value.
   # If the result is 'nil' or empty, set an error message in this reply.
@@ -176,7 +169,7 @@ class WimaxrfService < LegacyGridService
   end
 
   def self.getAllParams(req)
-    query = req.query()
+    query = req.query
     if query.has_key?('domain')
       query.delete('domain')
     end
@@ -545,11 +538,11 @@ class WimaxrfService < LegacyGridService
 
   def self.addDataPath(type,vlan,interface,params)
     return "Datapath #{interface}-#{vlan} already exists" if datapathExists?(interface, vlan)
-    return "Cannot create datapath: interface #{interface} doesn't exist" unless interfaceExists?(interface)
+    return "Cannot create datapath: interface #{interface} doesn't exist" unless Util.interface_exists?(interface)
 
     if @manageInterface
       if type.start_with?('click') and vlan != '0'
-        if interfaceExists?(interface, vlan)
+        if Util.interface_exists?(interface, vlan)
           return "Cannot create datapath: manage_interface is true but #{interface}.#{vlan} already exists"
         end
         debug(serviceName, "Creating VLAN #{interface}.#{vlan}")
@@ -562,7 +555,7 @@ class WimaxrfService < LegacyGridService
           return "Could not bring interface up: command '#{cmd}' failed with status #{$?.exitstatus}"
         end
       end
-    elsif vlan != '0' and not interfaceExists?(interface, vlan)
+    elsif vlan != '0' and not Util.interface_exists?(interface, vlan)
       return "Cannot create datapath: interface #{interface}.#{vlan} doesn't exist"
     end
 

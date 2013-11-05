@@ -67,13 +67,20 @@ end
 
 module Util
   # Returns the IPv4 address of the network interface 'ifname'
-  def get_interface_address(ifname)
+  def self.get_interface_address(ifname)
     `ip addr show dev #{ifname} | sed -nre 's,.*inet ([0-9\.]+)/.*,\1,p'`
   end
 
   # Returns the vlan id of the network interface 'ifname'
-  def get_interface_vlan(ifname)
+  def self.get_interface_vlan(ifname)
     vlan = `ip -d link show dev #{ifname} | sed -nre 's,.*vlan id ([0-9]+) .*,\1,p'`
     vlan.to_i
+  end
+
+  # Returns true if the given interface exists, false otherwise
+  def self.interface_exists?(interface, vlan=nil)
+    interface += ".#{vlan}" if vlan
+    result = `ip link show | grep "#{interface}"`
+    !result.empty?
   end
 end
