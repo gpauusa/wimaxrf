@@ -46,22 +46,14 @@ class Netdev < MObject
 
   def snmp_get(snmpobj)
     @manager.synchronize {
-      begin
-        return @manager.get_value(snmpobj)
-      rescue Exception => ex
-        raise "Exception in snmp_get: '#{ex}'"
-      end
+      @manager.get_value(snmpobj)
     }
   end
 
   def snmp_get_multi(row, &block)
     @manager.synchronize {
-      begin
-        @manager.walk(row) do |result|
-          yield(result)
-        end
-      rescue Exception => ex
-        raise "Exception in snmp_get_multi: '#{ex}'"
+      @manager.walk(row) do |result|
+        yield result
       end
     }
   end
