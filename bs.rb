@@ -1,12 +1,9 @@
 require 'omf-aggmgr/ogs_wimaxrf/netdev'
 
 class Bs < Netdev
+
   def initialize(bsconfig)
     super
-  end
-
-  def get_params_classes
-    PARAMS_CLASSES
   end
 
   # it is necessary to implement these methods

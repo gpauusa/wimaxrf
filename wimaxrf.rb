@@ -266,7 +266,7 @@ class WimaxrfService < LegacyGridService
 
   def self.findAttributeDef(name)
     attDef = nil
-    @bs.get_params_classes.each { |pc|
+    @bs.class.const_get('PARAMS_CLASSES').each do |pc|
       className = Kernel.const_get(pc)
       className.each { |n, p|
         if name == p[:bsname]
@@ -274,7 +274,7 @@ class WimaxrfService < LegacyGridService
           break
         end
       }
-    }
+    end
     attDef
   end
 
@@ -968,7 +968,7 @@ class WimaxrfService < LegacyGridService
 
   # services defined on base station param classes
   def self.initMethods
-    @bs.get_params_classes.each do |pc|
+    @bs.class.const_get('PARAMS_CLASSES').each do |pc|
       className = Kernel.const_get(pc)
 
       s_description className.getInfo
