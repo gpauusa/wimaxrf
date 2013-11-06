@@ -968,7 +968,7 @@ class WimaxrfService < LegacyGridService
 
   # services defined on base station param classes
   def self.initMethods
-    @bs.class.const_get('PARAMS_CLASSES').each do |pc|
+    @bs.get_params_classes.each do |pc|
       className = Kernel.const_get(pc)
 
       s_description className.getInfo
