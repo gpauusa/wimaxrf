@@ -246,7 +246,7 @@ class NecBs < Bs
   def restart
     begin
       status = snmp_set("wmanDevCmnResetDevice.0", 1)
-      if status.include?("changed")
+      if status == :noError
         result = "OK"
       else
         result = "Failed: '#{status}'"

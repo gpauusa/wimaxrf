@@ -73,46 +73,26 @@ class Netdev < MObject
   end
 
   def snmp_set(oid, value)
-    status = ''
     @manager.synchronize {
-      begin
-        # uses snmp to set MIB values - needs to check previous state and be able to handle more OID's
-        newoid = get_oid(oid)
-        val = @manager.get_value(newoid)
-        if val != value
-          if value.is_a?(Fixnum)
-            #print "INT #{newoid}=#{value.to_s}\n"
-            vb = SNMP::VarBind.new(newoid, SNMP::Integer.new(value))
-            status = "#{newoid} value changed to #{value}"
-          elsif value.is_a?(String)
-            #print "STR #{newoid}=#{val}\n"
-            vb = SNMP::VarBind.new(newoid, SNMP::OctetString.new(value))
-            status = "#{newoid} value changed to #{value}"
-          end
-          resp = @manager.set(vb)
-          #print "got error #{resp.error_status()}\n"
-          #val = @manager.get_value(newoid)
-          #print "#{newoid} value now set to #{val}\n"
-        else
-          status = "#{newoid} value already set to #{value}"
-        end
-      rescue SNMP::RequestTimeout
-        begin
-          tryAgain = true
-          #print "Try to get new value"
-          val = @manager.get_value(newoid)
-          status = "#{newoid} value changed to #{value}"
-        rescue SNMP::RequestTimeout
-          while tryAgain
-            print "RETRY"
-            retry
-          end
-        end
-      rescue Exception => ex
-        raise "Exception in snmp_set: '#{ex}'"
+      newoid = get_oid(oid)
+      current = @manager.get_value(newoid)
+      return :noError if current == value
+
+      if value.is_a?(Fixnum)
+        vb = SNMP::VarBind.new(newoid, SNMP::Integer.new(value))
+      elsif value.is_a?(String)
+        vb = SNMP::VarBind.new(newoid, SNMP::OctetString.new(value))
+      else
+        raise NotImplementedError.new("Unhandled value of type #{value.class.name} in snmp_set.")
       end
+
+      status = @manager.set(vb).error_status
+      if status != :noError
+        # just warn for now, there are too many calls failing for random reasons
+        debug("Setting SNMP object #{oid} to '#{value}' returned #{status}")
+      end
+      status
     }
-    status
   end
 
   def ssh(command)
