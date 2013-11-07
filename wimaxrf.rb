@@ -528,10 +528,6 @@ class WimaxrfService < LegacyGridService
     params.delete('type')
     params.delete('vlan')
     params.delete('interface')
-    # backward compatibility
-    if type == 'click'
-      type = 'click1'
-    end
     result = addDataPath(type, vlan, interface, params)
     setResponsePlainText(res, result)
   end
@@ -588,8 +584,8 @@ class WimaxrfService < LegacyGridService
     end
     dp.dpattributes.each { |k, v| dpconf[k] = v }
 
-    # backward compatibility
-    dptype = dp.type.downcase == 'click' ? 'Click1' : dp.type.capitalize
+    # forward compatibility
+    dptype = dp.type.downcase == 'click' ? 'Click2' : dp.type.capitalize
 
     # load and instantiate datapath class
     begin
