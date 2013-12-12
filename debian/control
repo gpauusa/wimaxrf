@@ -5,13 +5,11 @@ Maintainer: Davide Pesavento <davidepesa@ucla.edu>
 Build-Depends: debhelper (>= 9)
 Standards-Version: 3.9.3
 Homepage: https://www.geni.net/?p=2448
-Vcs-Browser: https://github.com/gpauusa/wimaxrf
-Vcs-Git: https://github.com/gpauusa/wimaxrf.git
-XS-Ruby-Versions: ruby1.8
+XS-Ruby-Versions: ruby1.9.1, ruby1.8
 
 Package: wimaxrf
 Architecture: all
-Depends: ${misc:Depends}, ruby1.8, omf-aggmgr-5.4 (>= 5.4.2), rubygems1.8, libsqlite3-dev
+Depends: ${misc:Depends}, ruby1.9.1 | ruby1.8, rubygems, omf-aggmgr-5.4 (>= 5.4.3), libsqlite3-dev
 Description: OMF WiMAX service manager
  OMF Aggregate Manager service for configuring and monitoring GENI WiMAX
  installations. Control modules for NEC and Airspan base stations are provided.

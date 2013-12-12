@@ -1,14 +1,15 @@
 #!/usr/bin/make -f
 
-OMF-VER=5.4
-RUBY-VER=1.8
-PKG-NAME=wimaxrf
+OMFVER := 5.4
 
 %:
 	dh $@
 
-
 override_dh_auto_install:
-	cp -r gems/ debian/wimaxrf/usr/share/omf-aggmgr-$(OMF-VER)/gems/$(RUBY-VER)/cache/wimaxrf
-	tar -cf - --exclude-vcs --exclude="click/" ogs_wimaxrf | tar -xf - -C debian/wimaxrf/usr/share/omf-aggmgr-$(OMF-VER)/omf-aggmgr
-	tar -cf - --exclude-vcs etc | tar -xf - -C debian/wimaxrf
+	install -d $(TMP)/usr/share/omf-aggmgr-$(OMFVER)/omf-aggmgr/ogs_wimaxrf
+	install -d $(TMP)/etc/omf-aggmgr-$(OMFVER)/available
+	tar -cf - --exclude-backups --exclude-vcs \
+		--exclude=AirspanMIB/ --exclude=click/ \
+		--exclude=debian/ --exclude=etc/ . | \
+		tar -xf - -C $(TMP)/usr/share/omf-aggmgr-$(OMFVER)/omf-aggmgr/ogs_wimaxrf
+	install etc/wimaxrf.*.yaml $(TMP)/etc/omf-aggmgr-$(OMFVER)/available

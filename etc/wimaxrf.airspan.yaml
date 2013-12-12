@@ -1,0 +1,27 @@
+# NOTE: use only 'spaces' to indent !
+# ('tab' indents are not supported by the ruby yaml parser used to read this file)
+#
+# This is the Config file for the WiMAXRF GridService
+#
+---
+wimaxrf:
+
+  database:
+    dbFile: 'db/wimaxrf.db'
+
+  bs:
+    type: airspan
+    ip: 10.3.0.10
+    mask: 255.255.0.0
+    mgmt_if: eth1
+    data_if: eth1.500
+    bsid: 44:51:db:00:00:10
+    frequency: 2572000
+    stats:
+      localoml:
+        :omlServer: oml.orbit-lab.org
+      globaloml:
+        :omlServer: oml.orbit-lab.org
+
+  datapath:
+    manage_interface: true
