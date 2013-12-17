@@ -13,4 +13,4 @@ override_dh_auto_install:
 		--exclude=AirspanMIB --exclude=click \
 		--exclude=debian --exclude=etc . | \
 		tar -xf - -C $(DESTDIR)/usr/share/omf-aggmgr-$(OMFVER)/omf-aggmgr/ogs_wimaxrf
-	install etc/wimaxrf.*.yaml $(DESTDIR)/etc/omf-aggmgr-$(OMFVER)/available
+	install -m 0644 etc/wimaxrf.*.yaml $(DESTDIR)/etc/omf-aggmgr-$(OMFVER)/available
