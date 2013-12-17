@@ -1,15 +1,16 @@
 #!/usr/bin/make -f
 
-OMFVER := 5.4
+DESTDIR = $(CURDIR)/debian/wimaxrf
+OMFVER  = 5.4
 
 %:
 	dh $@
 
 override_dh_auto_install:
-	install -d $(TMP)/usr/share/omf-aggmgr-$(OMFVER)/omf-aggmgr/ogs_wimaxrf
-	install -d $(TMP)/etc/omf-aggmgr-$(OMFVER)/available
+	install -d $(DESTDIR)/usr/share/omf-aggmgr-$(OMFVER)/omf-aggmgr/ogs_wimaxrf
+	install -d $(DESTDIR)/etc/omf-aggmgr-$(OMFVER)/available
 	tar -cf - --exclude-backups --exclude-vcs \
-		--exclude=AirspanMIB/ --exclude=click/ \
-		--exclude=debian/ --exclude=etc/ . | \
-		tar -xf - -C $(TMP)/usr/share/omf-aggmgr-$(OMFVER)/omf-aggmgr/ogs_wimaxrf
-	install etc/wimaxrf.*.yaml $(TMP)/etc/omf-aggmgr-$(OMFVER)/available
+		--exclude=AirspanMIB --exclude=click \
+		--exclude=debian --exclude=etc . | \
+		tar -xf - -C $(DESTDIR)/usr/share/omf-aggmgr-$(OMFVER)/omf-aggmgr/ogs_wimaxrf
+	install etc/wimaxrf.*.yaml $(DESTDIR)/etc/omf-aggmgr-$(OMFVER)/available

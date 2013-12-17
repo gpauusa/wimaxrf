@@ -1,5 +1,5 @@
-wimaxrf (1.0~beta1) UNRELEASED; urgency=low
+wimaxrf (1.0~beta3-1) UNRELEASED; urgency=low
 
   * Initial release.
 
- -- Francesco Berni <kurojishi@gmail.com>  Thu, 01 Aug 2013 20:29:53 -0700
+ -- Davide Pesavento <davidepesa@ucla.edu>  Tue, 17 Dec 2013 09:08:40 -0800
