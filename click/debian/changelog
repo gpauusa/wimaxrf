@@ -1,4 +1,10 @@
-click (2.1~git20131006-1) UNRELEASED; urgency=low
+click (2.1~git20131209-1) precise; urgency=low
+
+  * New snapshot.
+
+ -- Davide Pesavento <davidepesa@ucla.edu>  Thu, 16 Jan 2014 16:01:10 -0800
+
+click (2.1~git20131006-1) precise; urgency=low
 
   * Initial release.
 
